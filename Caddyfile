@@ -1,0 +1,16 @@
+:80 {
+	root * /app/dist
+
+	# API endpoints - proxy to Fastify server
+	handle /api/* {
+		reverse_proxy localhost:8080
+	}
+
+	# Serve static files
+	file_server
+
+	# SPA fallback - serve index.html for all other routes
+	try_files {path} /index.html
+
+	encode gzip
+}

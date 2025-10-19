@@ -1,0 +1,11 @@
+services:
+  caddyfile-manager:
+    build: .
+    ports:
+      - "3000:80"
+    volumes:
+      # Map your Caddyfiles directory here
+      - ./caddyfiles:/caddyfiles:rw
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
