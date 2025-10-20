@@ -248,8 +248,8 @@ function App() {
 												Validation Warnings
 											</h3>
 											<ul className="text-sm text-orange-800 space-y-1">
-												{validationWarnings.map((warning, i) => (
-													<li key={i}>• {warning}</li>
+												{validationWarnings.map((warning) => (
+													<li key={warning}>• {warning}</li>
 												))}
 											</ul>
 										</div>

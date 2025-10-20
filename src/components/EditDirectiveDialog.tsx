@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -37,6 +37,9 @@ export function EditDirectiveDialog({
 	onOpenChange,
 	onSave,
 }: EditDirectiveDialogProps) {
+	const nameId = useId();
+	const argsId = useId();
+	const blockId = useId();
 	const [editMode, setEditMode] = useState<"feature" | "raw">("raw");
 	const [detectedFeature, setDetectedFeature] = useState<CaddyFeature | null>(
 		null,
@@ -246,18 +249,18 @@ export function EditDirectiveDialog({
 				{editMode === "raw" && (
 					<div className="space-y-4">
 						<div className="grid gap-2">
-							<Label htmlFor="name">Directive Name</Label>
+							<Label htmlFor={nameId}>Directive Name</Label>
 							<Input
-								id="name"
+								id={nameId}
 								value={name}
 								onChange={(e) => setName(e.target.value)}
 								placeholder="e.g., root, file_server, reverse_proxy"
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="args">Arguments</Label>
+							<Label htmlFor={argsId}>Arguments</Label>
 							<Input
-								id="args"
+								id={argsId}
 								value={args}
 								onChange={(e) => setArgs(e.target.value)}
 								placeholder="e.g., * /var/www/html"
@@ -265,9 +268,9 @@ export function EditDirectiveDialog({
 						</div>
 						{directive?.block && (
 							<div className="grid gap-2">
-								<Label htmlFor="block">Block Content</Label>
+								<Label htmlFor={blockId}>Block Content</Label>
 								<Textarea
-									id="block"
+									id={blockId}
 									value={blockContent}
 									onChange={(e) => setBlockContent(e.target.value)}
 									placeholder="Nested directives (advanced)"

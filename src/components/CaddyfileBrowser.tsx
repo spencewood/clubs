@@ -1,5 +1,5 @@
 import { FileText, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -27,7 +27,7 @@ export function CaddyfileBrowser({ onFileSelect }: CaddyfileBrowserProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const loadFiles = async () => {
+	const loadFiles = useCallback(async () => {
 		setLoading(true);
 		setError(null);
 
@@ -58,7 +58,7 @@ export function CaddyfileBrowser({ onFileSelect }: CaddyfileBrowserProps) {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, []);
 
 	const handleFileClick = async (file: CaddyfileEntry) => {
 		try {

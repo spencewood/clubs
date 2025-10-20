@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -23,6 +23,8 @@ export function AddDirectiveDialog({
 	onOpenChange,
 	onAdd,
 }: AddDirectiveDialogProps) {
+	const nameId = useId();
+	const argsId = useId();
 	const [name, setName] = useState("");
 	const [args, setArgs] = useState("");
 
@@ -54,18 +56,18 @@ export function AddDirectiveDialog({
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
 					<div className="grid gap-2">
-						<Label htmlFor="name">Directive Name</Label>
+						<Label htmlFor={nameId}>Directive Name</Label>
 						<Input
-							id="name"
+							id={nameId}
 							value={name}
 							onChange={(e) => setName(e.target.value)}
 							placeholder="e.g., root, file_server, reverse_proxy"
 						/>
 					</div>
 					<div className="grid gap-2">
-						<Label htmlFor="args">Arguments</Label>
+						<Label htmlFor={argsId}>Arguments</Label>
 						<Input
-							id="args"
+							id={argsId}
 							value={args}
 							onChange={(e) => setArgs(e.target.value)}
 							placeholder="e.g., * /var/www/html"

@@ -10,7 +10,7 @@ import {
 	Globe,
 	Lock,
 } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -55,6 +55,7 @@ export function AddFeatureDialog({
 	onOpenChange,
 	onAddDirectives,
 }: AddFeatureDialogProps) {
+	const rawDirectiveId = useId();
 	const [selectedFeature, setSelectedFeature] = useState<CaddyFeature | null>(
 		null,
 	);
@@ -297,9 +298,9 @@ export function AddFeatureDialog({
 				{showAdvanced && (
 					<div className="space-y-4">
 						<div className="space-y-2">
-							<Label htmlFor="raw-directive">Directive</Label>
+							<Label htmlFor={rawDirectiveId}>Directive</Label>
 							<Textarea
-								id="raw-directive"
+								id={rawDirectiveId}
 								placeholder="reverse_proxy localhost:8080"
 								value={rawDirective}
 								onChange={(e) => setRawDirective(e.target.value)}

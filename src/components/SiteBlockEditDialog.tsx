@@ -129,7 +129,10 @@ export function SiteBlockEditDialog({
 							</div>
 							<div className="space-y-2">
 								{addresses.map((address, index) => (
-									<div key={index} className="flex gap-2">
+									<div
+										key={`address-${index}-${address}`}
+										className="flex gap-2"
+									>
 										<div className="relative flex-1">
 											{address.includes(".") && !address.startsWith(":") ? (
 												<Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
