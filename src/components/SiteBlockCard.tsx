@@ -1,8 +1,8 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Globe, Server, Settings, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { CaddySiteBlock } from "@/types/caddyfile";
-import { Settings, Trash2, Globe, Server } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { parseDirectiveWithFeatures } from "@/lib/caddy-features";
+import type { CaddySiteBlock } from "@/types/caddyfile";
 
 interface SiteBlockCardProps {
 	siteBlock: CaddySiteBlock;

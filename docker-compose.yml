@@ -1,11 +1,31 @@
+version: '3.8'
+
 services:
-  caddyfile-manager:
-    build: .
+  clubs:
+    # Use pre-built image from Docker Hub
+    # Or build locally by replacing with: build: .
+    image: your-dockerhub-username/clubs:latest
+    container_name: clubs
     ports:
-      - "3000:80"
+      - "80:80"       # HTTP
+      - "443:443"     # HTTPS
+      - "2019:2019"   # Caddy Admin API (for live mode)
+      - "8080:8080"   # Clubs API
     volumes:
-      # Map your Caddyfiles directory here
-      - ./caddyfiles:/caddyfiles:rw
+      # Mount directory for user Caddyfiles
+      - ./caddyfiles:/caddyfiles
+      # Mount Caddy data for persistence (certificates, etc.)
+      - caddy_data:/data
+      - caddy_config:/config
     environment:
       - NODE_ENV=production
+      - API_PORT=8080
+      - CADDYFILES_DIR=/caddyfiles
+      - CADDY_API_URL=http://localhost:2019
     restart: unless-stopped
+
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local

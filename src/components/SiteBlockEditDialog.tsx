@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { Globe, Pencil, Plus, Server, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -6,12 +8,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Pencil, Globe, Server } from "lucide-react";
-import type { CaddySiteBlock, CaddyDirective } from "@/types/caddyfile";
 import { parseDirectiveWithFeatures } from "@/lib/caddy-features";
+import type { CaddyDirective, CaddySiteBlock } from "@/types/caddyfile";
 import { AddFeatureDialog } from "./AddFeatureDialog";
 import { EditDirectiveDialog } from "./EditDirectiveDialog";
 
@@ -31,9 +31,8 @@ export function SiteBlockEditDialog({
 	const [addresses, setAddresses] = useState<string[]>([]);
 	const [directives, setDirectives] = useState<CaddyDirective[]>([]);
 	const [showAddFeature, setShowAddFeature] = useState(false);
-	const [editingDirective, setEditingDirective] = useState<CaddyDirective | null>(
-		null,
-	);
+	const [editingDirective, setEditingDirective] =
+		useState<CaddyDirective | null>(null);
 
 	useEffect(() => {
 		if (siteBlock) {
@@ -65,9 +64,7 @@ export function SiteBlockEditDialog({
 	};
 
 	const handleSaveDirective = (updated: CaddyDirective) => {
-		setDirectives(
-			directives.map((d) => (d.id === updated.id ? updated : d)),
-		);
+		setDirectives(directives.map((d) => (d.id === updated.id ? updated : d)));
 	};
 
 	const handleDeleteDirective = (id: string) => {
@@ -125,11 +122,7 @@ export function SiteBlockEditDialog({
 						<div className="space-y-3">
 							<div className="flex items-center justify-between">
 								<Label className="text-base font-semibold">Addresses</Label>
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={handleAddAddress}
-								>
+								<Button variant="outline" size="sm" onClick={handleAddAddress}>
 									<Plus className="h-4 w-4 mr-2" />
 									Add Address
 								</Button>
@@ -145,7 +138,9 @@ export function SiteBlockEditDialog({
 											)}
 											<Input
 												value={address}
-												onChange={(e) => handleUpdateAddress(index, e.target.value)}
+												onChange={(e) =>
+													handleUpdateAddress(index, e.target.value)
+												}
 												placeholder="example.com or :8080"
 												className="pl-10"
 											/>

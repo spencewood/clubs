@@ -34,8 +34,14 @@ COPY Caddyfile /etc/caddy/Caddyfile
 RUN mkdir -p /caddyfiles
 
 # Create startup script
-RUN printf '#!/bin/sh\nnode /app/dist/server/index.js &\ncaddy run --config /etc/caddy/Caddyfile --adapter caddyfile\n' > /start.sh && chmod +x /start.sh
+# Enable Caddy Admin API on all interfaces (required for Docker networking)
+RUN printf '#!/bin/sh\nnode /app/dist/server/index.js &\ncaddy run --config /etc/caddy/Caddyfile --adapter caddyfile --resume\n' > /start.sh && chmod +x /start.sh
 
-EXPOSE 80
+# Expose ports:
+# 80 - HTTP
+# 443 - HTTPS
+# 2019 - Caddy Admin API (for live mode)
+# 8080 - Clubs API
+EXPOSE 80 443 2019 8080
 
 CMD ["/start.sh"]

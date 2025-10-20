@@ -1,3 +1,9 @@
+{
+	# Enable Admin API on all interfaces (0.0.0.0:2019)
+	# This allows the Clubs backend to communicate with Caddy for live updates
+	admin 0.0.0.0:2019
+}
+
 :80 {
 	root * /app/dist
 

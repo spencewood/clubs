@@ -1,4 +1,18 @@
+import {
+	Archive,
+	ArrowLeft,
+	ArrowLeftRight,
+	ArrowRight,
+	Code,
+	FileCode,
+	FileText,
+	FolderOpen,
+	Globe,
+	Lock,
+} from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -6,10 +20,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Select,
 	SelectContent,
@@ -17,21 +29,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	ArrowLeftRight,
-	FolderOpen,
-	Archive,
-	FileCode,
-	ArrowRight,
-	FileText,
-	Lock,
-	Globe,
-	ArrowLeft,
-	Code,
-} from "lucide-react";
-import { caddyFeatures, type CaddyFeature } from "@/lib/caddy-features";
-import type { CaddyDirective } from "@/lib/types";
 import { Textarea } from "@/components/ui/textarea";
+import { type CaddyFeature, caddyFeatures } from "@/lib/caddy-features";
+import type { CaddyDirective } from "@/lib/types";
 
 interface AddFeatureDialogProps {
 	open: boolean;

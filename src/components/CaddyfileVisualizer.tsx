@@ -1,7 +1,14 @@
-import { Server, Globe, Sparkles, Zap, Shield, ChevronDown } from "lucide-react";
-import type { CaddyConfig, SiteBlock } from "@/types/caddyfile";
-import { parseDirectiveWithFeatures } from "@/lib/caddy-features";
+import {
+	ChevronDown,
+	Globe,
+	Server,
+	Shield,
+	Sparkles,
+	Zap,
+} from "lucide-react";
 import { useState } from "react";
+import { parseDirectiveWithFeatures } from "@/lib/caddy-features";
+import type { CaddyConfig, SiteBlock } from "@/types/caddyfile";
 
 interface CaddyfileVisualizerProps {
 	config: CaddyConfig;
@@ -91,7 +98,10 @@ function DomainGroupCard({ group }: { group: DomainGroup }) {
 							.filter((name, idx, arr) => arr.indexOf(name) === idx); // unique
 
 						return (
-							<div key={block.id} className="p-3 hover:bg-accent/30 transition-colors">
+							<div
+								key={block.id}
+								className="p-3 hover:bg-accent/30 transition-colors"
+							>
 								<div className="flex items-start gap-3">
 									<div className="flex-1 min-w-0">
 										<div className="font-mono text-sm font-medium truncate">
@@ -194,7 +204,9 @@ export function CaddyfileVisualizer({ config }: CaddyfileVisualizerProps) {
 							<div className="flex items-center gap-2">
 								<Sparkles className="h-4 w-4 text-primary" />
 								<span className="font-medium">{insights.staticFileCount}</span>
-								<span className="text-muted-foreground">static file servers</span>
+								<span className="text-muted-foreground">
+									static file servers
+								</span>
 							</div>
 						)}
 					</div>

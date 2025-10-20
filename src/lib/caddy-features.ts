@@ -152,7 +152,7 @@ export const caddyFeatures: CaddyFeature[] = [
 
 			return directives;
 		},
-		parse: (directive) => {
+		parse: (_directive) => {
 			// This feature generates multiple directives, so we can't easily parse it
 			// from a single directive. Return null to indicate it's not parseable.
 			return null;
@@ -220,7 +220,10 @@ export const caddyFeatures: CaddyFeature[] = [
 
 			const name = directive.args[0];
 			// Remove quotes from value if present
-			const value = directive.args.slice(1).join(" ").replace(/^["']|["']$/g, "");
+			const value = directive.args
+				.slice(1)
+				.join(" ")
+				.replace(/^["']|["']$/g, "");
 
 			return { name, value };
 		},
@@ -453,7 +456,7 @@ export const caddyFeatures: CaddyFeature[] = [
 				),
 			];
 		},
-		parse: (directive) => {
+		parse: (_directive) => {
 			// CORS generates multiple directives, can't parse from single directive
 			return null;
 		},
