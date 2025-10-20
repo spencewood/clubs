@@ -1,169 +1,229 @@
-import { Server, Globe, ArrowRight, FileText, Lock } from "lucide-react";
-import type { CaddyConfig } from "@/types/caddyfile";
+import { Server, Globe, Sparkles, Zap, Shield, ChevronDown } from "lucide-react";
+import type { CaddyConfig, SiteBlock } from "@/types/caddyfile";
+import { parseDirectiveWithFeatures } from "@/lib/caddy-features";
+import { useState } from "react";
 
 interface CaddyfileVisualizerProps {
-  config: CaddyConfig;
+	config: CaddyConfig;
+}
+
+interface DomainGroup {
+	baseDomain: string;
+	siteBlocks: SiteBlock[];
+}
+
+function extractBaseDomain(address: string): string {
+	// Remove port if present (e.g., ":8080")
+	if (address.startsWith(":")) {
+		return "localhost";
+	}
+
+	// Extract domain from address
+	const parts = address.split(".");
+
+	// If it's a subdomain (e.g., app.example.com), get the base domain (example.com)
+	if (parts.length >= 2) {
+		return parts.slice(-2).join(".");
+	}
+
+	return address;
+}
+
+function DomainGroupCard({ group }: { group: DomainGroup }) {
+	const [isExpanded, setIsExpanded] = useState(group.siteBlocks.length === 1);
+
+	const isDomain = group.baseDomain !== "localhost";
+
+	// Count HTTPS sites in this group
+	const httpsCount = group.siteBlocks.filter((b) =>
+		b.directives.some((d) => d.name === "tls"),
+	).length;
+
+	return (
+		<div className="rounded-lg border bg-card">
+			{/* Group Header */}
+			<button
+				type="button"
+				onClick={() => setIsExpanded(!isExpanded)}
+				className="w-full p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-t-lg"
+			>
+				<div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+					{isDomain ? (
+						<Globe className="h-4 w-4 text-primary" />
+					) : (
+						<Server className="h-4 w-4 text-primary" />
+					)}
+				</div>
+				<div className="flex-1 min-w-0 text-left">
+					<div className="font-mono font-semibold truncate">
+						{group.baseDomain}
+					</div>
+					<div className="text-sm text-muted-foreground flex items-center gap-3">
+						<span>
+							{group.siteBlocks.length}{" "}
+							{group.siteBlocks.length === 1 ? "site" : "sites"}
+						</span>
+						{httpsCount > 0 && (
+							<span className="flex items-center gap-1">
+								<Shield className="h-3 w-3 text-green-600 dark:text-green-400" />
+								{httpsCount} secure
+							</span>
+						)}
+					</div>
+				</div>
+				<ChevronDown
+					className={`h-5 w-5 text-muted-foreground transition-transform flex-shrink-0 ${
+						isExpanded ? "rotate-180" : ""
+					}`}
+				/>
+			</button>
+
+			{/* Expanded Sites List */}
+			{isExpanded && (
+				<div className="border-t divide-y">
+					{group.siteBlocks.map((block) => {
+						// Get feature summary
+						const features = block.directives
+							.map((directive) => {
+								const parsed = parseDirectiveWithFeatures(directive);
+								return parsed ? parsed.feature.name : directive.name;
+							})
+							.filter((name, idx, arr) => arr.indexOf(name) === idx); // unique
+
+						return (
+							<div key={block.id} className="p-3 hover:bg-accent/30 transition-colors">
+								<div className="flex items-start gap-3">
+									<div className="flex-1 min-w-0">
+										<div className="font-mono text-sm font-medium truncate">
+											{block.addresses[0]}
+										</div>
+										{block.addresses.length > 1 && (
+											<div className="text-xs text-muted-foreground">
+												+{block.addresses.length - 1} more addresses
+											</div>
+										)}
+										{features.length > 0 && (
+											<div className="text-xs text-muted-foreground truncate mt-1">
+												{features.slice(0, 2).join(", ")}
+												{features.length > 2 && ` +${features.length - 2} more`}
+											</div>
+										)}
+										{features.length === 0 && (
+											<div className="text-xs text-muted-foreground italic mt-1">
+												No configuration
+											</div>
+										)}
+									</div>
+									{block.directives.some((d) => d.name === "tls") && (
+										<Shield className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+									)}
+								</div>
+							</div>
+						);
+					})}
+				</div>
+			)}
+		</div>
+	);
 }
 
 export function CaddyfileVisualizer({ config }: CaddyfileVisualizerProps) {
-  return (
-    <div className="space-y-6">
-      {config.siteBlocks.map((block) => {
-        // Determine the type of site block
-        const isDomain = block.addresses.some((addr) =>
-          addr.includes(".") && !addr.startsWith(":"),
-        );
-        const isPort = block.addresses.some((addr) => addr.startsWith(":"));
-        const isLocalhost = block.addresses.some((addr) =>
-          addr.startsWith("localhost"),
-        );
+	// Analyze configuration for meaningful insights
+	const insights = {
+		httpsCount: config.siteBlocks.filter((b) =>
+			b.directives.some((d) => d.name === "tls"),
+		).length,
+		proxyCount: config.siteBlocks.filter((b) =>
+			b.directives.some((d) => d.name === "reverse_proxy"),
+		).length,
+		staticFileCount: config.siteBlocks.filter((b) =>
+			b.directives.some((d) => d.name === "file_server"),
+		).length,
+	};
 
-        // Extract routing information
-        const routes: Array<{ path?: string; target?: string; type: string }> =
-          [];
-        const features: string[] = [];
+	// Group sites by base domain
+	const domainGroups = new Map<string, SiteBlock[]>();
 
-        for (const directive of block.directives) {
-          if (directive.name === "reverse_proxy") {
-            const target = directive.args[0] || "unknown";
-            routes.push({
-              target,
-              type: "proxy",
-            });
-          } else if (directive.name === "handle" && directive.args.length > 0) {
-            const path = directive.args[0];
-            // Check if there's a reverse_proxy inside this handle block
-            const proxyDirective = directive.block?.find(
-              (d) => d.name === "reverse_proxy",
-            );
-            if (proxyDirective) {
-              routes.push({
-                path,
-                target: proxyDirective.args[0],
-                type: "proxy",
-              });
-            }
-          } else if (directive.name === "file_server") {
-            features.push("Static Files");
-          } else if (directive.name === "encode") {
-            features.push(`Compression: ${directive.args.join(", ") || "gzip"}`);
-          } else if (directive.name === "log") {
-            features.push("Logging");
-          } else if (directive.name === "tls") {
-            features.push("HTTPS/TLS");
-          } else if (directive.name === "root") {
-            const root = directive.args.slice(1).join(" ");
-            features.push(`Root: ${root}`);
-          }
-        }
+	for (const block of config.siteBlocks) {
+		const primaryAddress = block.addresses[0] || "unknown";
+		const baseDomain = extractBaseDomain(primaryAddress);
 
-        return (
-          <div
-            key={block.id}
-            className="border rounded-lg p-4 bg-card space-y-4"
-          >
-            {/* Site Address Header */}
-            <div className="flex items-center gap-3 pb-3 border-b">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                {isDomain ? (
-                  <Globe className="h-5 w-5 text-primary" />
-                ) : (
-                  <Server className="h-5 w-5 text-primary" />
-                )}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {block.addresses.map((addr, idx) => (
-                    <span
-                      key={idx}
-                      className="font-mono text-lg font-semibold"
-                    >
-                      {addr}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {isDomain
-                    ? "Domain Site"
-                    : isLocalhost
-                      ? "Localhost"
-                      : "Port Binding"}
-                </p>
-              </div>
-            </div>
+		if (!domainGroups.has(baseDomain)) {
+			domainGroups.set(baseDomain, []);
+		}
+		domainGroups.get(baseDomain)?.push(block);
+	}
 
-            {/* Routes */}
-            {routes.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-muted-foreground uppercase">
-                  Routes
-                </h4>
-                <div className="space-y-2">
-                  {routes.map((route, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-3 p-3 rounded-md bg-muted/50 border border-muted"
-                    >
-                      {route.path && (
-                        <>
-                          <span className="font-mono text-sm font-medium">
-                            {route.path}
-                          </span>
-                          <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        </>
-                      )}
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Server className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span className="font-mono text-sm truncate">
-                          {route.target}
-                        </span>
-                      </div>
-                      <span className="text-xs px-2 py-1 rounded bg-primary/10 text-primary">
-                        Proxy
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+	// Convert to array and sort by number of sites (descending)
+	const groups: DomainGroup[] = Array.from(domainGroups.entries())
+		.map(([baseDomain, siteBlocks]) => ({ baseDomain, siteBlocks }))
+		.sort((a, b) => b.siteBlocks.length - a.siteBlocks.length);
 
-            {/* Features */}
-            {features.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-muted-foreground uppercase">
-                  Features
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {features.map((feature, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary text-secondary-foreground text-sm"
-                    >
-                      {feature.includes("Root") && (
-                        <FileText className="h-3 w-3" />
-                      )}
-                      {feature.includes("TLS") && <Lock className="h-3 w-3" />}
-                      {feature}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+	return (
+		<div className="space-y-4">
+			{/* Condensed Overview */}
+			{config.siteBlocks.length > 0 && (
+				<div className="rounded-lg border bg-card p-4">
+					<div className="flex items-center gap-6 flex-wrap text-sm">
+						{config.siteBlocks.length > 0 && (
+							<div className="flex items-center gap-2">
+								<Server className="h-4 w-4 text-muted-foreground" />
+								<span className="font-medium">{config.siteBlocks.length}</span>
+								<span className="text-muted-foreground">
+									{config.siteBlocks.length === 1 ? "site" : "sites"}
+								</span>
+							</div>
+						)}
+						{insights.httpsCount > 0 && (
+							<div className="flex items-center gap-2">
+								<Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
+								<span className="font-medium">{insights.httpsCount}</span>
+								<span className="text-muted-foreground">with HTTPS</span>
+							</div>
+						)}
+						{insights.proxyCount > 0 && (
+							<div className="flex items-center gap-2">
+								<Zap className="h-4 w-4 text-primary" />
+								<span className="font-medium">{insights.proxyCount}</span>
+								<span className="text-muted-foreground">
+									{insights.proxyCount === 1 ? "proxy" : "proxies"}
+								</span>
+							</div>
+						)}
+						{insights.staticFileCount > 0 && (
+							<div className="flex items-center gap-2">
+								<Sparkles className="h-4 w-4 text-primary" />
+								<span className="font-medium">{insights.staticFileCount}</span>
+								<span className="text-muted-foreground">static file servers</span>
+							</div>
+						)}
+					</div>
+				</div>
+			)}
 
-            {/* Directive Count */}
-            <div className="pt-2 border-t text-xs text-muted-foreground">
-              {block.directives.length} directive
-              {block.directives.length !== 1 ? "s" : ""} total
-            </div>
-          </div>
-        );
-      })}
+			{/* Grouped Sites */}
+			<div className="space-y-3">
+				{groups.map((group) => (
+					<DomainGroupCard key={group.baseDomain} group={group} />
+				))}
+			</div>
 
-      {config.siteBlocks.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <p>No site blocks found in this Caddyfile</p>
-        </div>
-      )}
-    </div>
-  );
+			{/* Empty state */}
+			{config.siteBlocks.length === 0 && (
+				<div className="text-center py-12 rounded-lg border border-dashed">
+					<div className="flex justify-center mb-3">
+						<div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+							<Sparkles className="h-6 w-6 text-primary" />
+						</div>
+					</div>
+					<div>
+						<h3 className="font-semibold mb-1">No sites configured</h3>
+						<p className="text-sm text-muted-foreground">
+							Add your first site block to get started
+						</p>
+					</div>
+				</div>
+			)}
+		</div>
+	);
 }

@@ -1,33 +1,32 @@
 import { useState } from "react";
 import { CaddyfileBrowser } from "@/components/CaddyfileBrowser";
 import { CaddyfileVisualizer } from "@/components/CaddyfileVisualizer";
+import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
-import { EditDirectiveDialog } from "@/components/EditDirectiveDialog";
-import { AddDirectiveDialog } from "@/components/AddDirectiveDialog";
+import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { parseCaddyfile, serializeCaddyfile } from "@/lib/parser/caddyfile-parser";
 import { validateCaddyfile } from "@/lib/validator/caddyfile-validator";
-import type { CaddyConfig, CaddyDirective } from "@/types/caddyfile";
-import { Save, Plus, X, AlertTriangle, Eye, Edit3 } from "lucide-react";
+import type { CaddyConfig, CaddySiteBlock } from "@/types/caddyfile";
+import { Save, Plus, X, AlertTriangle, Eye, Edit3, Code } from "lucide-react";
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-type ViewMode = "edit" | "visualize";
+type ViewMode = "visualize" | "edit" | "raw";
 
 function App() {
   const [config, setConfig] = useState<CaddyConfig | null>(null);
+  const [rawContent, setRawContent] = useState<string>("");
   const [filename, setFilename] = useState<string>("");
   const [filepath, setFilepath] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("visualize");
+  const [showNewSiteDialog, setShowNewSiteDialog] = useState(false);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
-  const [editingDirective, setEditingDirective] = useState<{
-    siteBlockId: string;
-    directive: CaddyDirective;
-  } | null>(null);
-  const [addingDirective, setAddingDirective] = useState<string | null>(null);
+  const [editingSiteBlock, setEditingSiteBlock] = useState<CaddySiteBlock | null>(null);
 
   const handleFileSelect = (path: string, content: string, name: string) => {
     // Validate the file first
@@ -43,16 +42,41 @@ function App() {
 
     const parsed = parseCaddyfile(content);
     setConfig(parsed);
+    setRawContent(content);
     setFilename(name);
     setFilepath(path);
   };
 
+  const handleRawContentChange = (content: string) => {
+    setRawContent(content);
+    try {
+      const parsed = parseCaddyfile(content);
+      setConfig(parsed);
+    } catch (err) {
+      // Invalid syntax, keep the raw content but don't update config
+      console.error("Parse error:", err);
+    }
+  };
+
+  const handleCreateFromRecipe = (siteBlock: CaddySiteBlock) => {
+    if (!config) return;
+    const newConfig = { ...config };
+    newConfig.siteBlocks.push(siteBlock);
+    setConfig(newConfig);
+    setRawContent(serializeCaddyfile(newConfig));
+  };
+
+  const handleCreateBlank = () => {
+    handleAddSiteBlock();
+  };
+
   const handleSave = async () => {
-    if (!config || !filepath) return;
+    if (!filepath) return;
 
     setSaving(true);
     try {
-      const content = serializeCaddyfile(config);
+      // Use raw content if in raw mode, otherwise serialize from config
+      const content = viewMode === "raw" ? rawContent : config ? serializeCaddyfile(config) : "";
 
       if (import.meta.env.DEV) {
         // In development, just download the file
@@ -94,65 +118,25 @@ function App() {
     });
   };
 
-  const handleEditDirective = (siteBlockId: string, directiveId: string) => {
+  const handleEditSiteBlock = (id: string) => {
     if (!config) return;
-
-    const siteBlock = config.siteBlocks.find((sb) => sb.id === siteBlockId);
-    if (!siteBlock) return;
-
-    const directive = findDirectiveById(siteBlock.directives, directiveId);
-    if (directive) {
-      setEditingDirective({ siteBlockId, directive });
-    }
-  };
-
-  const handleSaveDirective = (updated: CaddyDirective) => {
-    if (!config || !editingDirective) return;
-
-    const newConfig = { ...config };
-    const siteBlock = newConfig.siteBlocks.find(
-      (sb) => sb.id === editingDirective.siteBlockId
-    );
-
+    const siteBlock = config.siteBlocks.find((sb) => sb.id === id);
     if (siteBlock) {
-      siteBlock.directives = updateDirectiveById(
-        siteBlock.directives,
-        updated.id,
-        updated
-      );
-      setConfig(newConfig);
+      setEditingSiteBlock(siteBlock);
     }
-
-    setEditingDirective(null);
   };
 
-  const handleDeleteDirective = (siteBlockId: string, directiveId: string) => {
+  const handleSaveSiteBlock = (updated: CaddySiteBlock) => {
     if (!config) return;
 
     const newConfig = { ...config };
-    const siteBlock = newConfig.siteBlocks.find((sb) => sb.id === siteBlockId);
+    const index = newConfig.siteBlocks.findIndex((sb) => sb.id === updated.id);
 
-    if (siteBlock) {
-      siteBlock.directives = deleteDirectiveById(siteBlock.directives, directiveId);
+    if (index !== -1) {
+      newConfig.siteBlocks[index] = updated;
       setConfig(newConfig);
+      setRawContent(serializeCaddyfile(newConfig));
     }
-  };
-
-  const handleAddDirective = (directive: Omit<CaddyDirective, "id">) => {
-    if (!config || !addingDirective) return;
-
-    const newConfig = { ...config };
-    const siteBlock = newConfig.siteBlocks.find((sb) => sb.id === addingDirective);
-
-    if (siteBlock) {
-      siteBlock.directives.push({
-        ...directive,
-        id: generateId(),
-      });
-      setConfig(newConfig);
-    }
-
-    setAddingDirective(null);
   };
 
   const handleAddSiteBlock = () => {
@@ -255,28 +239,49 @@ function App() {
                 <Edit3 className="h-4 w-4 inline mr-2" />
                 Edit
               </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("raw")}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  viewMode === "raw"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Code className="h-4 w-4 inline mr-2" />
+                Raw
+              </button>
             </div>
 
             {viewMode === "visualize" ? (
               <CaddyfileVisualizer config={config} />
+            ) : viewMode === "raw" ? (
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  Edit the raw Caddyfile syntax. Changes will be parsed automatically.
+                </div>
+                <Textarea
+                  value={rawContent}
+                  onChange={(e) => handleRawContentChange(e.target.value)}
+                  className="font-mono text-sm min-h-[400px]"
+                  placeholder="Enter Caddyfile configuration..."
+                />
+              </div>
             ) : (
               <div className="space-y-4">
                 <div className="flex justify-end">
-                  <Button onClick={handleAddSiteBlock} variant="outline">
+                  <Button onClick={() => setShowNewSiteDialog(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Site Block
                   </Button>
                 </div>
-                <div className="grid gap-4">
+                <div className="grid gap-3">
                   {config.siteBlocks.map((siteBlock) => (
                     <SiteBlockCard
                       key={siteBlock.id}
                       siteBlock={siteBlock}
-                      onEdit={(id) => console.log("Edit site block", id)}
+                      onEdit={handleEditSiteBlock}
                       onDelete={handleDeleteSiteBlock}
-                      onAddDirective={(id) => setAddingDirective(id)}
-                      onEditDirective={handleEditDirective}
-                      onDeleteDirective={handleDeleteDirective}
                     />
                   ))}
                 </div>
@@ -286,68 +291,21 @@ function App() {
         )}
       </main>
 
-      <EditDirectiveDialog
-        directive={editingDirective?.directive || null}
-        open={!!editingDirective}
-        onOpenChange={(open) => !open && setEditingDirective(null)}
-        onSave={handleSaveDirective}
+      <SiteBlockEditDialog
+        siteBlock={editingSiteBlock}
+        open={!!editingSiteBlock}
+        onOpenChange={(open) => !open && setEditingSiteBlock(null)}
+        onSave={handleSaveSiteBlock}
       />
 
-      <AddDirectiveDialog
-        open={!!addingDirective}
-        onOpenChange={(open) => !open && setAddingDirective(null)}
-        onAdd={handleAddDirective}
+      <NewSiteBlockDialog
+        open={showNewSiteDialog}
+        onOpenChange={setShowNewSiteDialog}
+        onCreateFromRecipe={handleCreateFromRecipe}
+        onCreateBlank={handleCreateBlank}
       />
     </div>
   );
-}
-
-function findDirectiveById(
-  directives: CaddyDirective[],
-  id: string
-): CaddyDirective | null {
-  for (const directive of directives) {
-    if (directive.id === id) return directive;
-    if (directive.block) {
-      const found = findDirectiveById(directive.block, id);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-function updateDirectiveById(
-  directives: CaddyDirective[],
-  id: string,
-  updated: CaddyDirective
-): CaddyDirective[] {
-  return directives.map((directive) => {
-    if (directive.id === id) return updated;
-    if (directive.block) {
-      return {
-        ...directive,
-        block: updateDirectiveById(directive.block, id, updated),
-      };
-    }
-    return directive;
-  });
-}
-
-function deleteDirectiveById(
-  directives: CaddyDirective[],
-  id: string
-): CaddyDirective[] {
-  return directives
-    .filter((directive) => directive.id !== id)
-    .map((directive) => {
-      if (directive.block) {
-        return {
-          ...directive,
-          block: deleteDirectiveById(directive.block, id),
-        };
-      }
-      return directive;
-    });
 }
 
 export default App;

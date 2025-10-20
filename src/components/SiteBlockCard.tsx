@@ -1,76 +1,86 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { CaddySiteBlock } from "@/types/caddyfile";
-import { Pencil, Trash2, Plus } from "lucide-react";
-import { DirectiveItem } from "./DirectiveItem";
+import { Settings, Trash2, Globe, Server } from "lucide-react";
+import { parseDirectiveWithFeatures } from "@/lib/caddy-features";
 
 interface SiteBlockCardProps {
-  siteBlock: CaddySiteBlock;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
-  onAddDirective: (siteBlockId: string) => void;
-  onEditDirective: (siteBlockId: string, directiveId: string) => void;
-  onDeleteDirective: (siteBlockId: string, directiveId: string) => void;
+	siteBlock: CaddySiteBlock;
+	onEdit: (id: string) => void;
+	onDelete: (id: string) => void;
 }
 
 export function SiteBlockCard({
-  siteBlock,
-  onEdit,
-  onDelete,
-  onAddDirective,
-  onEditDirective,
-  onDeleteDirective,
+	siteBlock,
+	onEdit,
+	onDelete,
 }: SiteBlockCardProps) {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg font-mono">
-              {siteBlock.addresses.join(", ")}
-            </CardTitle>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onEdit(siteBlock.id)}
-              title="Edit site addresses"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onDelete(siteBlock.id)}
-              title="Delete site block"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {siteBlock.directives.map((directive) => (
-            <DirectiveItem
-              key={directive.id}
-              directive={directive}
-              onEdit={() => onEditDirective(siteBlock.id, directive.id)}
-              onDelete={() => onDeleteDirective(siteBlock.id, directive.id)}
-            />
-          ))}
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full mt-4"
-            onClick={() => onAddDirective(siteBlock.id)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Directive
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+	// Generate a summary of what this site block does
+	const getSummary = () => {
+		if (siteBlock.directives.length === 0) {
+			return "No configuration";
+		}
+
+		const features: string[] = [];
+		for (const directive of siteBlock.directives) {
+			const parsed = parseDirectiveWithFeatures(directive);
+			if (parsed) {
+				features.push(parsed.feature.name);
+			} else {
+				features.push(directive.name);
+			}
+		}
+
+		// Show first 3, then "and X more"
+		if (features.length <= 3) {
+			return features.join(", ");
+		}
+		return `${features.slice(0, 3).join(", ")}, and ${features.length - 3} more`;
+	};
+
+	const isDomain = siteBlock.addresses.some(
+		(addr) => addr.includes(".") && !addr.startsWith(":"),
+	);
+
+	return (
+		<Card className="hover:border-primary/50 transition-colors">
+			<CardContent className="p-4">
+				<div className="flex items-center justify-between gap-4">
+					<div className="flex items-center gap-3 flex-1 min-w-0">
+						{isDomain ? (
+							<Globe className="h-5 w-5 text-primary flex-shrink-0" />
+						) : (
+							<Server className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+						)}
+						<div className="flex-1 min-w-0">
+							<div className="font-mono font-medium truncate">
+								{siteBlock.addresses.join(", ")}
+							</div>
+							<div className="text-sm text-muted-foreground truncate">
+								{getSummary()}
+							</div>
+						</div>
+					</div>
+					<div className="flex gap-2 flex-shrink-0">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => onEdit(siteBlock.id)}
+						>
+							<Settings className="h-4 w-4 mr-2" />
+							Edit
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={() => onDelete(siteBlock.id)}
+							title="Delete site block"
+						>
+							<Trash2 className="h-4 w-4" />
+						</Button>
+					</div>
+				</div>
+			</CardContent>
+		</Card>
+	);
 }
