@@ -1,6 +1,15 @@
 import { Globe, Server, Settings, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { parseDirectiveWithFeatures } from "@/lib/caddy-features";
 import type { CaddySiteBlock } from "@/types/caddyfile";
 
@@ -15,6 +24,8 @@ export function SiteBlockCard({
 	onEdit,
 	onDelete,
 }: SiteBlockCardProps) {
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
 	// Generate a summary of what this site block does
 	const getSummary = () => {
 		if (siteBlock.directives.length === 0) {
@@ -67,20 +78,52 @@ export function SiteBlockCard({
 							size="sm"
 							onClick={() => onEdit(siteBlock.id)}
 						>
-							<Settings className="h-4 w-4 mr-2" />
+							<Settings className="h-4 w-4 mr-1" />
 							Edit
 						</Button>
 						<Button
 							variant="ghost"
-							size="icon"
-							onClick={() => onDelete(siteBlock.id)}
-							title="Delete site block"
+							size="sm"
+							onClick={() => setShowDeleteConfirm(true)}
 						>
-							<Trash2 className="h-4 w-4" />
+							<Trash2 className="h-4 w-4 mr-1" />
+							Delete
 						</Button>
 					</div>
 				</div>
 			</CardContent>
+
+			<Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Delete site block?</DialogTitle>
+						<DialogDescription>
+							Are you sure you want to delete{" "}
+							<span className="font-mono font-semibold">
+								{siteBlock.addresses.join(", ")}
+							</span>
+							? This action cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setShowDeleteConfirm(false)}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={() => {
+								onDelete(siteBlock.id);
+								setShowDeleteConfirm(false);
+							}}
+						>
+							Delete
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</Card>
 	);
 }

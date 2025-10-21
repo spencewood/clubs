@@ -75,7 +75,6 @@ export function validateCaddyfile(content: string): ValidationResult {
 		`^\\s*(${commonDirectives.join("|")})\\b`,
 		"i",
 	);
-	let directiveMatches = 0;
 
 	for (const line of lines) {
 		const trimmedLine = line.trim();
@@ -87,7 +86,6 @@ export function validateCaddyfile(content: string): ValidationResult {
 
 		// Check for common directives
 		if (directivePattern.test(trimmedLine)) {
-			directiveMatches++;
 			score += 15;
 		}
 
@@ -126,25 +124,12 @@ export function validateCaddyfile(content: string): ValidationResult {
 	result.confidence = Math.min(100, Math.max(0, score));
 
 	// Determine if valid based on confidence
-	if (result.confidence >= 50) {
+	// Simplified: either valid or not, no "low confidence" middle ground
+	if (result.confidence >= 30) {
 		result.valid = true;
-	} else if (result.confidence >= 30) {
-		result.valid = true;
-		result.warnings.push(
-			`Low confidence (${result.confidence}%). This may not be a valid Caddyfile.`,
-		);
 	} else {
 		result.valid = false;
-		result.errors.push(
-			`File does not appear to be a valid Caddyfile (confidence: ${result.confidence}%)`,
-		);
-	}
-
-	// Add helpful info
-	if (directiveMatches === 0 && result.confidence < 50) {
-		result.warnings.push(
-			"No common Caddy directives found. This might be a minimal configuration or not a Caddyfile.",
-		);
+		result.errors.push("File does not appear to be a valid Caddyfile");
 	}
 
 	return result;

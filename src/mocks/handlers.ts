@@ -38,8 +38,27 @@ export const handlers = [
 	}),
 
 	// Get Caddyfile
-	http.get("http://localhost:8080/api/caddyfile", async () => {
+	http.get("http://localhost:8080/api/caddyfile", async ({ request }) => {
 		await delay(100);
+
+		const url = new URL(request.url);
+		const source = url.searchParams.get("source");
+
+		// If requesting live source but API not available, return 404
+		if (source === "live" && !mockCaddyAPIAvailable) {
+			return HttpResponse.json(
+				{ error: "Caddyfile not found" },
+				{ status: 404 },
+			);
+		}
+
+		// If requesting live source and API is available, return live config
+		if (source === "live" && mockCaddyAPIAvailable) {
+			// Simulate reading from live Caddy
+			return HttpResponse.text(mockCaddyfile);
+		}
+
+		// Default: return file content
 		return HttpResponse.text(mockCaddyfile);
 	}),
 

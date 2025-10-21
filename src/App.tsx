@@ -1,15 +1,15 @@
 import {
-	AlertTriangle,
 	Circle,
 	Code,
 	Plus,
+	RefreshCw,
 	Save,
 	Server,
 	Shield,
 	Sparkles,
 	Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { AddVirtualBlockDialog } from "@/components/AddVirtualBlockDialog";
 import { EditVirtualBlockDialog } from "@/components/EditVirtualBlockDialog";
@@ -48,16 +48,12 @@ function generateId(): string {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-type ViewMode = "edit" | "raw";
-
 function App() {
 	const [config, setConfig] = useState<CaddyConfig | null>(null);
 	const [rawContent, setRawContent] = useState<string>("");
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
-	const [viewMode, setViewMode] = useState<ViewMode>("edit");
 	const [showNewSiteDialog, setShowNewSiteDialog] = useState(false);
-	const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 	const [editingSiteBlock, setEditingSiteBlock] =
 		useState<CaddySiteBlock | null>(null);
 	const [caddyStatus, setCaddyStatus] = useState<CaddyAPIStatus | null>(null);
@@ -69,60 +65,88 @@ function App() {
 		containerId: string;
 		serviceId: string;
 	} | null>(null);
+	const [isLiveMode, setIsLiveMode] = useState(false);
 
-	// Load Caddyfile on mount
-	useEffect(() => {
-		const load = async () => {
-			setLoading(true);
-			try {
-				const result = await loadCaddyfile();
+	// Reusable load function that checks mode and loads appropriate config
+	const loadConfig = useCallback(async (showLoadingState = true) => {
+		if (showLoadingState) setLoading(true);
+		try {
+			// Check if Caddy API is available first
+			const status = await getCaddyAPIStatus();
+			const liveMode = status.available;
+			setIsLiveMode(liveMode);
 
-				if (result.success && result.content) {
-					// Validate the file first
-					const validation = validateCaddyfile(result.content);
+			// Try to load from live Caddy if available, otherwise from file
+			const result = await loadCaddyfile(liveMode);
 
-					if (!validation.valid) {
-						toast.error("Invalid Caddyfile", {
-							description: validation.errors.join(", "),
-						});
-						return;
-					}
+			if (result.success && result.content) {
+				// Validate the file first
+				const validation = validateCaddyfile(result.content);
 
-					// Show warnings if any
-					setValidationWarnings(validation.warnings);
+				if (!validation.valid) {
+					toast.error("Invalid Caddyfile", {
+						description: validation.errors.join(", "),
+					});
+					return;
+				}
 
-					const parsed = parseCaddyfile(result.content);
-					setConfig(parsed);
-					setRawContent(result.content);
-				} else if (result.error) {
+				const parsed = parseCaddyfile(result.content);
+				setConfig(parsed);
+				setRawContent(result.content);
+			} else if (result.error) {
+				// In live mode without a file, start with empty config
+				if (liveMode && result.error.includes("not found")) {
+					toast.info("Starting with empty configuration", {
+						description:
+							"No Caddyfile found. Create your first site block to get started.",
+					});
+					setConfig({ siteBlocks: [], globalOptions: [] });
+					setRawContent("");
+				} else {
 					toast.error("Failed to load Caddyfile", {
 						description: result.error,
 					});
 				}
-			} catch (error) {
-				toast.error("Error loading Caddyfile", {
-					description: error instanceof Error ? error.message : "Unknown error",
-				});
-			} finally {
-				setLoading(false);
 			}
-		};
-
-		load();
+		} catch (error) {
+			toast.error("Error loading Caddyfile", {
+				description: error instanceof Error ? error.message : "Unknown error",
+			});
+		} finally {
+			if (showLoadingState) setLoading(false);
+		}
 	}, []);
+
+	// Load Caddyfile on mount
+	useEffect(() => {
+		loadConfig();
+	}, [loadConfig]);
 
 	// Check Caddy API status on mount and periodically
 	useEffect(() => {
 		const checkStatus = async () => {
 			const status = await getCaddyAPIStatus();
+			const wasLiveMode = isLiveMode;
+			const nowLiveMode = status.available;
+
 			setCaddyStatus(status);
+
+			// If mode changed, reload config from new source
+			if (wasLiveMode !== nowLiveMode) {
+				toast.info(
+					nowLiveMode
+						? "Caddy API detected - switching to Live Mode"
+						: "Caddy API unavailable - switching to File Mode",
+				);
+				loadConfig(false);
+			}
 		};
 
 		checkStatus();
 		const interval = setInterval(checkStatus, 10000); // Check every 10 seconds
 
 		return () => clearInterval(interval);
-	}, []);
+	}, [isLiveMode, loadConfig]);
 
 	const handleRawContentChange = (content: string) => {
 		setRawContent(content);
@@ -171,30 +195,40 @@ function App() {
 	const handleSave = async () => {
 		setSaving(true);
 		try {
-			// Use raw content if in raw mode, otherwise serialize from config
-			const content =
-				viewMode === "raw"
-					? rawContent
-					: config
-						? serializeCaddyfile(config)
-						: "";
+			// Serialize current config
+			const content = config ? serializeCaddyfile(config) : "";
 
-			// Save via API
-			const result = await saveCaddyfile(content);
+			if (isLiveMode) {
+				// In live mode: save directly to Caddy (apply the config)
+				// First save to file (as backup)
+				await saveCaddyfile(content);
 
-			if (result.success) {
-				toast.success("Caddyfile saved!");
-				// Update raw content to match what was saved
-				if (viewMode === "edit") {
+				// Then apply to Caddy
+				const applyResult = await applyCaddyfileConfig();
+
+				if (applyResult.success) {
+					toast.success("Configuration applied to Caddy!");
 					setRawContent(content);
+				} else {
+					toast.error("Failed to apply to Caddy", {
+						description: applyResult.error,
+					});
 				}
 			} else {
-				toast.error("Failed to save", {
-					description: result.error,
-				});
+				// In file mode: save to file only
+				const result = await saveCaddyfile(content);
+
+				if (result.success) {
+					toast.success("Caddyfile saved!");
+					setRawContent(content);
+				} else {
+					toast.error("Failed to save", {
+						description: result.error,
+					});
+				}
 			}
 		} catch (err) {
-			toast.error("Failed to save file", {
+			toast.error("Failed to save", {
 				description: err instanceof Error ? err.message : "Unknown error",
 			});
 		} finally {
@@ -376,262 +410,141 @@ function App() {
 	return (
 		<>
 			<Toaster position="top-right" richColors closeButton />
-			<div className="min-h-screen bg-background">
-				<header className="border-b bg-card">
-					<div className="container mx-auto px-4 py-4">
-						<div className="flex items-center gap-3">
-							<span className="text-5xl flex-shrink-0">♣</span>
-							<div>
-								<h1 className="text-3xl font-bold">Clubs</h1>
-								<p className="text-sm text-muted-foreground">
-									Caddyfile Management System
-								</p>
+			<div className="min-h-screen bg-background pb-16">
+				<header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+					<div className="container mx-auto px-4 py-3">
+						<div className="flex items-center justify-between gap-4">
+							{/* Left: Logo and Title */}
+							<div className="flex items-center gap-3">
+								<span className="text-4xl flex-shrink-0">♣</span>
+								<div>
+									<h1 className="text-2xl font-bold">Clubs</h1>
+									<p className="text-xs text-muted-foreground">
+										Caddyfile Management System
+									</p>
+								</div>
 							</div>
+
+							{/* Right: Mode Indicator */}
+							{caddyStatus && (
+								<div
+									className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium border ${
+										caddyStatus.available
+											? "bg-green-50 border-green-200 text-green-700"
+											: "bg-gray-50 border-gray-200 text-gray-600"
+									}`}
+								>
+									<Circle
+										className={`h-2 w-2 fill-current ${caddyStatus.available ? "animate-pulse" : ""}`}
+									/>
+									{caddyStatus.available ? "Live Mode" : "File Mode"}
+								</div>
+							)}
 						</div>
 					</div>
 				</header>
 
-				<main className="container mx-auto px-4 py-8">
+				<main className="container mx-auto px-4 py-6">
 					{config && (
-						<div className="space-y-6">
-							{validationWarnings.length > 0 && (
-								<div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-									<div className="flex items-start gap-3">
-										<AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
-										<div className="flex-1">
-											<h3 className="font-semibold text-orange-900 mb-1">
-												Validation Warnings
-											</h3>
-											<ul className="text-sm text-orange-800 space-y-1">
-												{validationWarnings.map((warning) => (
-													<li key={warning}>• {warning}</li>
-												))}
-											</ul>
-										</div>
-									</div>
-								</div>
-							)}
-
-							<div className="flex justify-between items-center">
-								<div className="flex items-center gap-4">
-									<div>
-										<h2 className="text-xl font-semibold">Caddyfile</h2>
-										<p className="text-sm text-muted-foreground">
-											{config.siteBlocks.length} site block(s)
-										</p>
-									</div>
-
-									{/* Caddy API Status Indicator */}
-									{caddyStatus && (
-										<div
-											className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-												caddyStatus.available
-													? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-													: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
-											}`}
-										>
-											<Circle
-												className={`h-2 w-2 fill-current ${caddyStatus.available ? "animate-pulse" : ""}`}
-											/>
-											{caddyStatus.available ? "Live Mode" : "File Mode"}
-										</div>
-									)}
-								</div>
-								<div className="flex gap-2">
-									{/* Apply to Caddy button (only show if API available) */}
-									{caddyStatus?.available && (
-										<Button
-											onClick={handleApplyToCaddy}
-											disabled={applying}
-											variant="default"
-										>
-											<Zap className="h-4 w-4 mr-2" />
-											{applying ? "Applying..." : "Apply to Caddy"}
-										</Button>
-									)}
-									<Button
-										onClick={handleSave}
-										disabled={saving}
-										variant={caddyStatus?.available ? "outline" : "default"}
-									>
-										<Save className="h-4 w-4 mr-2" />
-										{saving ? "Saving..." : "Save"}
-									</Button>
-								</div>
-							</div>
-
-							{/* View Mode Tabs */}
-							<div className="flex gap-2 border-b">
-								<button
-									type="button"
-									onClick={() => setViewMode("edit")}
-									className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-										viewMode === "edit"
-											? "border-primary text-primary"
-											: "border-transparent text-muted-foreground hover:text-foreground"
-									}`}
-								>
-									<Server className="h-4 w-4 inline mr-2" />
-									Site Blocks
-								</button>
-								<button
-									type="button"
-									onClick={() => setViewMode("raw")}
-									className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-										viewMode === "raw"
-											? "border-primary text-primary"
-											: "border-transparent text-muted-foreground hover:text-foreground"
-									}`}
-								>
-									<Code className="h-4 w-4 inline mr-2" />
-									Raw
-								</button>
-							</div>
-
-							{viewMode === "raw" ? (
-								<div className="space-y-4">
-									<div className="text-sm text-muted-foreground">
-										Edit the raw Caddyfile syntax. Changes will be parsed
-										automatically.
-									</div>
-									<Textarea
-										value={rawContent}
-										onChange={(e) => handleRawContentChange(e.target.value)}
-										className="font-mono text-sm min-h-[400px]"
-										placeholder="Enter Caddyfile configuration..."
-									/>
-								</div>
-							) : (
-								<div className="space-y-4">
-									{/* Overview Stats */}
-									{config.siteBlocks.length > 0 && (
-										<div className="rounded-lg border bg-card p-4">
-											<div className="flex items-center gap-6 flex-wrap text-sm">
-												<div className="flex items-center gap-2">
-													<Server className="h-4 w-4 text-muted-foreground" />
-													<span className="font-medium">
-														{config.siteBlocks.length}
-													</span>
-													<span className="text-muted-foreground">
-														{config.siteBlocks.length === 1 ? "site" : "sites"}
-													</span>
-												</div>
-												{config.siteBlocks.filter((b) =>
-													b.directives.some((d) => d.name === "tls"),
-												).length > 0 && (
-													<div className="flex items-center gap-2">
-														<Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
-														<span className="font-medium">
-															{
-																config.siteBlocks.filter((b) =>
-																	b.directives.some((d) => d.name === "tls"),
-																).length
-															}
-														</span>
-														<span className="text-muted-foreground">
-															with HTTPS
-														</span>
-													</div>
-												)}
-												{config.siteBlocks.filter((b) =>
-													b.directives.some((d) => d.name === "reverse_proxy"),
-												).length > 0 && (
-													<div className="flex items-center gap-2">
-														<Zap className="h-4 w-4 text-primary" />
-														<span className="font-medium">
-															{
-																config.siteBlocks.filter((b) =>
-																	b.directives.some(
-																		(d) => d.name === "reverse_proxy",
-																	),
-																).length
-															}
-														</span>
-														<span className="text-muted-foreground">
-															{config.siteBlocks.filter((b) =>
-																b.directives.some(
-																	(d) => d.name === "reverse_proxy",
-																),
-															).length === 1
-																? "proxy"
-																: "proxies"}
-														</span>
-													</div>
-												)}
-												{config.siteBlocks.filter((b) =>
-													b.directives.some((d) => d.name === "file_server"),
-												).length > 0 && (
-													<div className="flex items-center gap-2">
-														<Sparkles className="h-4 w-4 text-primary" />
-														<span className="font-medium">
-															{
-																config.siteBlocks.filter((b) =>
-																	b.directives.some(
-																		(d) => d.name === "file_server",
-																	),
-																).length
-															}
-														</span>
-														<span className="text-muted-foreground">
-															static file servers
-														</span>
-													</div>
-												)}
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+							{/* Left: Visual Editor */}
+							<div className="space-y-4">
+								{config.siteBlocks.length === 0 ? (
+									// Empty state
+									<div className="flex flex-col items-center justify-center py-16 px-4">
+										<div className="text-center max-w-md space-y-6">
+											<div className="text-8xl opacity-20">♣</div>
+											<div className="space-y-2">
+												<h2 className="text-2xl font-semibold">
+													No Site Blocks Yet
+												</h2>
+												<p className="text-muted-foreground">
+													Get started by creating your first site block. Choose
+													from templates or start from scratch.
+												</p>
 											</div>
+											<Button
+												onClick={() => setShowNewSiteDialog(true)}
+												size="lg"
+												className="mt-4"
+											>
+												<Plus className="h-5 w-5 mr-2" />
+												Add Your First Site Block
+											</Button>
 										</div>
-									)}
-
-									<div className="flex justify-end">
-										<Button onClick={() => setShowNewSiteDialog(true)}>
-											<Plus className="h-4 w-4 mr-2" />
-											Add Site Block
-										</Button>
 									</div>
-									<div className="grid gap-3">
-										{config.siteBlocks.map((siteBlock) => {
-											// Check if this is a virtual container
-											if (isVirtualContainer(siteBlock)) {
-												const container = parseVirtualContainer(siteBlock);
+								) : (
+									<>
+										<div className="flex justify-between items-center mb-4">
+											<h2 className="text-lg font-semibold">Site Blocks</h2>
+											<Button
+												onClick={() => setShowNewSiteDialog(true)}
+												size="default"
+											>
+												<Plus className="h-4 w-4 mr-2" />
+												Add Site Block
+											</Button>
+										</div>
+										<div className="grid gap-3">
+											{config.siteBlocks.map((siteBlock) => {
+												// Check if this is a virtual container
+												if (isVirtualContainer(siteBlock)) {
+													const container = parseVirtualContainer(siteBlock);
+													return (
+														<VirtualContainerCard
+															key={siteBlock.id}
+															id={container.id}
+															wildcardDomain={container.wildcardDomain}
+															sharedConfig={container.sharedConfig.map((d) =>
+																getDirectiveSummary(d),
+															)}
+															virtualBlocks={container.virtualBlocks.map(
+																(vb) => ({
+																	...vb,
+																	directives: vb.directives.map((d) =>
+																		formatDirectiveForDisplay(d),
+																	),
+																}),
+															)}
+															onEdit={handleEditSiteBlock}
+															onDelete={handleDeleteSiteBlock}
+															onAddService={handleAddServiceToContainer}
+															onEditService={(containerId, serviceId) =>
+																setEditingService({ containerId, serviceId })
+															}
+															onDeleteService={handleDeleteService}
+														/>
+													);
+												}
+
+												// Regular site block
 												return (
-													<VirtualContainerCard
+													<SiteBlockCard
 														key={siteBlock.id}
-														id={container.id}
-														wildcardDomain={container.wildcardDomain}
-														sharedConfig={container.sharedConfig.map((d) =>
-															getDirectiveSummary(d),
-														)}
-														virtualBlocks={container.virtualBlocks.map(
-															(vb) => ({
-																...vb,
-																directives: vb.directives.map((d) =>
-																	formatDirectiveForDisplay(d),
-																),
-															}),
-														)}
+														siteBlock={siteBlock}
 														onEdit={handleEditSiteBlock}
 														onDelete={handleDeleteSiteBlock}
-														onAddService={handleAddServiceToContainer}
-														onEditService={(containerId, serviceId) =>
-															setEditingService({ containerId, serviceId })
-														}
-														onDeleteService={handleDeleteService}
 													/>
 												);
-											}
+											})}
+										</div>
+									</>
+								)}
+							</div>
 
-											// Regular site block
-											return (
-												<SiteBlockCard
-													key={siteBlock.id}
-													siteBlock={siteBlock}
-													onEdit={handleEditSiteBlock}
-													onDelete={handleDeleteSiteBlock}
-												/>
-											);
-										})}
-									</div>
+							{/* Right: Raw Caddyfile */}
+							<div className="space-y-4">
+								<div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+									<Code className="h-4 w-4" />
+									<span>Raw Caddyfile</span>
 								</div>
-							)}
+								<Textarea
+									value={rawContent}
+									onChange={(e) => handleRawContentChange(e.target.value)}
+									className="font-mono text-sm min-h-[600px] resize-none"
+									placeholder="# Caddyfile configuration..."
+								/>
+							</div>
 						</div>
 					)}
 				</main>
@@ -690,6 +603,121 @@ function App() {
 						onSave={handleSaveSiteBlock}
 					/>
 				)}
+
+				{/* Sticky Footer with Stats and Actions */}
+				<footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+					<div className="container mx-auto px-4 py-3">
+						<div className="flex items-center justify-between gap-4">
+							{/* Left: Stats */}
+							<div className="flex items-center gap-6 flex-wrap text-sm">
+								{config && config.siteBlocks.length > 0 && (
+									<>
+										<div className="flex items-center gap-2">
+											<Server className="h-4 w-4 text-muted-foreground" />
+											<span className="font-medium">
+												{config.siteBlocks.length}
+											</span>
+											<span className="text-muted-foreground">
+												{config.siteBlocks.length === 1 ? "site" : "sites"}
+											</span>
+										</div>
+										{config.siteBlocks.filter((b) =>
+											b.directives.some((d) => d.name === "tls"),
+										).length > 0 && (
+											<div className="flex items-center gap-2">
+												<Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
+												<span className="font-medium">
+													{
+														config.siteBlocks.filter((b) =>
+															b.directives.some((d) => d.name === "tls"),
+														).length
+													}
+												</span>
+												<span className="text-muted-foreground">HTTPS</span>
+											</div>
+										)}
+										{config.siteBlocks.filter((b) =>
+											b.directives.some((d) => d.name === "reverse_proxy"),
+										).length > 0 && (
+											<div className="flex items-center gap-2">
+												<Zap className="h-4 w-4 text-primary" />
+												<span className="font-medium">
+													{
+														config.siteBlocks.filter((b) =>
+															b.directives.some(
+																(d) => d.name === "reverse_proxy",
+															),
+														).length
+													}
+												</span>
+												<span className="text-muted-foreground">
+													{config.siteBlocks.filter((b) =>
+														b.directives.some(
+															(d) => d.name === "reverse_proxy",
+														),
+													).length === 1
+														? "proxy"
+														: "proxies"}
+												</span>
+											</div>
+										)}
+										{config.siteBlocks.filter((b) =>
+											b.directives.some((d) => d.name === "file_server"),
+										).length > 0 && (
+											<div className="flex items-center gap-2">
+												<Sparkles className="h-4 w-4 text-primary" />
+												<span className="font-medium">
+													{
+														config.siteBlocks.filter((b) =>
+															b.directives.some(
+																(d) => d.name === "file_server",
+															),
+														).length
+													}
+												</span>
+												<span className="text-muted-foreground">
+													file servers
+												</span>
+											</div>
+										)}
+									</>
+								)}
+							</div>
+
+							{/* Right: Actions */}
+							<div className="flex items-center gap-2">
+								<Button
+									onClick={() => loadConfig(false)}
+									variant="ghost"
+									size="sm"
+									title={isLiveMode ? "Reload from Caddy" : "Reload from file"}
+								>
+									<RefreshCw className="h-4 w-4" />
+								</Button>
+								<Button
+									onClick={handleSave}
+									disabled={saving}
+									variant="default"
+									size="sm"
+								>
+									<Save className="h-4 w-4 mr-2" />
+									{saving ? "Saving..." : isLiveMode ? "Save & Apply" : "Save"}
+								</Button>
+								{!isLiveMode && caddyStatus?.available && (
+									<Button
+										onClick={handleApplyToCaddy}
+										disabled={applying}
+										size="sm"
+										variant="outline"
+									>
+										<Zap className="h-4 w-4 mr-2" />
+										{applying ? "Applying..." : "Apply to Caddy"}
+									</Button>
+								)}
+							</div>
+						</div>
+					</div>
+				</footer>
 			</div>
 		</>
 	);

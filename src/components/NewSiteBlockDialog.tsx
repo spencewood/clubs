@@ -136,39 +136,35 @@ export function NewSiteBlockDialog({
 							<button
 								type="button"
 								onClick={() => setBlockType("physical")}
-								className="flex flex-col items-start gap-3 p-6 rounded-lg border-2 border-green-200 hover:border-green-500 hover:bg-green-50/50 transition-colors text-left"
+								className="flex items-start gap-4 p-6 rounded-lg border-2 border-green-200 hover:border-green-500 hover:bg-green-50/50 transition-colors text-left"
 							>
-								<div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
-									<Globe className="h-6 w-6 text-green-600" />
-								</div>
-								<div>
+								<Globe className="h-8 w-8 text-green-600 flex-shrink-0 mt-1" />
+								<div className="flex-1">
 									<h4 className="font-semibold text-lg">Physical Block</h4>
 									<p className="text-sm text-muted-foreground mt-1">
 										Traditional site block with its own independent
 										configuration
 									</p>
-								</div>
-								<div className="text-xs text-muted-foreground mt-2">
-									Example: blog.example.com, api.example.com
+									<div className="text-xs text-muted-foreground mt-2">
+										Example: blog.example.com, api.example.com
+									</div>
 								</div>
 							</button>
 
 							<button
 								type="button"
 								onClick={() => setBlockType("virtual-container")}
-								className="flex flex-col items-start gap-3 p-6 rounded-lg border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-left"
+								className="flex items-start gap-4 p-6 rounded-lg border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-left"
 							>
-								<div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
-									<Container className="h-6 w-6 text-blue-600" />
-								</div>
-								<div>
+								<Container className="h-8 w-8 text-blue-600 flex-shrink-0 mt-1" />
+								<div className="flex-1">
 									<h4 className="font-semibold text-lg">Virtual Container</h4>
 									<p className="text-sm text-muted-foreground mt-1">
 										Wildcard domain with shared config for multiple services
 									</p>
-								</div>
-								<div className="text-xs text-muted-foreground mt-2">
-									Example: *.services.example.com
+									<div className="text-xs text-muted-foreground mt-2">
+										Example: *.services.example.com
+									</div>
 								</div>
 							</button>
 						</div>
@@ -245,12 +241,10 @@ export function NewSiteBlockDialog({
 												key={recipe.id}
 												type="button"
 												onClick={() => handleRecipeSelect(recipe)}
-												className="flex flex-col items-start gap-3 p-4 rounded-lg border-2 border-muted hover:border-primary hover:bg-primary/5 transition-colors text-left"
+												className="flex items-start gap-3 p-4 rounded-lg border-2 border-muted hover:border-primary hover:bg-primary/5 transition-colors text-left"
 											>
-												<div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-													<Icon className="h-5 w-5 text-primary" />
-												</div>
-												<div>
+												<Icon className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+												<div className="flex-1">
 													<h4 className="font-semibold">{recipe.name}</h4>
 													<p className="text-sm text-muted-foreground mt-1">
 														{recipe.description}
@@ -277,12 +271,10 @@ export function NewSiteBlockDialog({
 								<button
 									type="button"
 									onClick={handleBlankCreate}
-									className="w-full flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted hover:border-primary hover:bg-primary/5 transition-colors text-left"
+									className="w-full flex items-start gap-3 p-4 rounded-lg border-2 border-dashed border-muted hover:border-primary hover:bg-primary/5 transition-colors text-left"
 								>
-									<div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-										<Plus className="h-5 w-5 text-muted-foreground" />
-									</div>
-									<div>
+									<Plus className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-0.5" />
+									<div className="flex-1">
 										<h4 className="font-semibold">Start from Scratch</h4>
 										<p className="text-sm text-muted-foreground mt-1">
 											Create an empty site block and configure it manually

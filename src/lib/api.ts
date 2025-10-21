@@ -91,14 +91,20 @@ export async function saveCaddyfile(
 
 /**
  * Load Caddyfile content from the backend
+ * @param preferLive - If true, try to read from live Caddy first (when available)
  */
-export async function loadCaddyfile(): Promise<{
+export async function loadCaddyfile(preferLive = false): Promise<{
 	success: boolean;
 	content?: string;
 	error?: string;
+	source?: "file" | "live";
 }> {
 	try {
-		const response = await fetch(`${API_BASE}/api/caddyfile`);
+		const url = preferLive
+			? `${API_BASE}/api/caddyfile?source=live`
+			: `${API_BASE}/api/caddyfile`;
+
+		const response = await fetch(url);
 
 		if (!response.ok) {
 			const data = await response.json();
@@ -109,7 +115,11 @@ export async function loadCaddyfile(): Promise<{
 		}
 
 		const content = await response.text();
-		return { success: true, content };
+		return {
+			success: true,
+			content,
+			source: preferLive ? "live" : "file",
+		};
 	} catch (error) {
 		return {
 			success: false,

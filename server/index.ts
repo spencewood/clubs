@@ -21,12 +21,66 @@ await fastify.register(import("@fastify/cors"), {
 });
 
 // Get the Caddyfile
-fastify.get("/api/caddyfile", async (_request, reply) => {
+fastify.get<{
+	Querystring: { source?: string };
+}>("/api/caddyfile", async (request, reply) => {
 	try {
+		// Check if we should try to read from live Caddy first
+		const preferLive = request.query?.source === "live";
+
+		// If preferLive and Caddy API is available, try to read from there
+		if (preferLive) {
+			const isAvailable = await caddyAPI.isAvailable();
+			if (isAvailable) {
+				// Get current config from Caddy and convert to Caddyfile format
+				// We'll use Caddy's /config/ endpoint which returns current config as Caddyfile
+				try {
+					const response = await fetch(`${CADDY_API_URL}/config/`, {
+						headers: {
+							Accept: "text/caddyfile",
+						},
+					});
+
+					if (response.ok) {
+						const content = await response.text();
+						return reply.type("text/plain").send(content);
+					}
+				} catch (liveError) {
+					fastify.log.warn(
+						{ err: liveError },
+						"Failed to read from live Caddy, falling back to file",
+					);
+				}
+			}
+		}
+
+		// Default: read from file
 		const content = await fs.readFile(CADDYFILE_PATH, "utf-8");
 		reply.type("text/plain").send(content);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+			// If file doesn't exist, check if we can read from live Caddy instead
+			const isAvailable = await caddyAPI.isAvailable();
+			if (isAvailable) {
+				try {
+					const response = await fetch(`${CADDY_API_URL}/config/`, {
+						headers: {
+							Accept: "text/caddyfile",
+						},
+					});
+
+					if (response.ok) {
+						const content = await response.text();
+						return reply.type("text/plain").send(content);
+					}
+				} catch (liveError) {
+					fastify.log.error(
+						{ err: liveError },
+						"Failed to read from live Caddy",
+					);
+				}
+			}
+
 			reply.code(404).send({ error: "Caddyfile not found" });
 		} else {
 			fastify.log.error({ err: error }, "Failed to read Caddyfile");
