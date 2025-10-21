@@ -186,9 +186,3 @@ Contributions welcome! This is a tool for the Caddy community.
 ## License
 
 MIT
-
----
-
-**Why "Clubs"?** It's a play on Caddy + the clubs suit (♣) from playing cards. Simple, memorable, and fun!
-
-Built with ❤️ for the homelab community
