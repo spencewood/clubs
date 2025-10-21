@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import Fastify from "fastify";
+import { getEnhancedStats } from "./lib/advanced-parser.js";
 import { createCaddyAPIClient } from "./lib/caddy-api-client.js";
-import { getCaddyfileStats } from "./parser.js";
 import { validateCaddyfile } from "./validator.js";
 
-const CADDYFILES_DIR = process.env.CADDYFILES_DIR || "./caddyfiles";
+const CADDYFILE_PATH = process.env.CADDYFILE_PATH || "./config/Caddyfile";
 const CADDY_API_URL = process.env.CADDY_API_URL || "http://localhost:2019";
 
 // Create Caddy API client
@@ -20,110 +20,92 @@ await fastify.register(import("@fastify/cors"), {
 	origin: "*",
 });
 
-interface CaddyfileInfo {
-	name: string;
-	path: string;
-	stats: {
-		siteBlocks: number;
-		directives: number;
-	};
-}
-
-interface FilenameParams {
-	filename: string;
-}
-
-// List all Caddyfiles
-fastify.get("/api/caddyfiles", async (_request, reply) => {
+// Get the Caddyfile
+fastify.get("/api/caddyfile", async (_request, reply) => {
 	try {
-		const files = await fs.readdir(CADDYFILES_DIR);
-		const potentialCaddyfiles = files.filter(
-			(f) => f === "Caddyfile" || f.endsWith(".caddy"),
-		);
-
-		// Validate each file and only return valid ones
-		const validCaddyfiles: CaddyfileInfo[] = [];
-
-		for (const filename of potentialCaddyfiles) {
-			try {
-				const filepath = path.join(CADDYFILES_DIR, filename);
-				const content = await fs.readFile(filepath, "utf-8");
-				const validation = validateCaddyfile(content);
-
-				if (validation.valid) {
-					const stats = getCaddyfileStats(content);
-					validCaddyfiles.push({
-						name: filename,
-						path: filepath,
-						stats: {
-							siteBlocks: stats.siteBlocks,
-							directives: stats.directives,
-						},
-					});
-				} else {
-					fastify.log.info(
-						`Skipping ${filename}: ${validation.errors.join(", ")}`,
-					);
-				}
-			} catch (error) {
-				fastify.log.error({ err: error }, `Error validating ${filename}`);
-			}
-		}
-
-		return validCaddyfiles;
+		const content = await fs.readFile(CADDYFILE_PATH, "utf-8");
+		reply.type("text/plain").send(content);
 	} catch (error) {
-		fastify.log.error({ err: error }, "Failed to list files");
-		reply.code(500).send({ error: "Failed to list files" });
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+			reply.code(404).send({ error: "Caddyfile not found" });
+		} else {
+			fastify.log.error({ err: error }, "Failed to read Caddyfile");
+			reply.code(500).send({ error: "Failed to read Caddyfile" });
+		}
 	}
 });
 
-// Get a specific Caddyfile
-fastify.get<{ Params: FilenameParams }>(
-	"/api/caddyfiles/:filename",
-	async (request, reply) => {
-		const { filename } = request.params;
+// Save the Caddyfile
+fastify.put("/api/caddyfile", async (request, reply) => {
+	try {
+		await fs.writeFile(CADDYFILE_PATH, request.body as string, "utf-8");
+		return { message: "Caddyfile saved successfully" };
+	} catch (error) {
+		fastify.log.error({ err: error }, "Failed to save Caddyfile");
+		reply.code(500).send({ error: "Failed to save Caddyfile" });
+	}
+});
 
-		// Security: prevent directory traversal
-		if (filename.includes("..") || filename.includes("/")) {
-			return reply.code(400).send({ error: "Invalid filename" });
+// Get Caddyfile stats
+fastify.get("/api/caddyfile/stats", async (_request, reply) => {
+	try {
+		const content = await fs.readFile(CADDYFILE_PATH, "utf-8");
+		const stats = getEnhancedStats(content);
+		return stats;
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+			reply.code(404).send({ error: "Caddyfile not found" });
+		} else {
+			fastify.log.error({ err: error }, "Failed to get Caddyfile stats");
+			reply.code(500).send({ error: "Failed to get Caddyfile stats" });
+		}
+	}
+});
+
+// Apply Caddyfile to Caddy via Admin API
+fastify.post("/api/caddyfile/apply", async (_request, reply) => {
+	try {
+		const content = await fs.readFile(CADDYFILE_PATH, "utf-8");
+
+		// Validate the Caddyfile first
+		const validation = validateCaddyfile(content);
+		if (!validation.valid) {
+			return reply.code(400).send({
+				error: "Invalid Caddyfile",
+				details: validation.errors.join(", "),
+			});
 		}
 
-		try {
-			const filepath = path.join(CADDYFILES_DIR, filename);
-			const content = await fs.readFile(filepath, "utf-8");
-			reply.type("text/plain").send(content);
-		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-				reply.code(404).send({ error: "File not found" });
-			} else {
-				fastify.log.error({ err: error }, "Failed to read file");
-				reply.code(500).send({ error: "Failed to read file" });
-			}
-		}
-	},
-);
+		// First, convert Caddyfile to JSON using Caddy's adapter API
+		const adaptResponse = await fetch(`${CADDY_API_URL}/load`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "text/caddyfile",
+			},
+			body: content,
+		});
 
-// Save a Caddyfile
-fastify.put<{ Params: FilenameParams }>(
-	"/api/caddyfiles/:filename",
-	async (request, reply) => {
-		const { filename } = request.params;
-
-		// Security: prevent directory traversal
-		if (filename.includes("..") || filename.includes("/")) {
-			return reply.code(400).send({ error: "Invalid filename" });
+		if (!adaptResponse.ok) {
+			const errorText = await adaptResponse.text();
+			return reply.code(500).send({
+				error: "Failed to apply configuration",
+				details: errorText || "Caddy rejected the configuration",
+			});
 		}
 
-		try {
-			const filepath = path.join(CADDYFILES_DIR, filename);
-			await fs.writeFile(filepath, request.body as string, "utf-8");
-			return { message: "File saved successfully" };
-		} catch (error) {
-			fastify.log.error({ err: error }, "Failed to save file");
-			reply.code(500).send({ error: "Failed to save file" });
+		return { message: "Configuration applied successfully" };
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+			reply.code(404).send({ error: "Caddyfile not found" });
+		} else {
+			fastify.log.error({ err: error }, "Failed to apply Caddyfile");
+			reply.code(500).send({
+				error: "Failed to apply Caddyfile",
+				details: error instanceof Error ? error.message : "Unknown error",
+			});
 		}
-	},
-);
+	}
+});
 
 // Check Caddy API status
 fastify.get("/api/caddy/status", async (_request, _reply) => {
@@ -151,12 +133,22 @@ fastify.get("/api/caddy/status", async (_request, _reply) => {
 // Start server
 const start = async () => {
 	try {
-		// Ensure caddyfiles directory exists
-		await fs.mkdir(CADDYFILES_DIR, { recursive: true });
+		// Ensure config directory exists
+		const configDir = path.dirname(CADDYFILE_PATH);
+		await fs.mkdir(configDir, { recursive: true });
+
+		// Create empty Caddyfile if it doesn't exist
+		try {
+			await fs.access(CADDYFILE_PATH);
+		} catch {
+			fastify.log.info("Creating empty Caddyfile");
+			await fs.writeFile(CADDYFILE_PATH, "", "utf-8");
+		}
 
 		const port = Number(process.env.API_PORT) || 8080;
 		await fastify.listen({ port, host: "0.0.0.0" });
 		fastify.log.info(`Server listening on port ${port}`);
+		fastify.log.info(`Using Caddyfile at: ${CADDYFILE_PATH}`);
 	} catch (err) {
 		fastify.log.error({ err }, "Failed to start server");
 		process.exit(1);

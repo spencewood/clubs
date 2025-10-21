@@ -1,0 +1,6 @@
+# Basic reverse proxy example
+# Simple site block proxying to a backend service
+
+myapp.example.com {
+	reverse_proxy localhost:3000
+}

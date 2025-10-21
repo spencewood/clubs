@@ -1,31 +1,53 @@
-version: '3.8'
+# Example: Basic setup with Caddy + Clubs
+# See docs/deployment.md for more configuration options
 
 services:
-  clubs:
-    # Use pre-built image from Docker Hub
-    # Or build locally by replacing with: build: .
-    image: your-dockerhub-username/clubs:latest
-    container_name: clubs
+  # Caddy web server
+  caddy:
+    image: caddy:latest
+    container_name: caddy
     ports:
       - "80:80"       # HTTP
       - "443:443"     # HTTPS
-      - "2019:2019"   # Caddy Admin API (for live mode)
-      - "8080:8080"   # Clubs API
+      - "2019:2019"   # Admin API (for Clubs live reload)
     volumes:
-      # Mount directory for user Caddyfiles
-      - ./caddyfiles:/caddyfiles
-      # Mount Caddy data for persistence (certificates, etc.)
+      # Mount local config directory - contains your Caddyfile
+      - ./config:/etc/caddy
+      # Persist certificates and other Caddy data
       - caddy_data:/data
       - caddy_config:/config
     environment:
-      - NODE_ENV=production
-      - API_PORT=8080
-      - CADDYFILES_DIR=/caddyfiles
-      - CADDY_API_URL=http://localhost:2019
+      # Enable Admin API on all interfaces so Clubs can access it
+      - CADDY_ADMIN=0.0.0.0:2019
     restart: unless-stopped
+    networks:
+      - clubs_network
+
+  # Clubs Caddyfile editor
+  clubs:
+    build: .
+    # Or use pre-built image:
+    # image: your-dockerhub-username/clubs:latest
+    container_name: clubs
+    ports:
+      - "8080:8080"   # Web UI - access at http://localhost:8080
+    volumes:
+      # Share same config directory as Caddy
+      - ./config:/config
+    environment:
+      - NODE_ENV=production
+      - CADDYFILE_PATH=/config/Caddyfile
+      - CADDY_API_URL=http://caddy:2019
+    restart: unless-stopped
+    depends_on:
+      - caddy
+    networks:
+      - clubs_network
+
+networks:
+  clubs_network:
+    driver: bridge
 
 volumes:
   caddy_data:
-    driver: local
   caddy_config:
-    driver: local

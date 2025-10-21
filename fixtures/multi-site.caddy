@@ -1,0 +1,20 @@
+# Multiple independent sites
+# Each site has its own configuration
+
+blog.example.com {
+	root * /var/www/blog
+	file_server
+	encode gzip
+}
+
+api.example.com {
+	reverse_proxy localhost:8080
+	header / {
+		Access-Control-Allow-Origin *
+	}
+}
+
+static.example.com {
+	root * /var/www/static
+	file_server browse
+}

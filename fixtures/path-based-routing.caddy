@@ -1,0 +1,25 @@
+# Path-based routing to multiple backends
+# Different paths go to different services
+
+example.com {
+	# Blog at /blog
+	handle /blog* {
+		reverse_proxy blog-service:3000
+	}
+
+	# Shop at /shop
+	handle /shop* {
+		reverse_proxy shop-service:8000
+	}
+
+	# Documentation at /docs
+	handle /docs* {
+		root * /var/www/docs
+		file_server
+	}
+
+	# Main site
+	handle {
+		reverse_proxy main-app:8080
+	}
+}

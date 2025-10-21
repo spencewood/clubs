@@ -1,0 +1,39 @@
+# Wildcard domain with shared configuration
+# All services share TLS settings and common headers
+
+*.services.example.com {
+	# Shared TLS configuration for all subdomains
+	tls admin@example.com {
+		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+	}
+
+	# Shared security headers
+	header / {
+		Strict-Transport-Security "max-age=31536000;"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+
+	# API Service
+	@api host api.services.example.com
+	handle @api {
+		reverse_proxy backend-api:8080
+	}
+
+	# Database Admin
+	@db host db.services.example.com
+	handle @db {
+		reverse_proxy postgres-admin:5050
+	}
+
+	# Monitoring
+	@grafana host grafana.services.example.com
+	handle @grafana {
+		reverse_proxy grafana:3000
+	}
+
+	# Catch-all for undefined subdomains
+	handle {
+		respond "Service not found" 404
+	}
+}

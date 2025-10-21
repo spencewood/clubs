@@ -1,0 +1,23 @@
+# Service with basic authentication
+# Demonstrates authentication and TLS configuration
+
+admin.example.com {
+	# Basic auth for all endpoints
+	basicauth {
+		admin $2a$14$hashed_password_here
+	}
+
+	# Custom TLS
+	tls admin@example.com {
+		protocols tls1.2 tls1.3
+	}
+
+	# Admin dashboard
+	reverse_proxy localhost:9090
+
+	# Access logging
+	log {
+		output file /var/log/caddy/admin.log
+		format json
+	}
+}

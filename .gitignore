@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Personal Caddyfile (not to be committed)
+config/Caddyfile
+config/*.caddy.bak

@@ -1,0 +1,52 @@
+# Example: Caddy with Cloudflare DNS + Clubs
+# This example shows how to use a custom Caddy build with the Cloudflare DNS module
+
+services:
+  caddy:
+    # Use custom Caddy image with Cloudflare DNS support
+    # Build it first: docker build -t caddy-cloudflare ./caddy-build
+    image: caddy-cloudflare:latest
+    build:
+      context: ./caddy-build
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      # DON'T expose 2019 externally in production
+      # - "2019:2019"
+    volumes:
+      - ./config:/etc/caddy
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - CADDY_ADMIN=0.0.0.0:2019
+      # Cloudflare API token for DNS challenges
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+    restart: unless-stopped
+    networks:
+      - clubs_network
+
+  clubs:
+    image: your-dockerhub-username/clubs:latest
+    container_name: clubs
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config:/config
+    environment:
+      - NODE_ENV=production
+      - CADDYFILE_PATH=/config/Caddyfile
+      - CADDY_API_URL=http://caddy:2019
+    restart: unless-stopped
+    depends_on:
+      - caddy
+    networks:
+      - clubs_network
+
+networks:
+  clubs_network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

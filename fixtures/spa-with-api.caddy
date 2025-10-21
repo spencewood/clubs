@@ -1,0 +1,25 @@
+# SPA with API endpoints
+# Frontend and backend on the same domain with path-based routing
+
+app.example.com {
+	# API endpoints
+	handle /api/* {
+		reverse_proxy localhost:8080
+	}
+
+	# Websocket endpoint
+	@websockets {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	handle @websockets {
+		reverse_proxy localhost:8080
+	}
+
+	# Static frontend (SPA)
+	handle {
+		root * /var/www/app
+		try_files {path} /index.html
+		file_server
+	}
+}

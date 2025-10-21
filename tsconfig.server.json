@@ -16,5 +16,11 @@
 		"types": ["node"]
 	},
 	"include": ["server/**/*"],
-	"exclude": ["node_modules", "dist", "src"]
+	"exclude": [
+		"node_modules",
+		"dist",
+		"src",
+		"server/**/*.test.ts",
+		"server/lib/caddy-json-converter.ts"
+	]
 }

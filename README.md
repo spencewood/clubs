@@ -30,43 +30,46 @@ Clubs is a web-based tool for editing and managing Caddy server configurations. 
 git clone <repo-url>
 cd clubs
 
-# Build and run with docker-compose
+# Start with docker-compose (includes both Caddy and Clubs)
 docker-compose up -d
 ```
 
-The application will be available at `http://localhost`
+**Access:**
+- **Clubs UI**: http://localhost:8080
+- **Caddy**: Ports 80/443
 
 **Ports:**
-- **80**: Web UI
-- **443**: HTTPS (if configured)
-- **2019**: Caddy Admin API (for Live Mode)
-- **8080**: Clubs API
+- **80/443**: Caddy web server (your sites)
+- **2019**: Caddy Admin API (internal - for live reload)
+- **8080**: Clubs web UI
 
-## Configuration
+## Deployment Options
 
-### Using Your Own Caddyfiles
+See **[docs/deployment.md](docs/deployment.md)** for detailed deployment scenarios:
 
-Edit `docker-compose.yml` to mount your Caddyfiles directory:
+- **New Setup** - Start fresh with Caddy + Clubs together
+- **Existing Caddy** - Add Clubs to your current Caddy installation
+- **Standalone** - Use Clubs without Caddy (file editing only)
+- **Custom Caddy** - Use custom builds (Cloudflare DNS, etc.)
+
+### Quick Examples
+
+**Use your existing Caddyfile:**
 
 ```yaml
+# docker-compose.yml
 volumes:
-  - /path/to/your/caddyfiles:/caddyfiles:rw
+  - /path/to/your/existing/config:/etc/caddy  # Caddy reads from here
+  - /path/to/your/existing/config:/config     # Clubs edits the same file
 ```
 
-Clubs will automatically detect all files named `Caddyfile` or ending in `.caddy` in the mounted directory.
+**Cloudflare DNS + Clubs:**
 
-### Enabling Live Mode
+See [examples/cloudflare/](examples/cloudflare/) for complete setup.
 
-Live Mode requires access to the Caddy Admin API (port 2019). The included `docker-compose.yml` has this configured by default. If you're running Caddy separately:
+**Add to existing Caddy:**
 
-1. Enable the Admin API in your Caddyfile:
-```caddyfile
-{
-  admin 0.0.0.0:2019
-}
-```
-
-2. Ensure Clubs can reach the API at `http://localhost:2019`
+See [examples/existing-caddy/](examples/existing-caddy/) for integration guide.
 
 ## Development
 
@@ -121,17 +124,30 @@ pnpm format         # Format code
 
 ### Architecture
 
+Clubs manages a **single Caddyfile** shared between two containers:
+
 ```
-Browser UI ─→ Clubs API ─→ Caddy Admin API (port 2019)
-                 ↓              ↓
-            Caddyfile      Live Config
-            (source)       (runtime)
+┌──────────────────┐         ┌──────────────────┐
+│  Caddy Container │         │ Clubs Container  │
+│                  │         │                  │
+│  Reads/Serves    │         │  Edits/Manages   │
+│  Caddyfile       │         │  Caddyfile       │
+│                  │         │                  │
+│  Admin API ◀─────┼─────────┼─ Fastify API     │
+│  (Port 2019)     │         │  (Port 8080)     │
+└────────┬─────────┘         └────────┬─────────┘
+         │                            │
+         │    ┌──────────────────┐    │
+         └────▶  config/         ◀────┘
+              │  Caddyfile       │
+              │  (shared volume) │
+              └──────────────────┘
 ```
 
 **Live Mode Flow:**
 1. Edit configuration in the UI
 2. Click "Apply to Caddy"
-3. Clubs converts Caddyfile → JSON
+3. Clubs sends Caddyfile to Caddy Admin API (`POST /load`)
 4. Caddy validates the configuration
 5. If valid: applied instantly (zero downtime)
 6. If invalid: rejected, error shown in toast
@@ -139,44 +155,21 @@ Browser UI ─→ Clubs API ─→ Caddy Admin API (port 2019)
 **File Mode Flow:**
 1. Edit configuration in the UI
 2. Click "Save"
-3. Changes written to Caddyfile
-4. Manual Caddy reload required
-
-### Container Architecture
-
-Clubs runs two services in a single container:
-
-1. **Fastify API Server** (port 8080): Handles file operations and API communication
-2. **Caddy Web Server** (port 80): Serves the React app and proxies API requests
-
-```
-┌─────────────────────────────────────┐
-│          Docker Container            │
-│                                      │
-│  ┌────────────┐    ┌──────────────┐ │
-│  │   Caddy    │───→│   Fastify    │ │
-│  │  (Port 80) │    │  (Port 8080) │ │
-│  └────────────┘    └──────────────┘ │
-│         │                  │         │
-│      Serves            Manages       │
-│      React App         Files         │
-│                          │           │
-└──────────────────────────┼───────────┘
-                           │
-                     ┌─────▼──────┐
-                     │ /caddyfiles│
-                     │  (volume)  │
-                     └────────────┘
-```
+3. Changes written to Caddyfile on disk
+4. Manual Caddy reload required: `docker-compose restart caddy`
 
 ## Usage
 
-1. **Browse Caddyfiles**: The home screen shows all Caddyfiles in your mounted volume
-2. **Select a File**: Click on any Caddyfile to load and parse it
-3. **View Structure**: See all site blocks and their directives
-4. **Edit**: Click edit icons to modify configurations using smart forms
+1. **Auto-Load**: Caddyfile loads automatically on startup
+2. **View Structure**: See all site blocks and their directives in visual editor
+3. **Edit Blocks**: Click edit icons to modify configurations
+4. **Raw Mode**: Switch to "Raw" tab for direct Caddyfile editing
 5. **Apply (Live Mode)**: Click "Apply to Caddy" for instant updates
 6. **Save (File Mode)**: Click "Save" to write changes to disk
+
+**Mode Indicator:**
+- 🟢 **Live Mode** - Connected to Caddy, instant updates available
+- ⚫ **File Mode** - File editing only, manual reload required
 
 ## Security
 

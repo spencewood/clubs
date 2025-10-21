@@ -1,0 +1,17 @@
+# Example: Standalone Clubs (File Mode Only)
+# Use this when you want to edit Caddyfiles without connecting to a running Caddy instance
+
+services:
+  clubs:
+    image: your-dockerhub-username/clubs:latest
+    container_name: clubs
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount local directory containing your Caddyfile(s)
+      - ./config:/config
+    environment:
+      - NODE_ENV=production
+      - CADDYFILE_PATH=/config/Caddyfile
+      # No CADDY_API_URL = File Mode only (no live reload)
+    restart: unless-stopped

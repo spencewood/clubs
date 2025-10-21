@@ -1,0 +1,28 @@
+# Example: Add Clubs to existing Caddy setup
+# This shows how to add Clubs when you already have Caddy running
+
+services:
+  clubs:
+    image: your-dockerhub-username/clubs:latest
+    container_name: clubs
+    ports:
+      - "8080:8080"
+    volumes:
+      # IMPORTANT: Point this to your existing Caddy config directory
+      # Update this path to match your setup:
+      - /path/to/your/existing/caddy/config:/config
+    environment:
+      - NODE_ENV=production
+      - CADDYFILE_PATH=/config/Caddyfile
+      # Update this to your Caddy container name or host
+      - CADDY_API_URL=http://caddy:2019
+    restart: unless-stopped
+    networks:
+      # IMPORTANT: Use the same network as your Caddy container
+      # Update this to match your Caddy's network name
+      - existing_caddy_network
+
+networks:
+  existing_caddy_network:
+    # Use external: true if Caddy's network already exists
+    external: true

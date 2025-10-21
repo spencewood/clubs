@@ -28,18 +28,16 @@ export async function getCaddyAPIStatus(): Promise<CaddyAPIStatus> {
 }
 
 /**
- * Apply a Caddyfile configuration to Caddy via the API
+ * Apply the Caddyfile configuration to Caddy via the API
  */
-export async function applyCaddyfileConfig(
-	filename: string,
-): Promise<{ success: boolean; error?: string }> {
+export async function applyCaddyfileConfig(): Promise<{
+	success: boolean;
+	error?: string;
+}> {
 	try {
-		const response = await fetch(
-			`${API_BASE}/api/caddyfiles/${filename}/apply`,
-			{
-				method: "POST",
-			},
-		);
+		const response = await fetch(`${API_BASE}/api/caddyfile/apply`, {
+			method: "POST",
+		});
 
 		const data = await response.json();
 
@@ -63,11 +61,10 @@ export async function applyCaddyfileConfig(
  * Save Caddyfile content to the backend
  */
 export async function saveCaddyfile(
-	filename: string,
 	content: string,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
-		const response = await fetch(`${API_BASE}/api/caddyfiles/${filename}`, {
+		const response = await fetch(`${API_BASE}/api/caddyfile`, {
 			method: "PUT",
 			headers: {
 				"Content-Type": "text/plain",
@@ -84,6 +81,35 @@ export async function saveCaddyfile(
 		}
 
 		return { success: true };
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Network error",
+		};
+	}
+}
+
+/**
+ * Load Caddyfile content from the backend
+ */
+export async function loadCaddyfile(): Promise<{
+	success: boolean;
+	content?: string;
+	error?: string;
+}> {
+	try {
+		const response = await fetch(`${API_BASE}/api/caddyfile`);
+
+		if (!response.ok) {
+			const data = await response.json();
+			return {
+				success: false,
+				error: data.error || "Failed to load",
+			};
+		}
+
+		const content = await response.text();
+		return { success: true, content };
 	} catch (error) {
 		return {
 			success: false,

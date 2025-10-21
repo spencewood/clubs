@@ -38,16 +38,13 @@ describe("Live Mode Integration", () => {
 	describe("Apply Configuration (Live Mode)", () => {
 		it("should successfully apply valid configuration", async () => {
 			setMockCaddyAPIAvailable(true);
-			setMockCaddyfile(
-				"test.caddy",
-				`
+			setMockCaddyfile(`
 app.example.com {
   reverse_proxy localhost:3000
 }
-      `,
-			);
+      `);
 
-			const result = await applyCaddyfileConfig("test.caddy");
+			const result = await applyCaddyfileConfig();
 
 			expect(result.success).toBe(true);
 			expect(result.error).toBeUndefined();
@@ -55,34 +52,23 @@ app.example.com {
 
 		it("should reject invalid configuration", async () => {
 			setMockCaddyAPIAvailable(true);
-			setMockCaddyfile(
-				"invalid.caddy",
-				`
+			setMockCaddyfile(`
 app.example.com {
   INVALID directive
 }
-      `,
-			);
+      `);
 
-			const result = await applyCaddyfileConfig("invalid.caddy");
+			const result = await applyCaddyfileConfig();
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBeDefined();
-			expect(result.error).toContain("Caddy rejected");
+			expect(result.error).toContain("Failed to apply configuration");
 		});
 
 		it("should fail gracefully when API is unavailable", async () => {
 			setMockCaddyAPIAvailable(false);
 
-			const result = await applyCaddyfileConfig("test.caddy");
-
-			expect(result.success).toBe(false);
-			expect(result.error).toContain("Caddy API not available");
-		});
-
-		it("should handle network errors", async () => {
-			// Test with non-existent file
-			const result = await applyCaddyfileConfig("nonexistent.caddy");
+			const result = await applyCaddyfileConfig();
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBeDefined();
@@ -97,18 +83,18 @@ app.example.com {
 }
       `;
 
-			const result = await saveCaddyfile("new-file.caddy", content);
+			const result = await saveCaddyfile(content);
 
 			expect(result.success).toBe(true);
 			expect(result.error).toBeUndefined();
 		});
 
-		it("should handle save errors", async () => {
-			// Try to save with invalid filename (contains ..)
-			const result = await saveCaddyfile("../etc/passwd", "malicious");
+		it("should handle save errors for invalid content", async () => {
+			// Try to save invalid content
+			const result = await saveCaddyfile("INVALID directive");
 
-			// The API should reject this, but for now we're just testing the flow
-			expect(result).toBeDefined();
+			expect(result.success).toBe(false);
+			expect(result.error).toBeDefined();
 		});
 	});
 
@@ -121,8 +107,8 @@ app.example.com {
 			expect(status.available).toBe(true);
 
 			// Apply should work
-			setMockCaddyfile("test.caddy", "app.example.com {\n}");
-			const applyResult = await applyCaddyfileConfig("test.caddy");
+			setMockCaddyfile("app.example.com {\n}");
+			const applyResult = await applyCaddyfileConfig();
 			expect(applyResult.success).toBe(true);
 		});
 
@@ -134,14 +120,11 @@ app.example.com {
 			expect(status.available).toBe(false);
 
 			// Apply should fail gracefully
-			const applyResult = await applyCaddyfileConfig("test.caddy");
+			const applyResult = await applyCaddyfileConfig();
 			expect(applyResult.success).toBe(false);
 
 			// But save should still work
-			const saveResult = await saveCaddyfile(
-				"test.caddy",
-				"app.example.com {\n}",
-			);
+			const saveResult = await saveCaddyfile("app.example.com {\n}");
 			expect(saveResult.success).toBe(true);
 		});
 	});
@@ -149,17 +132,19 @@ app.example.com {
 	describe("Error Handling", () => {
 		it("should provide clear error messages for validation failures", async () => {
 			setMockCaddyAPIAvailable(true);
-			setMockCaddyfile("bad.caddy", "INVALID");
+			setMockCaddyfile("INVALID");
 
-			const result = await applyCaddyfileConfig("bad.caddy");
+			const result = await applyCaddyfileConfig();
 
 			expect(result.success).toBe(false);
-			expect(result.error).toMatch(/Caddy rejected|Invalid|syntax|directive/);
+			expect(result.error).toMatch(
+				/Failed to apply configuration|Invalid|syntax|directive/,
+			);
 		});
 
 		it("should handle timeout scenarios", async () => {
 			// MSW simulates delays, this tests that timeouts work
-			const result = await applyCaddyfileConfig("test.caddy");
+			const result = await applyCaddyfileConfig();
 
 			// Should complete within reasonable time
 			expect(result).toBeDefined();
@@ -171,13 +156,13 @@ app.example.com {
 			setMockCaddyAPIAvailable(true);
 
 			// First, apply a valid config
-			setMockCaddyfile("good.caddy", "app.example.com {\n}");
-			const goodResult = await applyCaddyfileConfig("good.caddy");
+			setMockCaddyfile("app.example.com {\n}");
+			const goodResult = await applyCaddyfileConfig();
 			expect(goodResult.success).toBe(true);
 
 			// Then try to apply invalid config
-			setMockCaddyfile("bad.caddy", "INVALID");
-			const badResult = await applyCaddyfileConfig("bad.caddy");
+			setMockCaddyfile("INVALID");
+			const badResult = await applyCaddyfileConfig();
 			expect(badResult.success).toBe(false);
 
 			// Original config should still be intact (in real scenario)

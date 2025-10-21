@@ -3,11 +3,13 @@ import {
 	ArrowRightLeft,
 	Boxes,
 	ChevronLeft,
+	Container,
 	FileText,
+	Globe,
 	Plus,
 	Server,
 } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -22,11 +24,14 @@ import { Label } from "@/components/ui/label";
 import { type Recipe, recipes } from "@/lib/recipes/caddyfile-recipes";
 import type { CaddySiteBlock } from "@/types/caddyfile";
 
+type BlockType = "physical" | "virtual-container";
+
 interface NewSiteBlockDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onCreateFromRecipe: (siteBlock: CaddySiteBlock) => void;
 	onCreateBlank: () => void;
+	onCreateVirtualContainer?: (domain: string, sharedConfig: string[]) => void;
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -46,9 +51,13 @@ export function NewSiteBlockDialog({
 	onOpenChange,
 	onCreateFromRecipe,
 	onCreateBlank,
+	onCreateVirtualContainer,
 }: NewSiteBlockDialogProps) {
+	const [blockType, setBlockType] = useState<BlockType | null>(null);
 	const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 	const [formValues, setFormValues] = useState<Record<string, string>>({});
+	const [virtualContainerDomain, setVirtualContainerDomain] = useState("");
+	const wildcardDomainId = useId();
 
 	const handleRecipeSelect = (recipe: Recipe) => {
 		setSelectedRecipe(recipe);
@@ -80,14 +89,28 @@ export function NewSiteBlockDialog({
 	};
 
 	const handleClose = () => {
+		setBlockType(null);
 		setSelectedRecipe(null);
 		setFormValues({});
+		setVirtualContainerDomain("");
 		onOpenChange(false);
 	};
 
 	const handleBack = () => {
-		setSelectedRecipe(null);
-		setFormValues({});
+		if (selectedRecipe) {
+			setSelectedRecipe(null);
+			setFormValues({});
+		} else {
+			setBlockType(null);
+			setVirtualContainerDomain("");
+		}
+	};
+
+	const handleVirtualContainerCreate = () => {
+		if (!onCreateVirtualContainer || !virtualContainerDomain.trim()) return;
+		// For now, create with minimal config - user can add shared config later
+		onCreateVirtualContainer(virtualContainerDomain, []);
+		handleClose();
 	};
 
 	const isFormValid = () => {
@@ -100,10 +123,109 @@ export function NewSiteBlockDialog({
 	return (
 		<Dialog open={open} onOpenChange={handleClose}>
 			<DialogContent className="max-w-2xl">
-				{!selectedRecipe ? (
+				{!blockType ? (
 					<>
 						<DialogHeader>
-							<DialogTitle>Create New Site Block</DialogTitle>
+							<DialogTitle>Choose Block Type</DialogTitle>
+							<DialogDescription>
+								Select the type of configuration block you want to create
+							</DialogDescription>
+						</DialogHeader>
+
+						<div className="grid grid-cols-2 gap-4 py-6">
+							<button
+								type="button"
+								onClick={() => setBlockType("physical")}
+								className="flex flex-col items-start gap-3 p-6 rounded-lg border-2 border-green-200 hover:border-green-500 hover:bg-green-50/50 transition-colors text-left"
+							>
+								<div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
+									<Globe className="h-6 w-6 text-green-600" />
+								</div>
+								<div>
+									<h4 className="font-semibold text-lg">Physical Block</h4>
+									<p className="text-sm text-muted-foreground mt-1">
+										Traditional site block with its own independent
+										configuration
+									</p>
+								</div>
+								<div className="text-xs text-muted-foreground mt-2">
+									Example: blog.example.com, api.example.com
+								</div>
+							</button>
+
+							<button
+								type="button"
+								onClick={() => setBlockType("virtual-container")}
+								className="flex flex-col items-start gap-3 p-6 rounded-lg border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-left"
+							>
+								<div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+									<Container className="h-6 w-6 text-blue-600" />
+								</div>
+								<div>
+									<h4 className="font-semibold text-lg">Virtual Container</h4>
+									<p className="text-sm text-muted-foreground mt-1">
+										Wildcard domain with shared config for multiple services
+									</p>
+								</div>
+								<div className="text-xs text-muted-foreground mt-2">
+									Example: *.services.example.com
+								</div>
+							</button>
+						</div>
+					</>
+				) : blockType === "virtual-container" ? (
+					<>
+						<DialogHeader>
+							<DialogTitle className="flex items-center gap-2">
+								<Container className="h-5 w-5 text-blue-600" />
+								Create Virtual Container
+							</DialogTitle>
+							<DialogDescription>
+								Create a wildcard domain to host multiple services with shared
+								configuration
+							</DialogDescription>
+						</DialogHeader>
+
+						<div className="space-y-4 py-4">
+							<div className="space-y-2">
+								<Label htmlFor={wildcardDomainId}>
+									Wildcard Domain
+									<span className="text-destructive ml-1">*</span>
+								</Label>
+								<Input
+									id={wildcardDomainId}
+									type="text"
+									placeholder="*.services.example.com"
+									value={virtualContainerDomain}
+									onChange={(e) => setVirtualContainerDomain(e.target.value)}
+								/>
+								<p className="text-sm text-muted-foreground">
+									Use wildcard notation (e.g., *.services.example.com) to match
+									all subdomains
+								</p>
+							</div>
+						</div>
+
+						<DialogFooter className="gap-2">
+							<Button variant="outline" onClick={handleBack}>
+								<ChevronLeft className="h-4 w-4 mr-2" />
+								Back
+							</Button>
+							<Button
+								onClick={handleVirtualContainerCreate}
+								disabled={
+									!virtualContainerDomain.trim() ||
+									!virtualContainerDomain.includes("*")
+								}
+							>
+								Create Virtual Container
+							</Button>
+						</DialogFooter>
+					</>
+				) : !selectedRecipe ? (
+					<>
+						<DialogHeader>
+							<DialogTitle>Create Physical Site Block</DialogTitle>
 							<DialogDescription>
 								Choose a template to get started quickly, or create a blank site
 								block
@@ -169,6 +291,13 @@ export function NewSiteBlockDialog({
 								</button>
 							</div>
 						</div>
+
+						<DialogFooter>
+							<Button variant="outline" onClick={handleBack}>
+								<ChevronLeft className="h-4 w-4 mr-2" />
+								Back
+							</Button>
+						</DialogFooter>
 					</>
 				) : (
 					<>

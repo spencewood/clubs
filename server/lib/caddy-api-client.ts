@@ -1,4 +1,10 @@
-import type { CaddyJSONConfig } from "./caddy-json-converter.js";
+// Caddy JSON Config type (simplified for API usage)
+export interface CaddyJSONConfig {
+	apps?: {
+		[key: string]: unknown;
+	};
+	[key: string]: unknown;
+}
 
 export interface CaddyAPIConfig {
 	baseURL: string; // e.g., "http://localhost:2019"
