@@ -12,12 +12,12 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { AddVirtualBlockDialog } from "@/components/AddVirtualBlockDialog";
+import { CaddyfileEditor } from "@/components/CaddyfileEditor";
 import { EditVirtualBlockDialog } from "@/components/EditVirtualBlockDialog";
 import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
 import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { VirtualContainerCard } from "@/components/VirtualContainerCard";
 import { VirtualContainerEditDialog } from "@/components/VirtualContainerEditDialog";
 import {
@@ -538,10 +538,9 @@ function App() {
 									<Code className="h-4 w-4" />
 									<span>Raw Caddyfile</span>
 								</div>
-								<Textarea
+								<CaddyfileEditor
 									value={rawContent}
-									onChange={(e) => handleRawContentChange(e.target.value)}
-									className="font-mono text-sm min-h-[600px] resize-none"
+									onChange={handleRawContentChange}
 									placeholder="# Caddyfile configuration..."
 								/>
 							</div>
