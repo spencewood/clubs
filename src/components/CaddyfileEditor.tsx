@@ -1,6 +1,13 @@
+import {
+	HighlightStyle,
+	StreamLanguage,
+	syntaxHighlighting,
+} from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
+import { tags } from "@lezer/highlight";
 import CodeMirror from "@uiw/react-codemirror";
 import { useMemo } from "react";
+import { caddyfile } from "@/lib/caddyfile-mode";
 
 interface CaddyfileEditorProps {
 	value: string;
@@ -13,6 +20,46 @@ export function CaddyfileEditor({
 	onChange,
 	placeholder,
 }: CaddyfileEditorProps) {
+	// Custom syntax highlighting - override comments only
+	const customHighlighting = useMemo(
+		() =>
+			syntaxHighlighting(
+				HighlightStyle.define([
+					// Comments - muted gray
+					{
+						tag: tags.comment,
+						color: "var(--color-muted-foreground)",
+						fontStyle: "italic",
+					},
+					{
+						tag: tags.lineComment,
+						color: "var(--color-muted-foreground)",
+						fontStyle: "italic",
+					},
+					{
+						tag: tags.blockComment,
+						color: "var(--color-muted-foreground)",
+						fontStyle: "italic",
+					},
+					// Keywords - keep default colors
+					{ tag: tags.keyword, color: "#0ea5e9" },
+					{ tag: tags.controlKeyword, color: "#8b5cf6" },
+					{ tag: tags.definitionKeyword, color: "#8b5cf6" },
+					// Names
+					{ tag: tags.variableName, color: "var(--color-foreground)" },
+					{ tag: tags.propertyName, color: "#06b6d4" },
+					// Literals
+					{ tag: tags.string, color: "#10b981" }, // Green for paths and strings
+					{ tag: tags.number, color: "#f59e0b" }, // Orange for numbers
+					{ tag: tags.bool, color: "#f59e0b" },
+					// Other
+					{ tag: tags.operator, color: "var(--color-foreground)" },
+					{ tag: tags.punctuation, color: "var(--color-foreground)" },
+				]),
+			),
+		[],
+	);
+
 	// Create theme that uses CSS variables - will update when theme changes
 	const theme = useMemo(
 		() =>
@@ -59,8 +106,10 @@ export function CaddyfileEditor({
 				".cm-lineNumbers .cm-gutterElement": {
 					color: "var(--color-muted-foreground)",
 				},
-				".cm-line": {
-					color: "var(--color-muted-foreground)",
+				// Syntax highlighting - comments
+				".cmt-comment, .cmt-lineComment, .cmt-blockComment": {
+					color: "var(--color-muted-foreground) !important",
+					fontStyle: "italic",
 				},
 			}),
 		[],
@@ -95,7 +144,12 @@ export function CaddyfileEditor({
 				completionKeymap: true,
 				lintKeymap: true,
 			}}
-			extensions={[EditorView.lineWrapping, theme]}
+			extensions={[
+				EditorView.lineWrapping,
+				StreamLanguage.define(caddyfile),
+				customHighlighting,
+				theme,
+			]}
 			indentWithTab={true}
 		/>
 	);
