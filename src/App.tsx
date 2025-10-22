@@ -224,8 +224,8 @@ function App() {
 	const handleSave = async () => {
 		setSaving(true);
 		try {
-			// Serialize current config
-			const content = config ? serializeCaddyfile(config) : "";
+			// Use raw content directly (preserves comments and formatting)
+			const content = rawContent;
 
 			if (isLiveMode) {
 				// In live mode: save directly to Caddy (apply the config)

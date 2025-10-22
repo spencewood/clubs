@@ -1,4 +1,4 @@
-import { Globe, Server, Settings, Trash2 } from "lucide-react";
+import { ExternalLink, Globe, Server, Settings, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +53,24 @@ export function SiteBlockCard({
 		(addr) => addr.includes(".") && !addr.startsWith(":"),
 	);
 
+	// Get the first valid domain for the external link
+	const getFirstDomain = () => {
+		const domain = siteBlock.addresses.find(
+			(addr) => addr.includes(".") && !addr.startsWith(":"),
+		);
+		if (!domain) return null;
+		// Remove port if present, strip wildcards
+		const cleanDomain = domain.split(":")[0].replace(/^\*\./, "");
+		return cleanDomain;
+	};
+
+	const handleOpenInBrowser = () => {
+		const domain = getFirstDomain();
+		if (domain) {
+			window.open(`https://${domain}`, "_blank", "noopener,noreferrer");
+		}
+	};
+
 	return (
 		<Card className="hover:border-primary/50 transition-colors">
 			<CardContent className="p-4">
@@ -64,8 +82,20 @@ export function SiteBlockCard({
 							<Server className="h-5 w-5 text-muted-foreground flex-shrink-0" />
 						)}
 						<div className="flex-1 min-w-0">
-							<div className="font-mono font-medium truncate">
-								{siteBlock.addresses.join(", ")}
+							<div className="flex items-center gap-2">
+								<div className="font-mono font-medium truncate">
+									{siteBlock.addresses.join(", ")}
+								</div>
+								{isDomain && getFirstDomain() && (
+									<button
+										type="button"
+										onClick={handleOpenInBrowser}
+										className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
+										title={`Open https://${getFirstDomain()} in browser`}
+									>
+										<ExternalLink className="h-4 w-4" />
+									</button>
+								)}
 							</div>
 							<div className="text-sm text-muted-foreground truncate">
 								{getSummary()}
