@@ -3,7 +3,14 @@ import {
 	StreamLanguage,
 	syntaxHighlighting,
 } from "@codemirror/language";
-import { EditorView } from "@codemirror/view";
+import { RangeSetBuilder } from "@codemirror/state";
+import type { DecorationSet, PluginValue } from "@codemirror/view";
+import {
+	Decoration,
+	EditorView,
+	ViewPlugin,
+	type ViewUpdate,
+} from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import CodeMirror from "@uiw/react-codemirror";
 import { useMemo } from "react";
@@ -13,12 +20,59 @@ interface CaddyfileEditorProps {
 	value: string;
 	onChange: (value: string) => void;
 	placeholder?: string;
+	highlightLines?: { from: number; to: number } | null;
+}
+
+// Create line highlight decoration
+const lineHighlightMark = Decoration.line({
+	attributes: { class: "cm-highlight-hover-block" },
+});
+
+// Create a view plugin to highlight specific lines
+function createHighlightPlugin(
+	highlightRange: { from: number; to: number } | null,
+) {
+	class HighlightPlugin implements PluginValue {
+		decorations: DecorationSet;
+
+		constructor(view: EditorView) {
+			this.decorations = this.buildDecorations(view);
+		}
+
+		update(update: ViewUpdate) {
+			this.decorations = this.buildDecorations(update.view);
+		}
+
+		buildDecorations(view: EditorView): DecorationSet {
+			if (!highlightRange) {
+				return Decoration.none;
+			}
+
+			const builder = new RangeSetBuilder<Decoration>();
+			const doc = view.state.doc;
+
+			// Highlight lines from 'from' to 'to' (1-indexed)
+			for (let line = highlightRange.from; line <= highlightRange.to; line++) {
+				if (line > 0 && line <= doc.lines) {
+					const lineObj = doc.line(line);
+					builder.add(lineObj.from, lineObj.from, lineHighlightMark);
+				}
+			}
+
+			return builder.finish();
+		}
+	}
+
+	return ViewPlugin.fromClass(HighlightPlugin, {
+		decorations: (v) => v.decorations,
+	});
 }
 
 export function CaddyfileEditor({
 	value,
 	onChange,
 	placeholder,
+	highlightLines,
 }: CaddyfileEditorProps) {
 	// Custom syntax highlighting - override comments only
 	const customHighlighting = useMemo(
@@ -111,6 +165,11 @@ export function CaddyfileEditor({
 					color: "var(--color-muted-foreground) !important",
 					fontStyle: "italic",
 				},
+				// Hover highlight for site blocks
+				".cm-highlight-hover-block": {
+					borderLeft: "3px solid var(--color-primary)",
+					paddingLeft: "4px",
+				},
 			}),
 		[],
 	);
@@ -148,6 +207,7 @@ export function CaddyfileEditor({
 				EditorView.lineWrapping,
 				StreamLanguage.define(caddyfile),
 				customHighlighting,
+				createHighlightPlugin(highlightLines),
 				theme,
 			]}
 			indentWithTab={true}

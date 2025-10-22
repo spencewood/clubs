@@ -69,6 +69,45 @@ function App() {
 		serviceId: string;
 	} | null>(null);
 	const [isLiveMode, setIsLiveMode] = useState(false);
+	const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
+
+	// Calculate line range for hovered block
+	const getHoveredBlockLineRange = (): { from: number; to: number } | null => {
+		if (!hoveredBlockId || !config || !rawContent) return null;
+
+		const block = config.siteBlocks.find((sb) => sb.id === hoveredBlockId);
+		if (!block) return null;
+
+		// Find the block in the raw content
+		const lines = rawContent.split("\n");
+		const addressLine = block.addresses.join(", ");
+
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i].trim();
+			// Check if this line contains the address
+			if (
+				line.includes(addressLine) ||
+				block.addresses.some((addr) => line.includes(addr))
+			) {
+				// Found the start - now find the matching closing brace
+				let braceCount = 0;
+				const startLine = i;
+
+				for (let j = i; j < lines.length; j++) {
+					const currentLine = lines[j];
+					braceCount += (currentLine.match(/{/g) || []).length;
+					braceCount -= (currentLine.match(/}/g) || []).length;
+
+					if (braceCount === 0 && j > i) {
+						// Found the closing brace
+						return { from: startLine + 1, to: j + 1 }; // 1-indexed
+					}
+				}
+			}
+		}
+
+		return null;
+	};
 
 	// Reusable load function that checks mode and loads appropriate config
 	const loadConfig = useCallback(async (showLoadingState = true) => {
@@ -563,6 +602,8 @@ function App() {
 														siteBlock={siteBlock}
 														onEdit={handleEditSiteBlock}
 														onDelete={handleDeleteSiteBlock}
+														onHoverStart={setHoveredBlockId}
+														onHoverEnd={() => setHoveredBlockId(null)}
 													/>
 												);
 											})}
@@ -592,6 +633,7 @@ function App() {
 									value={rawContent}
 									onChange={handleRawContentChange}
 									placeholder="# Caddyfile configuration..."
+									highlightLines={getHoveredBlockLineRange()}
 								/>
 							</div>
 						</div>

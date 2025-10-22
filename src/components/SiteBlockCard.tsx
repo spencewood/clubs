@@ -17,12 +17,16 @@ interface SiteBlockCardProps {
 	siteBlock: CaddySiteBlock;
 	onEdit: (id: string) => void;
 	onDelete: (id: string) => void;
+	onHoverStart?: (id: string) => void;
+	onHoverEnd?: () => void;
 }
 
 export function SiteBlockCard({
 	siteBlock,
 	onEdit,
 	onDelete,
+	onHoverStart,
+	onHoverEnd,
 }: SiteBlockCardProps) {
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -72,7 +76,11 @@ export function SiteBlockCard({
 	};
 
 	return (
-		<Card className="hover:border-primary/50 transition-colors">
+		<Card
+			className="hover:border-primary/50 transition-colors"
+			onMouseEnter={() => onHoverStart?.(siteBlock.id)}
+			onMouseLeave={() => onHoverEnd?.()}
+		>
 			<CardContent className="p-4">
 				<div className="flex items-center justify-between gap-4">
 					<div className="flex items-center gap-3 flex-1 min-w-0">
