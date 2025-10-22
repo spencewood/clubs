@@ -127,3 +127,36 @@ export async function loadCaddyfile(preferLive = false): Promise<{
 		};
 	}
 }
+
+/**
+ * Format Caddyfile using Caddy's built-in formatter
+ */
+export async function formatCaddyfile(
+	content: string,
+): Promise<{ success: boolean; formatted?: string; error?: string }> {
+	try {
+		const response = await fetch(`${API_BASE}/api/caddyfile/format`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "text/plain",
+			},
+			body: content,
+		});
+
+		if (!response.ok) {
+			const data = await response.json();
+			return {
+				success: false,
+				error: data.error || data.details || "Failed to format",
+			};
+		}
+
+		const formatted = await response.text();
+		return { success: true, formatted };
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Network error",
+		};
+	}
+}

@@ -116,6 +116,57 @@ fastify.get("/api/caddyfile/stats", async (_request, reply) => {
 	}
 });
 
+// Format Caddyfile using Caddy's built-in formatter
+fastify.post("/api/caddyfile/format", async (request, reply) => {
+	try {
+		const content =
+			typeof request.body === "string"
+				? request.body
+				: await request.body.toString();
+
+		// Use Caddy's /load endpoint to validate and get formatted output
+		// This will validate the Caddyfile and return it in normalized format
+		const adaptResponse = await fetch(`${CADDY_API_URL}/load`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "text/caddyfile",
+			},
+			body: content,
+		});
+
+		if (!adaptResponse.ok) {
+			const errorText = await adaptResponse.text();
+			return reply.code(400).send({
+				error: "Invalid Caddyfile",
+				details: errorText || "Caddy could not parse the configuration",
+			});
+		}
+
+		// Get the JSON config back
+		const _jsonConfig = await adaptResponse.json();
+
+		// Convert JSON back to Caddyfile format by re-requesting with Accept header
+		const formatResponse = await fetch(`${CADDY_API_URL}/config/`, {
+			headers: {
+				Accept: "text/caddyfile",
+			},
+		});
+
+		if (!formatResponse.ok) {
+			return reply.code(500).send({
+				error: "Failed to format",
+				details: "Could not convert config back to Caddyfile",
+			});
+		}
+
+		const formatted = await formatResponse.text();
+		reply.type("text/plain").send(formatted);
+	} catch (error) {
+		fastify.log.error({ err: error }, "Failed to format Caddyfile");
+		reply.code(500).send({ error: "Failed to format Caddyfile" });
+	}
+});
+
 // Apply Caddyfile to Caddy via Admin API
 fastify.post("/api/caddyfile/apply", async (_request, reply) => {
 	try {

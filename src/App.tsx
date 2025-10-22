@@ -7,6 +7,7 @@ import {
 	Server,
 	Shield,
 	Sparkles,
+	Wand2,
 	Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -17,12 +18,14 @@ import { EditVirtualBlockDialog } from "@/components/EditVirtualBlockDialog";
 import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
 import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { VirtualContainerCard } from "@/components/VirtualContainerCard";
 import { VirtualContainerEditDialog } from "@/components/VirtualContainerEditDialog";
 import {
 	applyCaddyfileConfig,
 	type CaddyAPIStatus,
+	formatCaddyfile,
 	getCaddyAPIStatus,
 	loadCaddyfile,
 	saveCaddyfile,
@@ -189,6 +192,32 @@ function App() {
 			});
 		} finally {
 			setApplying(false);
+		}
+	};
+
+	const handleFormat = async () => {
+		try {
+			const result = await formatCaddyfile(rawContent);
+
+			if (result.success && result.formatted) {
+				setRawContent(result.formatted);
+				// Try to parse the formatted content
+				try {
+					const parsed = parseCaddyfile(result.formatted);
+					setConfig(parsed);
+				} catch (err) {
+					console.error("Parse error after format:", err);
+				}
+				toast.success("Caddyfile formatted!");
+			} else {
+				toast.error("Failed to format", {
+					description: result.error,
+				});
+			}
+		} catch (error) {
+			toast.error("Error formatting", {
+				description: error instanceof Error ? error.message : "Unknown error",
+			});
 		}
 	};
 
@@ -425,28 +454,38 @@ function App() {
 								</div>
 							</div>
 
-							{/* Right: Mode Indicator */}
-							{caddyStatus && (
-								<div
-									className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium border ${
-										caddyStatus.available
-											? "bg-green-50 border-green-200 text-green-700"
-											: "bg-gray-50 border-gray-200 text-gray-600"
-									}`}
-								>
-									<Circle
-										className={`h-2 w-2 fill-current ${caddyStatus.available ? "animate-pulse" : ""}`}
-									/>
-									{caddyStatus.available ? "Live Mode" : "File Mode"}
-								</div>
-							)}
+							{/* Right: Mode Indicator + Theme Toggle */}
+							<div className="flex items-center gap-2">
+								{caddyStatus && (
+									<div
+										className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium border"
+										style={{
+											backgroundColor: caddyStatus.available
+												? "var(--color-accent)"
+												: "var(--color-muted)",
+											borderColor: caddyStatus.available
+												? "var(--color-primary)"
+												: "var(--color-border)",
+											color: caddyStatus.available
+												? "var(--color-accent-foreground)"
+												: "var(--color-muted-foreground)",
+										}}
+									>
+										<Circle
+											className={`h-2 w-2 fill-current ${caddyStatus.available ? "animate-pulse" : ""}`}
+										/>
+										{caddyStatus.available ? "Live Mode" : "File Mode"}
+									</div>
+								)}
+								<ThemeToggle />
+							</div>
 						</div>
 					</div>
 				</header>
 
 				<main className="container mx-auto px-4 py-6">
 					{config && (
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+						<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 							{/* Left: Visual Editor */}
 							<div className="space-y-4">
 								{config.siteBlocks.length === 0 ? (
@@ -534,9 +573,20 @@ function App() {
 
 							{/* Right: Raw Caddyfile */}
 							<div className="space-y-4">
-								<div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-									<Code className="h-4 w-4" />
-									<span>Raw Caddyfile</span>
+								<div className="flex items-center justify-between mb-2">
+									<div className="flex items-center gap-2 text-sm text-muted-foreground">
+										<Code className="h-4 w-4" />
+										<span>Raw Caddyfile</span>
+									</div>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={handleFormat}
+										disabled={!rawContent.trim()}
+									>
+										<Wand2 className="h-4 w-4 mr-1" />
+										Format
+									</Button>
 								</div>
 								<CaddyfileEditor
 									value={rawContent}

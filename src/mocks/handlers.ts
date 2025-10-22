@@ -174,4 +174,54 @@ export const handlers = [
 			},
 		});
 	}),
+
+	// Format Caddyfile
+	http.post(
+		"http://localhost:8080/api/caddyfile/format",
+		async ({ request }) => {
+			await delay(200);
+			const content = await request.text();
+
+			// Validate content
+			if (!content || content.trim().length === 0) {
+				return HttpResponse.json(
+					{ error: "Cannot format empty Caddyfile" },
+					{ status: 400 },
+				);
+			}
+
+			// Check for invalid directives
+			if (content.includes("INVALID")) {
+				return HttpResponse.json(
+					{ error: "Invalid Caddyfile syntax" },
+					{ status: 400 },
+				);
+			}
+
+			// Simple formatting: normalize spacing and indentation
+			const lines = content.split("\n");
+			const formatted: string[] = [];
+			let indentLevel = 0;
+
+			for (const line of lines) {
+				const trimmed = line.trim();
+				if (!trimmed) continue;
+
+				// Decrease indent before closing brace
+				if (trimmed === "}") {
+					indentLevel = Math.max(0, indentLevel - 1);
+				}
+
+				// Add line with proper indentation
+				formatted.push("\t".repeat(indentLevel) + trimmed);
+
+				// Increase indent after opening brace
+				if (trimmed.endsWith("{")) {
+					indentLevel++;
+				}
+			}
+
+			return HttpResponse.text(formatted.join("\n"));
+		},
+	),
 ];
