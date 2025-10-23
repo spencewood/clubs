@@ -120,9 +120,7 @@ fastify.get("/api/caddyfile/stats", async (_request, reply) => {
 fastify.post("/api/caddyfile/format", async (request, reply) => {
 	try {
 		const content =
-			typeof request.body === "string"
-				? request.body
-				: String(request.body);
+			typeof request.body === "string" ? request.body : String(request.body);
 
 		// Use Caddy's /load endpoint to validate and get formatted output
 		// This will validate the Caddyfile and return it in normalized format
