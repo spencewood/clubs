@@ -177,7 +177,7 @@ export function CaddyfileEditor({
 	return (
 		<CodeMirror
 			value={value}
-			height="calc(100vh - 250px)"
+			height="100%"
 			placeholder={placeholder}
 			onChange={onChange}
 			basicSetup={{

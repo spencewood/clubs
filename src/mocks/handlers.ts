@@ -24,7 +24,7 @@ export const getMockCaddyfile = () => {
 
 export const handlers = [
 	// Check Caddy API status
-	http.get("http://localhost:8080/api/caddy/status", async () => {
+	http.get("/api/caddy/status", async () => {
 		await delay(100); // Simulate network delay
 
 		const status: CaddyAPIStatus = {
@@ -37,33 +37,16 @@ export const handlers = [
 		return HttpResponse.json(status);
 	}),
 
-	// Get Caddyfile
-	http.get("http://localhost:8080/api/caddyfile", async ({ request }) => {
+	// Get Caddyfile - always returns file content (no live mode)
+	http.get("/api/caddyfile", async () => {
 		await delay(100);
 
-		const url = new URL(request.url);
-		const source = url.searchParams.get("source");
-
-		// If requesting live source but API not available, return 404
-		if (source === "live" && !mockCaddyAPIAvailable) {
-			return HttpResponse.json(
-				{ error: "Caddyfile not found" },
-				{ status: 404 },
-			);
-		}
-
-		// If requesting live source and API is available, return live config
-		if (source === "live" && mockCaddyAPIAvailable) {
-			// Simulate reading from live Caddy
-			return HttpResponse.text(mockCaddyfile);
-		}
-
-		// Default: return file content
+		// Always return file content (we changed the backend to not read from live Caddy)
 		return HttpResponse.text(mockCaddyfile);
 	}),
 
 	// Save Caddyfile
-	http.put("http://localhost:8080/api/caddyfile", async ({ request }) => {
+	http.put("/api/caddyfile", async ({ request }) => {
 		await delay(200);
 		const content = await request.text();
 
@@ -114,7 +97,7 @@ export const handlers = [
 	}),
 
 	// Apply configuration to Caddy (Live Mode)
-	http.post("http://localhost:8080/api/caddyfile/apply", async () => {
+	http.post("/api/caddyfile/apply", async () => {
 		await delay(300);
 
 		if (!mockCaddyAPIAvailable) {
@@ -145,7 +128,7 @@ export const handlers = [
 	}),
 
 	// Get current live configuration from Caddy
-	http.get("http://localhost:8080/api/caddy/config", async () => {
+	http.get("/api/caddy/config", async () => {
 		await delay(150);
 
 		if (!mockCaddyAPIAvailable) {
@@ -175,53 +158,28 @@ export const handlers = [
 		});
 	}),
 
-	// Format Caddyfile
-	http.post(
-		"http://localhost:8080/api/caddyfile/format",
-		async ({ request }) => {
-			await delay(200);
-			const content = await request.text();
+	// Format Caddyfile - now just validates and returns original (matching new backend behavior)
+	http.post("/api/caddyfile/format", async ({ request }) => {
+		await delay(200);
+		const content = await request.text();
 
-			// Validate content
-			if (!content || content.trim().length === 0) {
-				return HttpResponse.json(
-					{ error: "Cannot format empty Caddyfile" },
-					{ status: 400 },
-				);
-			}
+		// Validate content
+		if (!content || content.trim().length === 0) {
+			return HttpResponse.json(
+				{ error: "Cannot format empty Caddyfile" },
+				{ status: 400 },
+			);
+		}
 
-			// Check for invalid directives
-			if (content.includes("INVALID")) {
-				return HttpResponse.json(
-					{ error: "Invalid Caddyfile syntax" },
-					{ status: 400 },
-				);
-			}
+		// Check for invalid directives
+		if (content.includes("INVALID")) {
+			return HttpResponse.json(
+				{ error: "Invalid Caddyfile", details: "Caddy could not parse the configuration" },
+				{ status: 400 },
+			);
+		}
 
-			// Simple formatting: normalize spacing and indentation
-			const lines = content.split("\n");
-			const formatted: string[] = [];
-			let indentLevel = 0;
-
-			for (const line of lines) {
-				const trimmed = line.trim();
-				if (!trimmed) continue;
-
-				// Decrease indent before closing brace
-				if (trimmed === "}") {
-					indentLevel = Math.max(0, indentLevel - 1);
-				}
-
-				// Add line with proper indentation
-				formatted.push("\t".repeat(indentLevel) + trimmed);
-
-				// Increase indent after opening brace
-				if (trimmed.endsWith("{")) {
-					indentLevel++;
-				}
-			}
-
-			return HttpResponse.text(formatted.join("\n"));
-		},
-	),
+		// Return original content (matching new backend behavior - just validates, doesn't format)
+		return HttpResponse.text(content);
+	}),
 ];

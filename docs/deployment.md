@@ -10,6 +10,7 @@ Clubs is a web-based Caddyfile editor that works with a single Caddyfile. This g
   - [Scenario 2: Add to Existing Caddy](#scenario-2-add-to-existing-caddy)
   - [Scenario 3: Standalone (File Mode Only)](#scenario-3-standalone-file-mode-only)
   - [Scenario 4: Custom Caddy Build](#scenario-4-custom-caddy-build-cloudflare-dns-etc)
+  - [Scenario 5: Production with Internal Networking](#scenario-5-production-deployment-with-internal-networking)
 - [Configuration](#configuration)
 - [Live Mode vs File Mode](#live-mode-vs-file-mode)
 
@@ -234,6 +235,127 @@ services:
 ```
 
 **Note:** Clubs works with any Caddy build as long as the Admin API is enabled.
+
+---
+
+### Scenario 5: Production Deployment with Internal Networking
+
+**Use case:** Production deployment where you want Clubs and Caddy Admin API to be internal-only, with access to Clubs UI through Caddy reverse proxy.
+
+This setup follows security best practices by:
+- Keeping the Caddy Admin API internal (not exposed to host)
+- Keeping Clubs API internal (not exposed to host)
+- Exposing Clubs UI only through Caddy reverse proxy
+- Allowing zero-downtime updates via internal Docker networking
+
+**Setup:**
+
+```yaml
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    container_name: caddy
+    mem_limit: 256m
+    mem_reservation: 128m
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - CADDY_ADMIN=0.0.0.0:2019  # Enable Admin API on all interfaces
+    volumes:
+      - ./config:/config
+      - ./data:/data
+      - /opt/stacks/certificates:/data/caddy/certificates
+      - ./config/Caddyfile:/etc/caddy/Caddyfile
+    ports:
+      - 80:80
+      - 443:443
+      # 2019 (Admin API) is internal only - not exposed to host
+    restart: unless-stopped
+    networks:
+      - clubs-network
+
+  clubs:
+    image: spencewood/clubs:latest
+    container_name: clubs
+    mem_limit: 512m
+    mem_reservation: 256m
+    environment:
+      - NODE_ENV=production
+      - API_PORT=8080
+      - CADDYFILE_PATH=/config/Caddyfile
+      - CADDY_API_URL=http://caddy:2019  # Internal Docker network address
+      - TZ=America/Chicago
+    volumes:
+      - ./config:/config  # Shared with Caddy for Caddyfile access
+    # No ports exposed - accessed via Caddy reverse proxy
+    depends_on:
+      - caddy
+    restart: unless-stopped
+    networks:
+      - clubs-network
+
+networks:
+  clubs-network:
+    driver: bridge
+```
+
+**Add to your Caddyfile** to expose Clubs UI:
+
+```caddy
+clubs.yourdomain.com {
+    reverse_proxy clubs:8080
+
+    # Optional: Add authentication
+    basicauth {
+        admin $2a$14$hashed_password
+    }
+}
+```
+
+**Security benefits:**
+- Port 2019 (Caddy Admin API) is never exposed to the host machine
+- Port 8080 (Clubs API) is never exposed to the host machine
+- All communication between Clubs and Caddy happens over internal Docker network
+- Only HTTPS traffic from Caddy reaches the outside world
+- You can add authentication/authorization at the Caddy level
+
+**Custom Caddy Build Example:**
+
+If you need a custom Caddy build (e.g., with Cloudflare DNS module):
+
+```dockerfile
+# Dockerfile.caddy
+FROM caddy:builder AS builder
+
+RUN xcaddy build \
+    --with github.com/caddy-dns/cloudflare
+
+FROM caddy:latest
+
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+```
+
+**Usage:**
+
+```bash
+# Start everything
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Access Clubs through Caddy reverse proxy
+# Navigate to https://clubs.yourdomain.com
+```
+
+**How it works:**
+1. Clubs connects to Caddy's Admin API via `http://caddy:2019` (internal Docker network)
+2. When you click "Apply to Caddy", changes are sent through the Admin API
+3. Caddy applies configuration with zero downtime
+4. Users access Clubs UI via Caddy reverse proxy on port 443 (HTTPS)
 
 ---
 

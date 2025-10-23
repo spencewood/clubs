@@ -21,40 +21,10 @@ await fastify.register(import("@fastify/cors"), {
 });
 
 // Get the Caddyfile
-fastify.get<{
-	Querystring: { source?: string };
-}>("/api/caddyfile", async (request, reply) => {
+fastify.get("/api/caddyfile", async (_request, reply) => {
 	try {
-		// Check if we should try to read from live Caddy first
-		const preferLive = request.query?.source === "live";
-
-		// If preferLive and Caddy API is available, try to read from there
-		if (preferLive) {
-			const isAvailable = await caddyAPI.isAvailable();
-			if (isAvailable) {
-				// Get current config from Caddy and convert to Caddyfile format
-				// We'll use Caddy's /config/ endpoint which returns current config as Caddyfile
-				try {
-					const response = await fetch(`${CADDY_API_URL}/config/`, {
-						headers: {
-							Accept: "text/caddyfile",
-						},
-					});
-
-					if (response.ok) {
-						const content = await response.text();
-						return reply.type("text/plain").send(content);
-					}
-				} catch (liveError) {
-					fastify.log.warn(
-						{ err: liveError },
-						"Failed to read from live Caddy, falling back to file",
-					);
-				}
-			}
-		}
-
-		// Default: read from file
+		// Always read from file - Caddy's Admin API returns JSON, not Caddyfile format
+		// The "live" mode refers to the ability to apply changes via the API, not read config
 		const content = await fs.readFile(CADDYFILE_PATH, "utf-8");
 		reply.type("text/plain").send(content);
 	} catch (error) {
@@ -117,13 +87,14 @@ fastify.get("/api/caddyfile/stats", async (_request, reply) => {
 });
 
 // Format Caddyfile using Caddy's built-in formatter
+// NOTE: Caddy's Admin API doesn't support converting JSON back to Caddyfile format.
+// The `caddy fmt` command exists but is CLI-only. For now, we just validate and return the original.
 fastify.post("/api/caddyfile/format", async (request, reply) => {
 	try {
 		const content =
 			typeof request.body === "string" ? request.body : String(request.body);
 
-		// Use Caddy's /load endpoint to validate and get formatted output
-		// This will validate the Caddyfile and return it in normalized format
+		// Validate the Caddyfile by loading it into Caddy
 		const adaptResponse = await fetch(`${CADDY_API_URL}/load`, {
 			method: "POST",
 			headers: {
@@ -140,25 +111,9 @@ fastify.post("/api/caddyfile/format", async (request, reply) => {
 			});
 		}
 
-		// Get the JSON config back (we don't need it, just validating)
-		await adaptResponse.json();
-
-		// Convert JSON back to Caddyfile format by re-requesting with Accept header
-		const formatResponse = await fetch(`${CADDY_API_URL}/config/`, {
-			headers: {
-				Accept: "text/caddyfile",
-			},
-		});
-
-		if (!formatResponse.ok) {
-			return reply.code(500).send({
-				error: "Failed to format",
-				details: "Could not convert config back to Caddyfile",
-			});
-		}
-
-		const formatted = await formatResponse.text();
-		reply.type("text/plain").send(formatted);
+		// Validation passed - return the original content
+		// TODO: Implement client-side or Caddy CLI-based formatting in the future
+		reply.type("text/plain").send(content);
 	} catch (error) {
 		fastify.log.error({ err: error }, "Failed to format Caddyfile");
 		reply.code(500).send({ error: "Failed to format Caddyfile" });

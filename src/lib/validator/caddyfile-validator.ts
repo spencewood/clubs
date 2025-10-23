@@ -32,13 +32,12 @@ export function validateCaddyfile(content: string): ValidationResult {
 	}
 
 	// Check for JSON (another common false positive)
+	// Only flag as JSON if it ONLY contains JSON (not a Caddyfile that happens to have braces)
 	const trimmed = content.trim();
-	if (
-		(trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-		(trimmed.startsWith("[") && trimmed.endsWith("]"))
-	) {
+	if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
 		try {
 			JSON.parse(content);
+			// Successfully parsed as JSON - likely Caddy's JSON config, not a Caddyfile
 			result.errors.push("File appears to be JSON, not a Caddyfile");
 			return result;
 		} catch {

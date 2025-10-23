@@ -613,7 +613,7 @@ function App() {
 							</div>
 
 							{/* Right: Raw Caddyfile */}
-							<div className="space-y-4">
+							<div className="flex flex-col space-y-4 min-h-[calc(100vh-12rem)]">
 								<div className="flex items-center justify-between mb-2">
 									<div className="flex items-center gap-2 text-sm text-muted-foreground">
 										<Code className="h-4 w-4" />
@@ -629,12 +629,14 @@ function App() {
 										Format
 									</Button>
 								</div>
-								<CaddyfileEditor
-									value={rawContent}
-									onChange={handleRawContentChange}
-									placeholder="# Caddyfile configuration..."
-									highlightLines={getHoveredBlockLineRange()}
-								/>
+								<div className="flex-1">
+									<CaddyfileEditor
+										value={rawContent}
+										onChange={handleRawContentChange}
+										placeholder="# Caddyfile configuration..."
+										highlightLines={getHoveredBlockLineRange()}
+									/>
+								</div>
 							</div>
 						</div>
 					)}
