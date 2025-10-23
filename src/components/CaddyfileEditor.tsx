@@ -207,7 +207,7 @@ export function CaddyfileEditor({
 				EditorView.lineWrapping,
 				StreamLanguage.define(caddyfile),
 				customHighlighting,
-				createHighlightPlugin(highlightLines),
+				createHighlightPlugin(highlightLines ?? null),
 				theme,
 			]}
 			indentWithTab={true}

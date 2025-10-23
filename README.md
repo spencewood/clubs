@@ -1,5 +1,8 @@
 # ♣ Clubs
 
+[![Docker Hub](https://img.shields.io/docker/v/spencewood/clubs?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/spencewood/clubs)
+[![Docker Pulls](https://img.shields.io/docker/pulls/spencewood/clubs)](https://hub.docker.com/r/spencewood/clubs)
+
 **A modern Caddyfile management tool with zero-downtime updates**
 
 Clubs is a web-based tool for editing and managing Caddy server configurations. It provides a clean, intuitive interface for visualizing and modifying your Caddyfiles with instant, zero-downtime updates via the Caddy Admin API.
@@ -26,11 +29,15 @@ Clubs is a web-based tool for editing and managing Caddy server configurations. 
 ## Quick Start with Docker
 
 ```bash
-# Clone the repository
-git clone <repo-url>
-cd clubs
+# Run standalone (simplest)
+docker run -d \
+  -p 8080:80 \
+  -v ./config:/config \
+  -e CADDYFILE_PATH=/config/Caddyfile \
+  spencewood/clubs:latest
 
-# Start with docker-compose (includes both Caddy and Clubs)
+# Or use docker-compose for full stack (Caddy + Clubs)
+curl -O https://raw.githubusercontent.com/spencewood/clubs/main/docker-compose.yml
 docker-compose up -d
 ```
 
@@ -41,7 +48,7 @@ docker-compose up -d
 **Ports:**
 - **80/443**: Caddy web server (your sites)
 - **2019**: Caddy Admin API (internal - for live reload)
-- **8080**: Clubs web UI
+- **8080**: Clubs web UI (container port 80 mapped to host 8080)
 
 ## Deployment Options
 

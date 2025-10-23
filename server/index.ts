@@ -122,7 +122,7 @@ fastify.post("/api/caddyfile/format", async (request, reply) => {
 		const content =
 			typeof request.body === "string"
 				? request.body
-				: await request.body.toString();
+				: String(request.body);
 
 		// Use Caddy's /load endpoint to validate and get formatted output
 		// This will validate the Caddyfile and return it in normalized format
@@ -142,8 +142,8 @@ fastify.post("/api/caddyfile/format", async (request, reply) => {
 			});
 		}
 
-		// Get the JSON config back
-		const _jsonConfig = await adaptResponse.json();
+		// Get the JSON config back (we don't need it, just validating)
+		await adaptResponse.json();
 
 		// Convert JSON back to Caddyfile format by re-requesting with Accept header
 		const formatResponse = await fetch(`${CADDY_API_URL}/config/`, {

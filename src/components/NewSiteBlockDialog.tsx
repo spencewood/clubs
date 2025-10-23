@@ -42,10 +42,6 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 	Server,
 };
 
-function _generateId(): string {
-	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-}
-
 export function NewSiteBlockDialog({
 	open,
 	onOpenChange,

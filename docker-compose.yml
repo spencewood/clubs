@@ -25,12 +25,12 @@ services:
 
   # Clubs Caddyfile editor
   clubs:
-    build: .
-    # Or use pre-built image:
-    # image: your-dockerhub-username/clubs:latest
+    image: spencewood/clubs:latest
+    # Or build from source:
+    # build: .
     container_name: clubs
     ports:
-      - "8080:8080"   # Web UI - access at http://localhost:8080
+      - "8080:80"     # Web UI - access at http://localhost:8080
     volumes:
       # Share same config directory as Caddy
       - ./config:/config

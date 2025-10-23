@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { type CaddyFeature, caddyFeatures } from "@/lib/caddy-features";
-import type { CaddyDirective } from "@/lib/types";
+import type { CaddyDirective } from "@/types/caddyfile";
 
 interface AddFeatureDialogProps {
 	open: boolean;
@@ -95,7 +95,14 @@ export function AddFeatureDialog({
 			// Parse raw directive
 			const trimmed = rawDirective.trim();
 			if (trimmed) {
-				onAddDirectives([{ directive: trimmed }]);
+				const parts = trimmed.split(/\s+/);
+				const directive: CaddyDirective = {
+					id: `directive-${Date.now()}-${Math.random()}`,
+					name: parts[0] || "",
+					args: parts.slice(1),
+					raw: trimmed,
+				};
+				onAddDirectives([directive]);
 				handleClose();
 			}
 		} else if (selectedFeature) {

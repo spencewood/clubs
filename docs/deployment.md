@@ -20,12 +20,16 @@ Clubs is a web-based Caddyfile editor that works with a single Caddyfile. This g
 The simplest way to get started:
 
 ```bash
-# Clone the repo
-git clone https://github.com/your-username/clubs.git
-cd clubs
-
-# Start with docker-compose (includes both Caddy and Clubs)
+# Option 1: Use docker-compose (recommended)
+curl -O https://raw.githubusercontent.com/spencewood/clubs/main/docker-compose.yml
 docker-compose up -d
+
+# Option 2: Run standalone
+docker run -d \
+  -p 8080:80 \
+  -v ./config:/config \
+  -e CADDYFILE_PATH=/config/Caddyfile \
+  spencewood/clubs:latest
 
 # Access Clubs at http://localhost:8080
 ```
@@ -61,9 +65,9 @@ services:
       - CADDY_ADMIN=0.0.0.0:2019
 
   clubs:
-    build: .
+    image: spencewood/clubs:latest
     ports:
-      - "8080:8080"
+      - "8080:80"
     volumes:
       - ./config:/config
     environment:

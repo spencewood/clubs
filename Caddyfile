@@ -1,0 +1,26 @@
+# Default Caddyfile for the Clubs container
+# This serves the Clubs UI and proxies API requests to the Node.js backend
+# This is ONLY used inside the Docker container for the bundled Caddy instance
+
+{
+	# Enable Admin API on all interfaces (required for Clubs Live Mode)
+	admin 0.0.0.0:2019
+}
+
+# Clubs UI - served on port 80
+:80 {
+	# Serve Clubs frontend
+	root * /app/dist
+
+	# Proxy API requests to Node.js backend
+	@api path /api/*
+	handle @api {
+		reverse_proxy localhost:8080
+	}
+
+	# Serve static files, fallback to index.html for SPA routing
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}
