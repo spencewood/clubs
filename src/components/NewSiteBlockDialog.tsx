@@ -2,14 +2,12 @@ import {
 	ArrowRight,
 	ArrowRightLeft,
 	Boxes,
-	ChevronLeft,
 	Container,
 	FileText,
-	Globe,
 	Plus,
 	Server,
 } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -32,6 +30,7 @@ interface NewSiteBlockDialogProps {
 	onCreateFromRecipe: (siteBlock: CaddySiteBlock) => void;
 	onCreateBlank: () => void;
 	onCreateVirtualContainer?: (domain: string, sharedConfig: string[]) => void;
+	initialBlockType?: BlockType | null;
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -48,12 +47,20 @@ export function NewSiteBlockDialog({
 	onCreateFromRecipe,
 	onCreateBlank,
 	onCreateVirtualContainer,
+	initialBlockType = null,
 }: NewSiteBlockDialogProps) {
 	const [blockType, setBlockType] = useState<BlockType | null>(null);
 	const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 	const [formValues, setFormValues] = useState<Record<string, string>>({});
 	const [virtualContainerDomain, setVirtualContainerDomain] = useState("");
 	const wildcardDomainId = useId();
+
+	// Update blockType when dialog opens with initialBlockType
+	useEffect(() => {
+		if (open) {
+			setBlockType(initialBlockType);
+		}
+	}, [open, initialBlockType]);
 
 	const handleRecipeSelect = (recipe: Recipe) => {
 		setSelectedRecipe(recipe);
@@ -92,20 +99,13 @@ export function NewSiteBlockDialog({
 		onOpenChange(false);
 	};
 
-	const handleBack = () => {
-		if (selectedRecipe) {
-			setSelectedRecipe(null);
-			setFormValues({});
-		} else {
-			setBlockType(null);
-			setVirtualContainerDomain("");
-		}
-	};
 
 	const handleVirtualContainerCreate = () => {
 		if (!onCreateVirtualContainer || !virtualContainerDomain.trim()) return;
+		// Auto-prepend *. to the domain
+		const fullDomain = `*.${virtualContainerDomain.trim()}`;
 		// For now, create with minimal config - user can add shared config later
-		onCreateVirtualContainer(virtualContainerDomain, []);
+		onCreateVirtualContainer(fullDomain, []);
 		handleClose();
 	};
 
@@ -119,58 +119,12 @@ export function NewSiteBlockDialog({
 	return (
 		<Dialog open={open} onOpenChange={handleClose}>
 			<DialogContent className="max-w-2xl">
-				{!blockType ? (
-					<>
-						<DialogHeader>
-							<DialogTitle>Choose Block Type</DialogTitle>
-							<DialogDescription>
-								Select the type of configuration block you want to create
-							</DialogDescription>
-						</DialogHeader>
-
-						<div className="grid grid-cols-2 gap-4 py-6">
-							<button
-								type="button"
-								onClick={() => setBlockType("physical")}
-								className="flex items-start gap-4 p-6 rounded-lg border-2 border-green-200 hover:border-green-500 hover:bg-green-50/50 transition-colors text-left"
-							>
-								<Globe className="h-8 w-8 text-green-600 flex-shrink-0 mt-1" />
-								<div className="flex-1">
-									<h4 className="font-semibold text-lg">Physical Block</h4>
-									<p className="text-sm text-muted-foreground mt-1">
-										Traditional site block with its own independent
-										configuration
-									</p>
-									<div className="text-xs text-muted-foreground mt-2">
-										Example: blog.example.com, api.example.com
-									</div>
-								</div>
-							</button>
-
-							<button
-								type="button"
-								onClick={() => setBlockType("virtual-container")}
-								className="flex items-start gap-4 p-6 rounded-lg border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-left"
-							>
-								<Container className="h-8 w-8 text-blue-600 flex-shrink-0 mt-1" />
-								<div className="flex-1">
-									<h4 className="font-semibold text-lg">Virtual Container</h4>
-									<p className="text-sm text-muted-foreground mt-1">
-										Wildcard domain with shared config for multiple services
-									</p>
-									<div className="text-xs text-muted-foreground mt-2">
-										Example: *.services.example.com
-									</div>
-								</div>
-							</button>
-						</div>
-					</>
-				) : blockType === "virtual-container" ? (
+				{blockType === "virtual-container" ? (
 					<>
 						<DialogHeader>
 							<DialogTitle className="flex items-center gap-2">
 								<Container className="h-5 w-5 text-blue-600" />
-								Create Virtual Container
+								Create Container
 							</DialogTitle>
 							<DialogDescription>
 								Create a wildcard domain to host multiple services with shared
@@ -178,49 +132,51 @@ export function NewSiteBlockDialog({
 							</DialogDescription>
 						</DialogHeader>
 
-						<div className="space-y-4 py-4">
-							<div className="space-y-2">
-								<Label htmlFor={wildcardDomainId}>
-									Wildcard Domain
-									<span className="text-destructive ml-1">*</span>
-								</Label>
-								<Input
-									id={wildcardDomainId}
-									type="text"
-									placeholder="*.services.example.com"
-									value={virtualContainerDomain}
-									onChange={(e) => setVirtualContainerDomain(e.target.value)}
-								/>
-								<p className="text-sm text-muted-foreground">
-									Use wildcard notation (e.g., *.services.example.com) to match
-									all subdomains
-								</p>
+						<form
+							onSubmit={(e) => {
+								e.preventDefault();
+								handleVirtualContainerCreate();
+							}}
+						>
+							<div className="space-y-4 py-4">
+								<div className="space-y-2">
+									<Label htmlFor={wildcardDomainId}>
+										Domain
+										<span className="text-destructive ml-1">*</span>
+									</Label>
+									<div className="flex items-center gap-2">
+										<span className="text-sm font-mono text-muted-foreground">
+											*.
+										</span>
+										<Input
+											id={wildcardDomainId}
+											type="text"
+											placeholder="services.example.com"
+											value={virtualContainerDomain}
+											onChange={(e) => setVirtualContainerDomain(e.target.value)}
+											className="flex-1"
+										/>
+									</div>
+									<p className="text-sm text-muted-foreground">
+										All subdomains will be matched (e.g., api.services.example.com,
+										web.services.example.com)
+									</p>
+								</div>
 							</div>
-						</div>
 
-						<DialogFooter className="gap-2">
-							<Button variant="outline" onClick={handleBack}>
-								<ChevronLeft className="h-4 w-4 mr-2" />
-								Back
-							</Button>
-							<Button
-								onClick={handleVirtualContainerCreate}
-								disabled={
-									!virtualContainerDomain.trim() ||
-									!virtualContainerDomain.includes("*")
-								}
-							>
-								Create Virtual Container
-							</Button>
-						</DialogFooter>
+							<DialogFooter>
+								<Button type="submit" disabled={!virtualContainerDomain.trim()}>
+									Create Container
+								</Button>
+							</DialogFooter>
+						</form>
 					</>
 				) : !selectedRecipe ? (
 					<>
 						<DialogHeader>
-							<DialogTitle>Create Physical Site Block</DialogTitle>
+							<DialogTitle>Create Site</DialogTitle>
 							<DialogDescription>
 								Choose a template to get started quickly, or create a blank site
-								block
 							</DialogDescription>
 						</DialogHeader>
 
@@ -273,19 +229,13 @@ export function NewSiteBlockDialog({
 									<div className="flex-1">
 										<h4 className="font-semibold">Start from Scratch</h4>
 										<p className="text-sm text-muted-foreground mt-1">
-											Create an empty site block and configure it manually
+											Create an empty site and configure it manually
 										</p>
 									</div>
 								</button>
 							</div>
 						</div>
 
-						<DialogFooter>
-							<Button variant="outline" onClick={handleBack}>
-								<ChevronLeft className="h-4 w-4 mr-2" />
-								Back
-							</Button>
-						</DialogFooter>
 					</>
 				) : (
 					<>
@@ -302,78 +252,81 @@ export function NewSiteBlockDialog({
 							</DialogDescription>
 						</DialogHeader>
 
-						<div className="space-y-4 py-4">
-							{selectedRecipe.fields.map((field) => (
-								<div key={field.name} className="space-y-2">
-									<Label htmlFor={field.name}>
-										{field.label}
-										{field.required && (
-											<span className="text-destructive ml-1">*</span>
-										)}
-									</Label>
-									{field.type === "text" || field.type === "number" ? (
-										<Input
-											id={field.name}
-											type={field.type}
-											placeholder={field.placeholder}
-											value={formValues[field.name] || ""}
-											onChange={(e) =>
-												handleFieldChange(field.name, e.target.value)
-											}
-										/>
-									) : field.type === "select" ? (
-										<select
-											id={field.name}
-											value={formValues[field.name] || ""}
-											onChange={(e) =>
-												handleFieldChange(field.name, e.target.value)
-											}
-											className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-										>
-											<option value="">Select...</option>
-											{field.options?.map((opt) => (
-												<option key={opt.value} value={opt.value}>
-													{opt.label}
-												</option>
-											))}
-										</select>
-									) : field.type === "boolean" ? (
-										<div className="flex items-center gap-2">
-											<input
-												type="checkbox"
+						<form
+							onSubmit={(e) => {
+								e.preventDefault();
+								handleComplete();
+							}}
+						>
+							<div className="space-y-4 py-4">
+								{selectedRecipe.fields.map((field) => (
+									<div key={field.name} className="space-y-2">
+										<Label htmlFor={field.name}>
+											{field.label}
+											{field.required && (
+												<span className="text-destructive ml-1">*</span>
+											)}
+										</Label>
+										{field.type === "text" || field.type === "number" ? (
+											<Input
 												id={field.name}
-												checked={formValues[field.name] === "true"}
+												type={field.type}
+												placeholder={field.placeholder}
+												value={formValues[field.name] || ""}
 												onChange={(e) =>
-													handleFieldChange(
-														field.name,
-														e.target.checked ? "true" : "false",
-													)
+													handleFieldChange(field.name, e.target.value)
 												}
-												className="h-4 w-4 rounded border-input"
 											/>
-											<span className="text-sm text-muted-foreground">
+										) : field.type === "select" ? (
+											<select
+												id={field.name}
+												value={formValues[field.name] || ""}
+												onChange={(e) =>
+													handleFieldChange(field.name, e.target.value)
+												}
+												className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+											>
+												<option value="">Select...</option>
+												{field.options?.map((opt) => (
+													<option key={opt.value} value={opt.value}>
+														{opt.label}
+													</option>
+												))}
+											</select>
+										) : field.type === "boolean" ? (
+											<div className="flex items-center gap-2">
+												<input
+													type="checkbox"
+													id={field.name}
+													checked={formValues[field.name] === "true"}
+													onChange={(e) =>
+														handleFieldChange(
+															field.name,
+															e.target.checked ? "true" : "false",
+														)
+													}
+													className="h-4 w-4 rounded border-input"
+												/>
+												<span className="text-sm text-muted-foreground">
+													{field.description}
+												</span>
+											</div>
+										) : null}
+										{field.description && field.type !== "boolean" && (
+											<p className="text-sm text-muted-foreground">
 												{field.description}
-											</span>
-										</div>
-									) : null}
-									{field.description && field.type !== "boolean" && (
-										<p className="text-sm text-muted-foreground">
-											{field.description}
-										</p>
-									)}
-								</div>
-							))}
-						</div>
+											</p>
+										)}
+									</div>
+								))}
+							</div>
 
-						<DialogFooter className="gap-2">
-							<Button variant="outline" onClick={handleBack}>
-								<ChevronLeft className="h-4 w-4 mr-2" />
-								Back
-							</Button>
-							<Button onClick={handleComplete} disabled={!isFormValid()}>
-								Create Site Block
-							</Button>
-						</DialogFooter>
+							<DialogFooter>
+								<Button type="submit" disabled={!isFormValid()}>
+									Create Site
+								</Button>
+							</DialogFooter>
+						</form>
 					</>
 				)}
 			</DialogContent>

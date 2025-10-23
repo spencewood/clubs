@@ -1,6 +1,8 @@
 import {
 	Circle,
 	Code,
+	Container,
+	Globe,
 	Plus,
 	RefreshCw,
 	Save,
@@ -57,6 +59,9 @@ function App() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [showNewSiteDialog, setShowNewSiteDialog] = useState(false);
+	const [newSiteBlockType, setNewSiteBlockType] = useState<
+		"physical" | "virtual-container" | null
+	>(null);
 	const [editingSiteBlock, setEditingSiteBlock] =
 		useState<CaddySiteBlock | null>(null);
 	const [caddyStatus, setCaddyStatus] = useState<CaddyAPIStatus | null>(null);
@@ -528,41 +533,54 @@ function App() {
 							{/* Left: Visual Editor */}
 							<div className="space-y-4">
 								{config.siteBlocks.length === 0 ? (
-									// Empty state
-									<div className="flex flex-col items-center justify-center py-16 px-4">
-										<div className="text-center max-w-md space-y-6">
-											<div className="text-8xl opacity-20">♣</div>
-											<div className="space-y-2">
-												<h2 className="text-2xl font-semibold">
-													No Site Blocks Yet
-												</h2>
-												<p className="text-muted-foreground">
-													Get started by creating your first site block. Choose
-													from templates or start from scratch.
-												</p>
-											</div>
-											<Button
-												onClick={() => setShowNewSiteDialog(true)}
-												size="lg"
-												className="mt-4"
+									// Empty state - Show two add options
+									<div className="space-y-6">
+										<div className="text-center space-y-2 pt-8">
+											<h2 className="text-lg font-semibold">Get Started</h2>
+											<p className="text-sm text-muted-foreground">
+												Create your first site or container
+											</p>
+										</div>
+										<div className="grid gap-3 max-w-md mx-auto">
+											<button
+												type="button"
+												onClick={() => {
+													setNewSiteBlockType("physical");
+													setShowNewSiteDialog(true);
+												}}
+												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-left"
 											>
-												<Plus className="h-5 w-5 mr-2" />
-												Add Your First Site Block
-											</Button>
+												<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+												<Globe className="h-6 w-6 text-green-600 flex-shrink-0" />
+												<div className="flex-1">
+													<h4 className="font-semibold">Site</h4>
+													<p className="text-xs text-muted-foreground mt-0.5">
+														Single domain with its own configuration
+													</p>
+												</div>
+											</button>
+											<button
+												type="button"
+												onClick={() => {
+													setNewSiteBlockType("virtual-container");
+													setShowNewSiteDialog(true);
+												}}
+												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-left"
+											>
+												<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+												<Container className="h-6 w-6 text-blue-600 flex-shrink-0" />
+												<div className="flex-1">
+													<h4 className="font-semibold">Container</h4>
+													<p className="text-xs text-muted-foreground mt-0.5">
+														Wildcard domain hosting multiple services
+													</p>
+												</div>
+											</button>
 										</div>
 									</div>
 								) : (
 									<>
-										<div className="flex justify-between items-center mb-4">
-											<h2 className="text-lg font-semibold">Site Blocks</h2>
-											<Button
-												onClick={() => setShowNewSiteDialog(true)}
-												size="default"
-											>
-												<Plus className="h-4 w-4 mr-2" />
-												Add Site Block
-											</Button>
-										</div>
+										<h2 className="text-lg font-semibold mb-4">Sites</h2>
 										<div className="grid gap-3">
 											{config.siteBlocks.map((siteBlock) => {
 												// Check if this is a virtual container
@@ -607,6 +625,34 @@ function App() {
 													/>
 												);
 											})}
+
+											{/* Inline Add Buttons (Trello-style) */}
+											<div className="grid grid-cols-2 gap-3">
+												<button
+													type="button"
+													onClick={() => {
+														setNewSiteBlockType("physical");
+														setShowNewSiteDialog(true);
+													}}
+													className="flex items-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-muted-foreground hover:text-foreground"
+												>
+													<Plus className="h-4 w-4" />
+													<Globe className="h-4 w-4" />
+													<span className="text-sm font-medium">Site</span>
+												</button>
+												<button
+													type="button"
+													onClick={() => {
+														setNewSiteBlockType("virtual-container");
+														setShowNewSiteDialog(true);
+													}}
+													className="flex items-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-muted-foreground hover:text-foreground"
+												>
+													<Plus className="h-4 w-4" />
+													<Container className="h-4 w-4" />
+													<span className="text-sm font-medium">Container</span>
+												</button>
+											</div>
 										</div>
 									</>
 								)}
@@ -661,10 +707,16 @@ function App() {
 
 				<NewSiteBlockDialog
 					open={showNewSiteDialog}
-					onOpenChange={setShowNewSiteDialog}
+					onOpenChange={(open) => {
+						setShowNewSiteDialog(open);
+						if (!open) {
+							setNewSiteBlockType(null); // Reset when closing
+						}
+					}}
 					onCreateFromRecipe={handleCreateFromRecipe}
 					onCreateBlank={handleCreateBlank}
 					onCreateVirtualContainer={handleCreateVirtualContainer}
+					initialBlockType={newSiteBlockType}
 				/>
 
 				{addServiceToContainer && (

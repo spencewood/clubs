@@ -86,93 +86,101 @@ export function AddVirtualBlockDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="space-y-4 py-4">
-					<div className="space-y-2">
-						<Label htmlFor={subdomainId}>
-							Subdomain
-							<span className="text-destructive ml-1">*</span>
-						</Label>
-						<Input
-							id={subdomainId}
-							type="text"
-							placeholder="api"
-							value={subdomain}
-							onChange={(e) => handleSubdomainChange(e.target.value)}
-						/>
-						<p className="text-sm text-muted-foreground">
-							Full hostname will be:{" "}
-							<span className="font-mono font-semibold text-purple-700">
-								{fullHostname}
-							</span>
-						</p>
-					</div>
-
-					<div className="space-y-2">
-						<Label htmlFor={matcherNameId}>
-							Matcher Name
-							<span className="text-destructive ml-1">*</span>
-						</Label>
-						<Input
-							id={matcherNameId}
-							type="text"
-							placeholder="api"
-							value={matcherName}
-							onChange={(e) => setMatcherName(e.target.value)}
-						/>
-						<p className="text-sm text-muted-foreground">
-							Used in Caddy config as{" "}
-							<span className="font-mono">@{matcherName || "matcher"}</span>
-						</p>
-					</div>
-
-					<div className="space-y-2">
-						<Label htmlFor={backendId}>Backend Server (Optional)</Label>
-						<Input
-							id={backendId}
-							type="text"
-							placeholder="localhost:8080"
-							value={backend}
-							onChange={(e) => setBackend(e.target.value)}
-						/>
-						<p className="text-sm text-muted-foreground">
-							If provided, will add a reverse_proxy directive
-						</p>
-					</div>
-
-					{/* Preview */}
-					<div className="p-3 bg-muted rounded-lg border">
-						<h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-							Generated Config Preview
-						</h4>
-						<pre className="text-xs font-mono">
-							{matcherName && subdomain ? (
-								<>
-									<span className="text-purple-600">@{matcherName}</span> host{" "}
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						handleCreate();
+					}}
+				>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label htmlFor={subdomainId}>
+								Subdomain
+								<span className="text-destructive ml-1">*</span>
+							</Label>
+							<Input
+								id={subdomainId}
+								type="text"
+								placeholder="api"
+								value={subdomain}
+								onChange={(e) => handleSubdomainChange(e.target.value)}
+							/>
+							<p className="text-sm text-muted-foreground">
+								Full hostname will be:{" "}
+								<span className="font-mono font-semibold text-purple-700">
 									{fullHostname}
-									{"\n"}
-									handle <span className="text-purple-600">@{matcherName}</span>{" "}
-									{"{\n"}
-									{backend && `    reverse_proxy ${backend}\n`}
-									{!backend && "    # Add directives here\n"}
-									{"}"}
-								</>
-							) : (
-								<span className="text-muted-foreground">
-									Fill in the fields above to see a preview
 								</span>
-							)}
-						</pre>
-					</div>
-				</div>
+							</p>
+						</div>
 
-				<DialogFooter>
-					<Button variant="outline" onClick={handleClose}>
-						Cancel
-					</Button>
-					<Button onClick={handleCreate} disabled={!isFormValid}>
-						Add Service
-					</Button>
-				</DialogFooter>
+						<div className="space-y-2">
+							<Label htmlFor={matcherNameId}>
+								Matcher Name
+								<span className="text-destructive ml-1">*</span>
+							</Label>
+							<Input
+								id={matcherNameId}
+								type="text"
+								placeholder="api"
+								value={matcherName}
+								onChange={(e) => setMatcherName(e.target.value)}
+							/>
+							<p className="text-sm text-muted-foreground">
+								Used in Caddy config as{" "}
+								<span className="font-mono">@{matcherName || "matcher"}</span>
+							</p>
+						</div>
+
+						<div className="space-y-2">
+							<Label htmlFor={backendId}>Backend Server (Optional)</Label>
+							<Input
+								id={backendId}
+								type="text"
+								placeholder="localhost:8080"
+								value={backend}
+								onChange={(e) => setBackend(e.target.value)}
+							/>
+							<p className="text-sm text-muted-foreground">
+								If provided, will add a reverse_proxy directive
+							</p>
+						</div>
+
+						{/* Preview */}
+						<div className="p-3 bg-muted rounded-lg border">
+							<h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
+								Generated Config Preview
+							</h4>
+							<pre className="text-xs font-mono">
+								{matcherName && subdomain ? (
+									<>
+										<span className="text-purple-600">@{matcherName}</span> host{" "}
+										{fullHostname}
+										{"\n"}
+										handle{" "}
+										<span className="text-purple-600">@{matcherName}</span>{" "}
+										{"{\n"}
+										{backend && `    reverse_proxy ${backend}\n`}
+										{!backend && "    # Add directives here\n"}
+										{"}"}
+									</>
+								) : (
+									<span className="text-muted-foreground">
+										Fill in the fields above to see a preview
+									</span>
+								)}
+							</pre>
+						</div>
+					</div>
+
+					<DialogFooter>
+						<Button type="button" variant="outline" onClick={handleClose}>
+							Cancel
+						</Button>
+						<Button type="submit" disabled={!isFormValid}>
+							Add Service
+						</Button>
+					</DialogFooter>
+				</form>
 			</DialogContent>
 		</Dialog>
 	);

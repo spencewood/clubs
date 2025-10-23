@@ -174,7 +174,10 @@ export const handlers = [
 		// Check for invalid directives
 		if (content.includes("INVALID")) {
 			return HttpResponse.json(
-				{ error: "Invalid Caddyfile", details: "Caddy could not parse the configuration" },
+				{
+					error: "Invalid Caddyfile",
+					details: "Caddy could not parse the configuration",
+				},
 				{ status: 400 },
 			);
 		}

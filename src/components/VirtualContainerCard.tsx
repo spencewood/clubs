@@ -45,23 +45,23 @@ export function VirtualContainerCard({
 	const [isExpanded, setIsExpanded] = useState(true);
 
 	return (
-		<Card className="border-l-4 border-l-blue-500 bg-blue-500/10 dark:bg-blue-500/20">
+		<Card className="border-l-4 border-l-primary">
 			<CardHeader className="pb-3">
 				<div className="flex items-center justify-between gap-4">
 					<div className="flex items-center gap-3 flex-1 min-w-0">
 						<button
 							type="button"
 							onClick={() => setIsExpanded(!isExpanded)}
-							className="p-1 hover:bg-blue-500/20 rounded transition-colors"
+							className="p-1 hover:bg-accent rounded transition-colors"
 							aria-label={isExpanded ? "Collapse" : "Expand"}
 						>
 							{isExpanded ? (
-								<ChevronDown className="h-4 w-4 text-blue-600" />
+								<ChevronDown className="h-4 w-4 text-muted-foreground" />
 							) : (
-								<ChevronRight className="h-4 w-4 text-blue-600" />
+								<ChevronRight className="h-4 w-4 text-muted-foreground" />
 							)}
 						</button>
-						<Container className="h-5 w-5 text-blue-600 flex-shrink-0" />
+						<Container className="h-5 w-5 text-primary flex-shrink-0" />
 						<div className="flex-1 min-w-0">
 							<CardTitle className="font-mono text-lg truncate">
 								{wildcardDomain}
@@ -73,12 +73,7 @@ export function VirtualContainerCard({
 						</div>
 					</div>
 					<div className="flex gap-2 flex-shrink-0">
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => onEdit(id)}
-							className="border-blue-300 hover:bg-blue-100"
-						>
+						<Button variant="outline" size="sm" onClick={() => onEdit(id)}>
 							<Settings className="h-4 w-4 mr-2" />
 							Edit Shared Config
 						</Button>
@@ -98,16 +93,13 @@ export function VirtualContainerCard({
 				<CardContent className="pt-0 space-y-3">
 					{/* Shared Configuration Section */}
 					{sharedConfig.length > 0 && (
-						<div className="p-3 bg-blue-500/15 dark:bg-blue-500/25 rounded-lg border border-blue-500/30">
-							<h4 className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase mb-2">
+						<div className="p-3 bg-muted rounded-lg border">
+							<h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
 								Shared Configuration
 							</h4>
 							<div className="space-y-1">
 								{sharedConfig.map((config) => (
-									<div
-										key={config}
-										className="text-sm font-mono text-blue-900 dark:text-blue-200"
-									>
+									<div key={config} className="text-sm font-mono">
 										{config}
 									</div>
 								))}
@@ -120,12 +112,12 @@ export function VirtualContainerCard({
 						{virtualBlocks.map((block) => (
 							<Card
 								key={block.id}
-								className="border-l-4 border-l-purple-400 bg-purple-500/10 dark:bg-purple-500/20"
+								className="border-l-2 border-l-primary/50 bg-muted/30"
 							>
 								<CardContent className="p-3">
 									<div className="flex items-center justify-between gap-3">
 										<div className="flex items-center gap-3 flex-1 min-w-0">
-											<LinkIcon className="h-4 w-4 text-purple-600 flex-shrink-0" />
+											<LinkIcon className="h-4 w-4 text-primary flex-shrink-0" />
 											<div className="flex-1 min-w-0">
 												<div className="font-mono font-medium text-sm truncate">
 													{block.hostname}
@@ -165,10 +157,10 @@ export function VirtualContainerCard({
 						<button
 							type="button"
 							onClick={() => onAddService(id)}
-							className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-purple-400/50 hover:border-purple-500 hover:bg-purple-500/10 transition-colors text-purple-700 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300"
+							className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-primary/30 hover:border-primary hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
 						>
 							<Plus className="h-4 w-4" />
-							<span className="text-sm font-medium">Add Service</span>
+							<span className="text-sm font-medium">Service</span>
 						</button>
 					</div>
 				</CardContent>
