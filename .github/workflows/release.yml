@@ -45,18 +45,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get version and trigger Docker build
-        if: steps.changesets.outputs.hasChangesets == 'false' && steps.changesets.outputs.pullRequestNumber == ''
-        id: get_version
+      - name: Trigger Docker build on version bump
+        if: steps.changesets.outputs.publishedPackages != ''
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version updated to $VERSION, triggering Docker build"
-
-      - name: Trigger Docker build
-        if: steps.get_version.outputs.VERSION != ''
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: publish-docker
-          client-payload: '{"version": "${{ steps.get_version.outputs.VERSION }}"}'
+          echo "Version bumped to $VERSION, triggering Docker build"
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            -d '{"event_type":"publish-docker","client_payload":{"version":"'$VERSION'"}}'
