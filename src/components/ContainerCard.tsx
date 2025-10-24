@@ -3,12 +3,14 @@ import {
 	ChevronRight,
 	Container,
 	ExternalLink,
+	FileJson,
 	Globe,
 	Plus,
 	Settings,
 	Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { InspectConfigModal } from "@/components/InspectConfigModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -44,6 +46,7 @@ export function ContainerCard({
 	onDeleteSite,
 }: ContainerCardProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
+	const [inspectSiteId, setInspectSiteId] = useState<string | null>(null);
 
 	return (
 		<Card className="border-l-4 border-l-primary bg-muted/30">
@@ -155,6 +158,14 @@ export function ContainerCard({
 												<Button
 													variant="outline"
 													size="sm"
+													onClick={() => setInspectSiteId(block.id)}
+													title="Inspect JSON configuration"
+												>
+													<FileJson className="h-4 w-4" />
+												</Button>
+												<Button
+													variant="outline"
+													size="sm"
 													onClick={() => onEditSite(id, block.id)}
 													title="Edit site"
 												>
@@ -188,6 +199,13 @@ export function ContainerCard({
 					</div>
 				</CardContent>
 			)}
+
+			<InspectConfigModal
+				open={inspectSiteId !== null}
+				onOpenChange={(open) => !open && setInspectSiteId(null)}
+				title={`Inspect: ${virtualBlocks.find((b) => b.id === inspectSiteId)?.hostname || "Site"}`}
+				description="Full Caddy JSON configuration (container sites don't have individual @id tags)"
+			/>
 		</Card>
 	);
 }

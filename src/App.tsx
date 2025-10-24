@@ -2,6 +2,7 @@ import {
 	Circle,
 	Code,
 	Container,
+	FileJson,
 	Globe,
 	Plus,
 	RefreshCw,
@@ -19,6 +20,7 @@ import { CaddyfileEditor } from "@/components/CaddyfileEditor";
 import { ContainerCard } from "@/components/ContainerCard";
 import { ContainerEditDialog } from "@/components/ContainerEditDialog";
 import { EditContainerSiteDialog } from "@/components/EditContainerSiteDialog";
+import { InspectConfigModal } from "@/components/InspectConfigModal";
 import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
 import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
@@ -74,6 +76,7 @@ function App() {
 		siteId: string;
 	} | null>(null);
 	const [isLiveMode, setIsLiveMode] = useState(false);
+	const [showFullConfigInspect, setShowFullConfigInspect] = useState(false);
 
 	// Reusable load function that checks mode and loads appropriate config
 	const loadConfig = useCallback(async (showLoadingState = true) => {
@@ -823,11 +826,28 @@ function App() {
 										{applying ? "Applying..." : "Apply to Caddy"}
 									</Button>
 								)}
+								{caddyStatus?.available && (
+									<Button
+										onClick={() => setShowFullConfigInspect(true)}
+										size="sm"
+										variant="outline"
+									>
+										<FileJson className="h-4 w-4 mr-2" />
+										View Full Config
+									</Button>
+								)}
 							</div>
 						</div>
 					</div>
 				</footer>
 			</div>
+
+			<InspectConfigModal
+				open={showFullConfigInspect}
+				onOpenChange={setShowFullConfigInspect}
+				title="Full Caddy Configuration"
+				description="Complete JSON configuration as seen by Caddy"
+			/>
 		</>
 	);
 }

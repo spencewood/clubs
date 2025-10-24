@@ -219,6 +219,62 @@ fastify.get("/api/caddy/status", async (_request, _reply) => {
 	}
 });
 
+// Get full Caddy JSON configuration
+fastify.get("/api/caddy/config", async (_request, reply) => {
+	try {
+		const response = await fetch(`${CADDY_API_URL}/config/`);
+
+		if (!response.ok) {
+			return reply.code(response.status).send({
+				error: "Failed to fetch configuration",
+				details: await response.text(),
+			});
+		}
+
+		const config = await response.json();
+		return reply.type("application/json").send(config);
+	} catch (error) {
+		fastify.log.error({ err: error }, "Failed to fetch Caddy config");
+		reply.code(500).send({
+			error: "Failed to fetch configuration",
+			details: error instanceof Error ? error.message : "Unknown error",
+		});
+	}
+});
+
+// Get JSON configuration for specific @id
+fastify.get<{ Params: { id: string } }>(
+	"/api/caddy/config/:id",
+	async (request, reply) => {
+		try {
+			const { id } = request.params;
+			const response = await fetch(`${CADDY_API_URL}/id/${id}`);
+
+			if (!response.ok) {
+				if (response.status === 404) {
+					return reply.code(404).send({
+						error: "Configuration not found",
+						details: `No configuration found with @id "${id}"`,
+					});
+				}
+				return reply.code(response.status).send({
+					error: "Failed to fetch configuration",
+					details: await response.text(),
+				});
+			}
+
+			const config = await response.json();
+			return reply.type("application/json").send(config);
+		} catch (error) {
+			fastify.log.error({ err: error }, "Failed to fetch Caddy config by ID");
+			reply.code(500).send({
+				error: "Failed to fetch configuration",
+				details: error instanceof Error ? error.message : "Unknown error",
+			});
+		}
+	},
+);
+
 // Start server
 const start = async () => {
 	try {

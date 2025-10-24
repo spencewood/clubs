@@ -82,6 +82,16 @@ export function parseCaddyfile(content: string): CaddyConfig {
 		const args = tokens.slice(1).filter((t) => t !== "{");
 		const hasOpenBrace = tokens.includes("{");
 
+		// Special handling for @id directive in site blocks
+		if (directiveName === "@id" && currentBlock && blockStack.length === 1) {
+			// This is an @id tag at the site block level
+			if (args.length > 0) {
+				currentBlock.caddyId = args[0];
+			}
+			// Don't add @id as a regular directive
+			continue;
+		}
+
 		const directive: CaddyDirective = {
 			id: generateId(),
 			name: directiveName,
@@ -175,6 +185,11 @@ function serializeSiteBlock(siteBlock: CaddySiteBlock): string[] {
 
 	// Site addresses
 	lines.push(`${siteBlock.addresses.join(" ")} {`);
+
+	// Add @id tag if present
+	if (siteBlock.caddyId) {
+		lines.push(`\t@id ${siteBlock.caddyId}`);
+	}
 
 	// Directives
 	for (const directive of siteBlock.directives) {

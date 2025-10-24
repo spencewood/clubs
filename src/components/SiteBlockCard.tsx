@@ -1,5 +1,13 @@
-import { ExternalLink, Globe, Server, Settings, Trash2 } from "lucide-react";
+import {
+	ExternalLink,
+	FileJson,
+	Globe,
+	Server,
+	Settings,
+	Trash2,
+} from "lucide-react";
 import { useState } from "react";
+import { InspectConfigModal } from "@/components/InspectConfigModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -25,6 +33,7 @@ export function SiteBlockCard({
 	onDelete,
 }: SiteBlockCardProps) {
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [showInspect, setShowInspect] = useState(false);
 
 	// Generate a summary of what this site block does
 	const getSummary = () => {
@@ -106,6 +115,14 @@ export function SiteBlockCard({
 						<Button
 							variant="outline"
 							size="sm"
+							onClick={() => setShowInspect(true)}
+							title="Inspect JSON configuration"
+						>
+							<FileJson className="h-4 w-4" />
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
 							onClick={() => onEdit(siteBlock.id)}
 							title="Edit site"
 						>
@@ -122,6 +139,18 @@ export function SiteBlockCard({
 					</div>
 				</div>
 			</CardContent>
+
+			<InspectConfigModal
+				open={showInspect}
+				onOpenChange={setShowInspect}
+				title={`Inspect: ${siteBlock.addresses.join(", ")}`}
+				description={
+					siteBlock.caddyId
+						? `Configuration for @id "${siteBlock.caddyId}"`
+						: "Full Caddy JSON configuration (no @id tag set for this site)"
+				}
+				caddyId={siteBlock.caddyId}
+			/>
 
 			<Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
 				<DialogContent>

@@ -10,6 +10,7 @@ export interface CaddySiteBlock {
 	id: string;
 	addresses: string[];
 	directives: CaddyDirective[];
+	caddyId?: string; // The @id tag value for Caddy API access
 }
 
 export interface CaddyConfig {

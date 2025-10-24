@@ -167,3 +167,67 @@ export async function formatCaddyfile(content: string): Promise<{
 		};
 	}
 }
+
+/**
+ * Get full Caddy JSON configuration
+ */
+export async function getCaddyConfig(): Promise<{
+	success: boolean;
+	config?: unknown;
+	error?: string;
+}> {
+	try {
+		const response = await fetch(`${API_BASE}/api/caddy/config`);
+
+		if (!response.ok) {
+			const data = await response.json();
+			return {
+				success: false,
+				error: data.error || data.details || "Failed to fetch config",
+			};
+		}
+
+		const config = await response.json();
+		return {
+			success: true,
+			config,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Network error",
+		};
+	}
+}
+
+/**
+ * Get JSON configuration for a specific @id
+ */
+export async function getCaddyConfigById(id: string): Promise<{
+	success: boolean;
+	config?: unknown;
+	error?: string;
+}> {
+	try {
+		const response = await fetch(`${API_BASE}/api/caddy/config/${id}`);
+
+		if (!response.ok) {
+			const data = await response.json();
+			return {
+				success: false,
+				error: data.error || data.details || "Failed to fetch config",
+			};
+		}
+
+		const config = await response.json();
+		return {
+			success: true,
+			config,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Network error",
+		};
+	}
+}
