@@ -1,5 +1,11 @@
 # clubs
 
+## 0.3.1
+
+### Patch Changes
+
+- b50bbc1: Fix individual site configs. Add version in header.
+
 ## 0.3.0
 
 ### Minor Changes
