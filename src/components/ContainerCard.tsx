@@ -13,6 +13,14 @@ import { useState } from "react";
 import { InspectConfigModal } from "@/components/InspectConfigModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 
 interface VirtualBlock {
 	id: string;
@@ -47,6 +55,9 @@ export function ContainerCard({
 }: ContainerCardProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
 	const [inspectSiteId, setInspectSiteId] = useState<string | null>(null);
+	const [showDeleteContainerConfirm, setShowDeleteContainerConfirm] =
+		useState(false);
+	const [deletingSiteId, setDeletingSiteId] = useState<string | null>(null);
 
 	return (
 		<Card className="border-l-4 border-l-primary bg-muted/30">
@@ -83,7 +94,7 @@ export function ContainerCard({
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={() => onDelete(id)}
+							onClick={() => setShowDeleteContainerConfirm(true)}
 							title="Delete container"
 						>
 							<Trash2 className="h-4 w-4" />
@@ -174,7 +185,7 @@ export function ContainerCard({
 												<Button
 													variant="outline"
 													size="sm"
-													onClick={() => onDeleteSite(id, block.id)}
+													onClick={() => setDeletingSiteId(block.id)}
 													title="Delete site"
 												>
 													<Trash2 className="h-4 w-4" />
@@ -206,6 +217,77 @@ export function ContainerCard({
 				title={`Inspect: ${virtualBlocks.find((b) => b.id === inspectSiteId)?.hostname || "Site"}`}
 				description="Full Caddy JSON configuration (container sites don't have individual @id tags)"
 			/>
+
+			{/* Container Delete Confirmation */}
+			<Dialog
+				open={showDeleteContainerConfirm}
+				onOpenChange={setShowDeleteContainerConfirm}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Delete container?</DialogTitle>
+						<DialogDescription>
+							Are you sure you want to delete the container{" "}
+							<span className="font-mono font-semibold">{wildcardDomain}</span>{" "}
+							and all {virtualBlocks.length} site
+							{virtualBlocks.length !== 1 ? "s" : ""} inside it? This action
+							cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setShowDeleteContainerConfirm(false)}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={() => {
+								onDelete(id);
+								setShowDeleteContainerConfirm(false);
+							}}
+						>
+							Delete Container
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Site Delete Confirmation */}
+			<Dialog
+				open={deletingSiteId !== null}
+				onOpenChange={(open) => !open && setDeletingSiteId(null)}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Delete site?</DialogTitle>
+						<DialogDescription>
+							Are you sure you want to delete{" "}
+							<span className="font-mono font-semibold">
+								{virtualBlocks.find((b) => b.id === deletingSiteId)?.hostname}
+							</span>{" "}
+							from this container? This action cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setDeletingSiteId(null)}>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={() => {
+								if (deletingSiteId) {
+									onDeleteSite(id, deletingSiteId);
+									setDeletingSiteId(null);
+								}
+							}}
+						>
+							Delete Site
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</Card>
 	);
 }
