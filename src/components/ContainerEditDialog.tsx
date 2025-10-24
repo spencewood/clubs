@@ -146,7 +146,7 @@ export function ContainerEditDialog({
 						Edit container
 					</DialogTitle>
 					<DialogDescription>
-						Configure shared settings that apply to all services in this
+						Configure shared settings that apply to all sites in this
 						container
 					</DialogDescription>
 				</DialogHeader>
@@ -159,10 +159,10 @@ export function ContainerEditDialog({
 							id={wildcardDomainId}
 							value={wildcardDomain}
 							onChange={(e) => setWildcardDomain(e.target.value)}
-							placeholder="*.services.example.com"
+							placeholder="*.sites.example.com"
 						/>
 						<p className="text-sm text-muted-foreground">
-							{container.virtualBlocks.length} service
+							{container.virtualBlocks.length} site
 							{container.virtualBlocks.length !== 1 ? "s" : ""} in this
 							container
 						</p>
@@ -175,7 +175,7 @@ export function ContainerEditDialog({
 							{container.sharedConfig.length === 0 ? (
 								<div className="text-sm text-muted-foreground italic p-3 border rounded-lg border-dashed">
 									No shared configuration. Add directives below that will apply
-									to all services.
+									to all sites.
 								</div>
 							) : (
 								container.sharedConfig.map((directive) => (
@@ -297,7 +297,7 @@ export function ContainerEditDialog({
 							</Button>
 						</div>
 						<p className="text-sm text-muted-foreground">
-							Add Caddy directives that will apply to all services (e.g., tls,
+							Add Caddy directives that will apply to all sites (e.g., tls,
 							encode, header)
 						</p>
 					</div>
