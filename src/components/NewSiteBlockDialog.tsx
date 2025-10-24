@@ -99,7 +99,6 @@ export function NewSiteBlockDialog({
 		onOpenChange(false);
 	};
 
-
 	const handleVirtualContainerCreate = () => {
 		if (!onCreateVirtualContainer || !virtualContainerDomain.trim()) return;
 		// Auto-prepend *. to the domain
@@ -153,13 +152,15 @@ export function NewSiteBlockDialog({
 											type="text"
 											placeholder="services.example.com"
 											value={virtualContainerDomain}
-											onChange={(e) => setVirtualContainerDomain(e.target.value)}
+											onChange={(e) =>
+												setVirtualContainerDomain(e.target.value)
+											}
 											className="flex-1"
 										/>
 									</div>
 									<p className="text-sm text-muted-foreground">
-										All subdomains will be matched (e.g., api.services.example.com,
-										web.services.example.com)
+										All subdomains will be matched (e.g.,
+										api.services.example.com, web.services.example.com)
 									</p>
 								</div>
 							</div>
@@ -235,7 +236,6 @@ export function NewSiteBlockDialog({
 								</button>
 							</div>
 						</div>
-
 					</>
 				) : (
 					<>

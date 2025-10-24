@@ -15,10 +15,10 @@ import {
 	parseVirtualContainer,
 	serializeVirtualContainer,
 	type VirtualContainer,
-} from "@/lib/virtual-container-utils";
+} from "@/lib/container-utils";
 import type { CaddyDirective, CaddySiteBlock } from "@/types/caddyfile";
 
-interface VirtualContainerEditDialogProps {
+interface ContainerEditDialogProps {
 	siteBlock: CaddySiteBlock | null;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -29,12 +29,12 @@ function generateId(): string {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-export function VirtualContainerEditDialog({
+export function ContainerEditDialog({
 	siteBlock,
 	open,
 	onOpenChange,
 	onSave,
-}: VirtualContainerEditDialogProps) {
+}: ContainerEditDialogProps) {
 	const [container, setContainer] = useState<VirtualContainer | null>(null);
 	const [wildcardDomain, setWildcardDomain] = useState("");
 	const [newDirective, setNewDirective] = useState("");
@@ -143,7 +143,7 @@ export function VirtualContainerEditDialog({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<Container className="h-5 w-5 text-blue-600" />
-						Edit Virtual Container
+						Edit container
 					</DialogTitle>
 					<DialogDescription>
 						Configure shared settings that apply to all services in this

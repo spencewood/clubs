@@ -14,16 +14,16 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
-import { AddVirtualBlockDialog } from "@/components/AddVirtualBlockDialog";
+import { AddContainerSiteDialog } from "@/components/AddContainerSiteDialog";
 import { CaddyfileEditor } from "@/components/CaddyfileEditor";
-import { EditVirtualBlockDialog } from "@/components/EditVirtualBlockDialog";
+import { ContainerCard } from "@/components/ContainerCard";
+import { ContainerEditDialog } from "@/components/ContainerEditDialog";
+import { EditContainerSiteDialog } from "@/components/EditContainerSiteDialog";
 import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
 import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { VirtualContainerCard } from "@/components/VirtualContainerCard";
-import { VirtualContainerEditDialog } from "@/components/VirtualContainerEditDialog";
 import {
 	applyCaddyfileConfig,
 	type CaddyAPIStatus,
@@ -33,16 +33,16 @@ import {
 	saveCaddyfile,
 } from "@/lib/api";
 import {
-	parseCaddyfile,
-	serializeCaddyfile,
-} from "@/lib/parser/caddyfile-parser";
-import { validateCaddyfile } from "@/lib/validator/caddyfile-validator";
-import {
 	formatDirectiveForDisplay,
 	getDirectiveSummary,
 	isVirtualContainer,
 	parseVirtualContainer,
-} from "@/lib/virtual-container-utils";
+} from "@/lib/container-utils";
+import {
+	parseCaddyfile,
+	serializeCaddyfile,
+} from "@/lib/parser/caddyfile-parser";
+import { validateCaddyfile } from "@/lib/validator/caddyfile-validator";
 import type {
 	CaddyConfig,
 	CaddyDirective,
@@ -66,12 +66,12 @@ function App() {
 		useState<CaddySiteBlock | null>(null);
 	const [caddyStatus, setCaddyStatus] = useState<CaddyAPIStatus | null>(null);
 	const [applying, setApplying] = useState(false);
-	const [addServiceToContainer, setAddServiceToContainer] = useState<
-		string | null
-	>(null);
-	const [editingService, setEditingService] = useState<{
+	const [addSiteToContainer, setAddSiteToContainer] = useState<string | null>(
+		null,
+	);
+	const [editingSite, setEditingSite] = useState<{
 		containerId: string;
-		serviceId: string;
+		siteId: string;
 	} | null>(null);
 	const [isLiveMode, setIsLiveMode] = useState(false);
 	const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
@@ -390,11 +390,11 @@ function App() {
 		setRawContent(serializeCaddyfile(newConfig));
 	};
 
-	const handleAddServiceToContainer = (containerId: string) => {
-		setAddServiceToContainer(containerId);
+	const handleAddSiteToContainer = (containerId: string) => {
+		setAddSiteToContainer(containerId);
 	};
 
-	const handleCreateService = (
+	const handleCreateSite = (
 		containerId: string,
 		service: { subdomain: string; matcherName: string; backend?: string },
 	) => {
@@ -442,7 +442,7 @@ function App() {
 		setRawContent(serializeCaddyfile(newConfig));
 	};
 
-	const handleDeleteService = (containerId: string, serviceId: string) => {
+	const handleDeleteSite = (containerId: string, siteId: string) => {
 		if (!config) return;
 
 		const newConfig = { ...config };
@@ -451,13 +451,11 @@ function App() {
 		if (!container) return;
 
 		// Remove the handle block with this ID
-		container.directives = container.directives.filter(
-			(d) => d.id !== serviceId,
-		);
+		container.directives = container.directives.filter((d) => d.id !== siteId);
 
 		// Also remove the associated matcher
 		// Find the handle block to get the matcher name
-		const handleBlock = container.directives.find((d) => d.id === serviceId);
+		const handleBlock = container.directives.find((d) => d.id === siteId);
 		if (handleBlock && handleBlock.args.length > 0) {
 			const matcherRef = handleBlock.args[0];
 			container.directives = container.directives.filter(
@@ -583,11 +581,11 @@ function App() {
 										<h2 className="text-lg font-semibold mb-4">Sites</h2>
 										<div className="grid gap-3">
 											{config.siteBlocks.map((siteBlock) => {
-												// Check if this is a virtual container
+												// Check if this is a container
 												if (isVirtualContainer(siteBlock)) {
 													const container = parseVirtualContainer(siteBlock);
 													return (
-														<VirtualContainerCard
+														<ContainerCard
 															key={siteBlock.id}
 															id={container.id}
 															wildcardDomain={container.wildcardDomain}
@@ -604,11 +602,11 @@ function App() {
 															)}
 															onEdit={handleEditSiteBlock}
 															onDelete={handleDeleteSiteBlock}
-															onAddService={handleAddServiceToContainer}
-															onEditService={(containerId, serviceId) =>
-																setEditingService({ containerId, serviceId })
+															onAddSite={handleAddSiteToContainer}
+															onEditSite={(containerId, siteId) =>
+																setEditingSite({ containerId, siteId })
 															}
-															onDeleteService={handleDeleteService}
+															onDeleteSite={handleDeleteSite}
 														/>
 													);
 												}
@@ -688,9 +686,9 @@ function App() {
 					)}
 				</main>
 
-				{/* Use specialized dialog for virtual containers */}
+				{/* Use specialized dialog for containers */}
 				{editingSiteBlock && isVirtualContainer(editingSiteBlock) ? (
-					<VirtualContainerEditDialog
+					<ContainerEditDialog
 						siteBlock={editingSiteBlock}
 						open={!!editingSiteBlock}
 						onOpenChange={(open) => !open && setEditingSiteBlock(null)}
@@ -719,30 +717,30 @@ function App() {
 					initialBlockType={newSiteBlockType}
 				/>
 
-				{addServiceToContainer && (
-					<AddVirtualBlockDialog
-						open={!!addServiceToContainer}
+				{addSiteToContainer && (
+					<AddContainerSiteDialog
+						open={!!addSiteToContainer}
 						onOpenChange={(open) => !open && setAddServiceToContainer(null)}
 						containerDomain={
-							config?.siteBlocks.find((sb) => sb.id === addServiceToContainer)
+							config?.siteBlocks.find((sb) => sb.id === addSiteToContainer)
 								?.addresses[0] || ""
 						}
 						onCreateService={(service) => {
-							handleCreateService(addServiceToContainer, service);
+							handleCreateSite(addSiteToContainer, service);
 							setAddServiceToContainer(null);
 						}}
 					/>
 				)}
 
-				{editingService && (
-					<EditVirtualBlockDialog
-						open={!!editingService}
-						onOpenChange={(open) => !open && setEditingService(null)}
-						containerId={editingService.containerId}
-						serviceId={editingService.serviceId}
+				{editingSite && (
+					<EditContainerSiteDialog
+						open={!!editingSite}
+						onOpenChange={(open) => !open && setEditingSite(null)}
+						containerId={editingSite.containerId}
+						siteId={editingSite.siteId}
 						siteBlock={
 							config?.siteBlocks.find(
-								(sb) => sb.id === editingService.containerId,
+								(sb) => sb.id === editingSite.containerId,
 							) || null
 						}
 						onSave={handleSaveSiteBlock}

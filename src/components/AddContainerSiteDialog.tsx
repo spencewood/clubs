@@ -12,23 +12,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-interface AddVirtualBlockDialogProps {
+interface AddContainerSiteDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	containerDomain: string; // e.g., "*.services.example.com"
-	onCreateService: (service: {
+	onCreateSite: (site: {
 		subdomain: string;
 		matcherName: string;
 		backend?: string;
 	}) => void;
 }
 
-export function AddVirtualBlockDialog({
+export function AddContainerSiteDialog({
 	open,
 	onOpenChange,
 	containerDomain,
-	onCreateService,
-}: AddVirtualBlockDialogProps) {
+	onCreateSite,
+}: AddContainerSiteDialogProps) {
 	const [subdomain, setSubdomain] = useState("");
 	const [matcherName, setMatcherName] = useState("");
 	const [backend, setBackend] = useState("");
@@ -58,7 +58,7 @@ export function AddVirtualBlockDialog({
 	const handleCreate = () => {
 		if (!subdomain.trim() || !matcherName.trim()) return;
 
-		onCreateService({
+		onCreateSite({
 			subdomain: subdomain.trim(),
 			matcherName: matcherName.trim(),
 			backend: backend.trim() || undefined,
@@ -78,10 +78,10 @@ export function AddVirtualBlockDialog({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<LinkIcon className="h-5 w-5 text-purple-600" />
-						Add Service to Container
+						Add Site to Container
 					</DialogTitle>
 					<DialogDescription>
-						Add a new virtual service to{" "}
+						Add a new site to{" "}
 						<span className="font-mono font-semibold">{containerDomain}</span>
 					</DialogDescription>
 				</DialogHeader>
@@ -177,7 +177,7 @@ export function AddVirtualBlockDialog({
 							Cancel
 						</Button>
 						<Button type="submit" disabled={!isFormValid}>
-							Add Service
+							Add Site
 						</Button>
 					</DialogFooter>
 				</form>

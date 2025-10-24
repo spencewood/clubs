@@ -19,29 +19,29 @@ interface VirtualBlock {
 	directives: string[];
 }
 
-interface VirtualContainerCardProps {
+interface ContainerCardProps {
 	id: string;
 	wildcardDomain: string;
 	sharedConfig: string[];
 	virtualBlocks: VirtualBlock[];
 	onEdit: (id: string) => void;
 	onDelete: (id: string) => void;
-	onAddService: (containerId: string) => void;
-	onEditService: (containerId: string, serviceId: string) => void;
-	onDeleteService: (containerId: string, serviceId: string) => void;
+	onAddSite: (containerId: string) => void;
+	onEditSite: (containerId: string, siteId: string) => void;
+	onDeleteSite: (containerId: string, siteId: string) => void;
 }
 
-export function VirtualContainerCard({
+export function ContainerCard({
 	id,
 	wildcardDomain,
 	sharedConfig,
 	virtualBlocks,
 	onEdit,
 	onDelete,
-	onAddService,
-	onEditService,
-	onDeleteService,
-}: VirtualContainerCardProps) {
+	onAddSite,
+	onEditSite,
+	onDeleteSite,
+}: ContainerCardProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
 
 	return (
@@ -67,7 +67,7 @@ export function VirtualContainerCard({
 								{wildcardDomain}
 							</CardTitle>
 							<div className="text-sm text-muted-foreground mt-1">
-								{virtualBlocks.length} service
+								{virtualBlocks.length} site
 								{virtualBlocks.length !== 1 ? "s" : ""}
 							</div>
 						</div>
@@ -81,7 +81,7 @@ export function VirtualContainerCard({
 							variant="ghost"
 							size="icon"
 							onClick={() => onDelete(id)}
-							title="Delete virtual container"
+							title="Delete container"
 						>
 							<Trash2 className="h-4 w-4" />
 						</Button>
@@ -132,7 +132,7 @@ export function VirtualContainerCard({
 											<Button
 												variant="ghost"
 												size="sm"
-												onClick={() => onEditService(id, block.id)}
+												onClick={() => onEditSite(id, block.id)}
 												className="h-8 px-2"
 											>
 												<Settings className="h-3 w-3 mr-1" />
@@ -141,9 +141,9 @@ export function VirtualContainerCard({
 											<Button
 												variant="ghost"
 												size="icon"
-												onClick={() => onDeleteService(id, block.id)}
+												onClick={() => onDeleteSite(id, block.id)}
 												className="h-8 w-8"
-												title="Delete service"
+												title="Delete site"
 											>
 												<Trash2 className="h-3 w-3" />
 											</Button>
@@ -153,14 +153,14 @@ export function VirtualContainerCard({
 							</Card>
 						))}
 
-						{/* Add Service Button */}
+						{/* Add Site Button */}
 						<button
 							type="button"
-							onClick={() => onAddService(id)}
+							onClick={() => onAddSite(id)}
 							className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-primary/30 hover:border-primary hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
 						>
 							<Plus className="h-4 w-4" />
-							<span className="text-sm font-medium">Service</span>
+							<span className="text-sm font-medium">Site</span>
 						</button>
 					</div>
 				</CardContent>

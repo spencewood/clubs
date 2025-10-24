@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CaddyDirective, CaddySiteBlock } from "@/types/caddyfile";
 
-interface EditVirtualBlockDialogProps {
+interface EditContainerSiteDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	containerId: string;
@@ -26,14 +26,14 @@ function generateId(): string {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-export function EditVirtualBlockDialog({
+export function EditContainerSiteDialog({
 	open,
 	onOpenChange,
 	containerId: _containerId,
 	serviceId,
 	siteBlock,
 	onSave,
-}: EditVirtualBlockDialogProps) {
+}: EditContainerSiteDialogProps) {
 	const [hostname, setHostname] = useState("");
 	const [matcherName, setMatcherName] = useState("");
 	const [directives, setDirectives] = useState<CaddyDirective[]>([]);
@@ -132,7 +132,7 @@ export function EditVirtualBlockDialog({
 						Edit Virtual Service
 					</DialogTitle>
 					<DialogDescription>
-						Configure this individual service within the virtual container
+						Configure this individual service within the container
 					</DialogDescription>
 				</DialogHeader>
 
