@@ -19,6 +19,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { parseDirectiveWithFeatures } from "@/lib/caddy-features";
+import { serializeCaddyfile } from "@/lib/parser/caddyfile-parser";
 import type { CaddySiteBlock } from "@/types/caddyfile";
 
 interface SiteBlockCardProps {
@@ -78,6 +79,14 @@ export function SiteBlockCard({
 		if (domain) {
 			window.open(`https://${domain}`, "_blank", "noopener,noreferrer");
 		}
+	};
+
+	// Serialize the site block to Caddyfile format for adaptation
+	const getSiteBlockCaddyfile = () => {
+		return serializeCaddyfile({
+			siteBlocks: [siteBlock],
+			globalOptions: [],
+		});
 	};
 
 	return (
@@ -147,9 +156,12 @@ export function SiteBlockCard({
 				description={
 					siteBlock.caddyId
 						? `Configuration for @id "${siteBlock.caddyId}"`
-						: "Full Caddy JSON configuration (no @id tag set for this site)"
+						: "JSON configuration adapted from this site's Caddyfile"
 				}
 				caddyId={siteBlock.caddyId}
+				caddyfileContent={
+					siteBlock.caddyId ? undefined : getSiteBlockCaddyfile()
+				}
 			/>
 
 			<Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>

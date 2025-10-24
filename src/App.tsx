@@ -463,7 +463,8 @@ function App() {
 								<div>
 									<h1 className="text-2xl font-bold">Clubs</h1>
 									<p className="text-xs text-muted-foreground">
-										Caddyfile Management System
+										Caddyfile Management System{" "}
+										<span className="opacity-60">v0.3.0</span>
 									</p>
 								</div>
 							</div>

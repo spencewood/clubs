@@ -8,14 +8,15 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { getCaddyConfig, getCaddyConfigById } from "@/lib/api";
+import { adaptCaddyfile, getCaddyConfig, getCaddyConfigById } from "@/lib/api";
 
 interface InspectConfigModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	title: string;
 	description?: string;
-	caddyId?: string; // If provided, fetch by @id, otherwise fetch full config
+	caddyId?: string; // If provided, fetch by @id
+	caddyfileContent?: string; // If no @id, adapt this content to JSON
 }
 
 export function InspectConfigModal({
@@ -24,6 +25,7 @@ export function InspectConfigModal({
 	title,
 	description,
 	caddyId,
+	caddyfileContent,
 }: InspectConfigModalProps) {
 	const [config, setConfig] = useState<unknown | null>(null);
 	const [loading, setLoading] = useState(false);
@@ -47,7 +49,9 @@ export function InspectConfigModal({
 			try {
 				const result = caddyId
 					? await getCaddyConfigById(caddyId)
-					: await getCaddyConfig();
+					: caddyfileContent
+						? await adaptCaddyfile(caddyfileContent)
+						: await getCaddyConfig();
 
 				if (result.success) {
 					setConfig(result.config);
@@ -62,7 +66,7 @@ export function InspectConfigModal({
 		};
 
 		fetchConfig();
-	}, [open, caddyId]);
+	}, [open, caddyId, caddyfileContent]);
 
 	const copyToClipboard = () => {
 		if (config) {

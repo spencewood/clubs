@@ -231,3 +231,41 @@ export async function getCaddyConfigById(id: string): Promise<{
 		};
 	}
 }
+
+/**
+ * Adapt a Caddyfile snippet to JSON
+ */
+export async function adaptCaddyfile(content: string): Promise<{
+	success: boolean;
+	config?: unknown;
+	error?: string;
+}> {
+	try {
+		const response = await fetch(`${API_BASE}/api/caddy/adapt`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "text/plain",
+			},
+			body: content,
+		});
+
+		if (!response.ok) {
+			const data = await response.json();
+			return {
+				success: false,
+				error: data.error || data.details || "Failed to adapt config",
+			};
+		}
+
+		const config = await response.json();
+		return {
+			success: true,
+			config,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Network error",
+		};
+	}
+}

@@ -275,6 +275,40 @@ fastify.get<{ Params: { id: string } }>(
 	},
 );
 
+// Adapt a Caddyfile snippet to JSON
+fastify.post("/api/caddy/adapt", async (request, reply) => {
+	try {
+		const content =
+			typeof request.body === "string" ? request.body : String(request.body);
+
+		// Use Caddy's /adapt endpoint to convert Caddyfile to JSON
+		const adaptResponse = await fetch(`${CADDY_API_URL}/adapt`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "text/caddyfile",
+			},
+			body: content,
+		});
+
+		if (!adaptResponse.ok) {
+			const errorText = await adaptResponse.text();
+			return reply.code(adaptResponse.status).send({
+				error: "Failed to adapt Caddyfile",
+				details: errorText,
+			});
+		}
+
+		const config = await adaptResponse.json();
+		return reply.type("application/json").send(config);
+	} catch (error) {
+		fastify.log.error({ err: error }, "Failed to adapt Caddyfile");
+		reply.code(500).send({
+			error: "Failed to adapt Caddyfile",
+			details: error instanceof Error ? error.message : "Unknown error",
+		});
+	}
+});
+
 // Start server
 const start = async () => {
 	try {
