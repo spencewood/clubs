@@ -1,5 +1,11 @@
 # clubs
 
+## 0.2.0
+
+### Minor Changes
+
+- bb71673: Add multi-platform Docker support
+
 ## 0.1.0
 
 ### Minor Changes
