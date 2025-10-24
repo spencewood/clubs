@@ -50,6 +50,7 @@ import type {
 	CaddyDirective,
 	CaddySiteBlock,
 } from "@/types/caddyfile";
+import packageJson from "../package.json";
 
 function generateId(): string {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -464,7 +465,9 @@ function App() {
 									<h1 className="text-2xl font-bold">Clubs</h1>
 									<p className="text-xs text-muted-foreground">
 										Caddyfile Management System{" "}
-										<span className="opacity-60">v0.3.0</span>
+										<span className="opacity-60">
+											{import.meta.env.DEV ? "dev" : `v${packageJson.version}`}
+										</span>
 									</p>
 								</div>
 							</div>
