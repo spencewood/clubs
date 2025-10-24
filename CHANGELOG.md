@@ -1,5 +1,11 @@
 # clubs
 
+## 0.3.0
+
+### Minor Changes
+
+- 7162d0c: Add configuration inspectors for seeing caddy json configuration
+
 ## 0.2.1
 
 ### Patch Changes
