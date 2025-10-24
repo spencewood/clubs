@@ -720,14 +720,14 @@ function App() {
 				{addSiteToContainer && (
 					<AddContainerSiteDialog
 						open={!!addSiteToContainer}
-						onOpenChange={(open) => !open && setAddServiceToContainer(null)}
+						onOpenChange={(open) => !open && setAddSiteToContainer(null)}
 						containerDomain={
 							config?.siteBlocks.find((sb) => sb.id === addSiteToContainer)
 								?.addresses[0] || ""
 						}
-						onCreateService={(service) => {
-							handleCreateSite(addSiteToContainer, service);
-							setAddServiceToContainer(null);
+						onCreateSite={(site) => {
+							handleCreateSite(addSiteToContainer, site);
+							setAddSiteToContainer(null);
 						}}
 					/>
 				)}

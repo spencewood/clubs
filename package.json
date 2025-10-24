@@ -16,6 +16,7 @@
 		"lint": "biome check src server",
 		"lint:fix": "biome check --write src server",
 		"format": "biome format --write src server",
+		"typecheck": "tsc -b && tsc --project tsconfig.server.json",
 		"preview": "vite preview",
 		"changeset": "changeset",
 		"version": "changeset version",

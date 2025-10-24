@@ -17,7 +17,7 @@ interface EditContainerSiteDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	containerId: string;
-	serviceId: string;
+	siteId: string;
 	siteBlock: CaddySiteBlock | null;
 	onSave: (siteBlock: CaddySiteBlock) => void;
 }
@@ -30,7 +30,7 @@ export function EditContainerSiteDialog({
 	open,
 	onOpenChange,
 	containerId: _containerId,
-	serviceId,
+	siteId,
 	siteBlock,
 	onSave,
 }: EditContainerSiteDialogProps) {
@@ -45,9 +45,7 @@ export function EditContainerSiteDialog({
 		if (!siteBlock) return;
 
 		// Find the handle directive by ID
-		const handleDirective = siteBlock.directives.find(
-			(d) => d.id === serviceId,
-		);
+		const handleDirective = siteBlock.directives.find((d) => d.id === siteId);
 		if (!handleDirective || handleDirective.name !== "handle") return;
 
 		// Extract matcher name from handle args (e.g., "@api" -> "api")
@@ -67,7 +65,7 @@ export function EditContainerSiteDialog({
 
 		// Get directives from handle block
 		setDirectives(handleDirective.block || []);
-	}, [siteBlock, serviceId]);
+	}, [siteBlock, siteId]);
 
 	const handleSave = () => {
 		if (!siteBlock) return;
@@ -88,7 +86,7 @@ export function EditContainerSiteDialog({
 
 		// Update handle directive
 		const handleDirectiveIndex = updatedSiteBlock.directives.findIndex(
-			(d) => d.id === serviceId,
+			(d) => d.id === siteId,
 		);
 		if (handleDirectiveIndex !== -1) {
 			updatedSiteBlock.directives[handleDirectiveIndex] = {
