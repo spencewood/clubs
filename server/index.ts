@@ -87,33 +87,64 @@ fastify.get("/api/caddyfile/stats", async (_request, reply) => {
 });
 
 // Format Caddyfile using Caddy's built-in formatter
-// NOTE: Caddy's Admin API doesn't support converting JSON back to Caddyfile format.
-// The `caddy fmt` command exists but is CLI-only. For now, we just validate and return the original.
 fastify.post("/api/caddyfile/format", async (request, reply) => {
 	try {
 		const content =
 			typeof request.body === "string" ? request.body : String(request.body);
 
-		// Validate the Caddyfile by loading it into Caddy
-		const adaptResponse = await fetch(`${CADDY_API_URL}/load`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "text/caddyfile",
-			},
-			body: content,
-		});
+		// Try to use `caddy fmt` CLI command if available
+		try {
+			const { exec } = await import("node:child_process");
+			const { promisify } = await import("node:util");
+			const execAsync = promisify(exec);
 
-		if (!adaptResponse.ok) {
-			const errorText = await adaptResponse.text();
-			return reply.code(400).send({
-				error: "Invalid Caddyfile",
-				details: errorText || "Caddy could not parse the configuration",
+			// Write content to temp file, format it, read it back
+			const tmpFile = `/tmp/caddyfile-${Date.now()}`;
+			await fs.writeFile(tmpFile, content, "utf-8");
+
+			const { stderr } = await execAsync(`caddy fmt --overwrite ${tmpFile}`);
+
+			if (stderr && !stderr.includes("Caddyfile formatted")) {
+				fastify.log.warn({ stderr }, "Caddy format warning");
+			}
+
+			const formatted = await fs.readFile(tmpFile, "utf-8");
+			await fs.unlink(tmpFile); // Clean up temp file
+
+			return reply.type("application/json").send({
+				formatted: true,
+				content: formatted,
+			});
+		} catch (cliError) {
+			// If caddy fmt fails or is not available, validate and return original
+			fastify.log.warn(
+				{ err: cliError },
+				"Caddy fmt not available, falling back to validation only",
+			);
+
+			const adaptResponse = await fetch(`${CADDY_API_URL}/load`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "text/caddyfile",
+				},
+				body: content,
+			});
+
+			if (!adaptResponse.ok) {
+				const errorText = await adaptResponse.text();
+				return reply.code(400).send({
+					error: "Invalid Caddyfile",
+					details: errorText || "Caddy could not parse the configuration",
+				});
+			}
+
+			// Validation passed but formatting not available - return original with warning
+			return reply.type("application/json").send({
+				formatted: false,
+				content: content,
+				warning: "Caddy fmt not available - returning unformatted content",
 			});
 		}
-
-		// Validation passed - return the original content
-		// TODO: Implement client-side or Caddy CLI-based formatting in the future
-		reply.type("text/plain").send(content);
 	} catch (error) {
 		fastify.log.error({ err: error }, "Failed to format Caddyfile");
 		reply.code(500).send({ error: "Failed to format Caddyfile" });

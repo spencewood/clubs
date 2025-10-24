@@ -182,7 +182,12 @@ export const handlers = [
 			);
 		}
 
-		// Return original content (matching new backend behavior - just validates, doesn't format)
-		return HttpResponse.text(content);
+		// Return JSON response matching new backend format
+		return HttpResponse.json({
+			formatted: false,
+			content: content,
+			warning:
+				"Caddy fmt not available in mock mode - returning unformatted content",
+		});
 	}),
 ];

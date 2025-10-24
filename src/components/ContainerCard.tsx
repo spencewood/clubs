@@ -2,7 +2,8 @@ import {
 	ChevronDown,
 	ChevronRight,
 	Container,
-	Link as LinkIcon,
+	ExternalLink,
+	Globe,
 	Plus,
 	Settings,
 	Trash2,
@@ -29,6 +30,8 @@ interface ContainerCardProps {
 	onAddSite: (containerId: string) => void;
 	onEditSite: (containerId: string, siteId: string) => void;
 	onDeleteSite: (containerId: string, siteId: string) => void;
+	onSiteHoverStart?: (siteId: string) => void;
+	onSiteHoverEnd?: () => void;
 }
 
 export function ContainerCard({
@@ -41,11 +44,13 @@ export function ContainerCard({
 	onAddSite,
 	onEditSite,
 	onDeleteSite,
+	onSiteHoverStart,
+	onSiteHoverEnd,
 }: ContainerCardProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
 
 	return (
-		<Card className="border-l-4 border-l-primary">
+		<Card className="border-l-4 border-l-primary bg-muted/30">
 			<CardHeader className="pb-3">
 				<div className="flex items-center justify-between gap-4">
 					<div className="flex items-center gap-3 flex-1 min-w-0">
@@ -74,12 +79,11 @@ export function ContainerCard({
 					</div>
 					<div className="flex gap-2 flex-shrink-0">
 						<Button variant="outline" size="sm" onClick={() => onEdit(id)}>
-							<Settings className="h-4 w-4 mr-2" />
-							Edit Shared Config
+							<Settings className="h-4 w-4" />
 						</Button>
 						<Button
-							variant="ghost"
-							size="icon"
+							variant="outline"
+							size="sm"
 							onClick={() => onDelete(id)}
 							title="Delete container"
 						>
@@ -109,57 +113,82 @@ export function ContainerCard({
 
 					{/* Virtual Blocks */}
 					<div className="space-y-2">
-						{virtualBlocks.map((block) => (
-							<Card
-								key={block.id}
-								className="border-l-2 border-l-primary/50 bg-muted/30"
-							>
-								<CardContent className="p-3">
-									<div className="flex items-center justify-between gap-3">
-										<div className="flex items-center gap-3 flex-1 min-w-0">
-											<LinkIcon className="h-4 w-4 text-primary flex-shrink-0" />
-											<div className="flex-1 min-w-0">
-												<div className="font-mono font-medium text-sm truncate">
-													{block.hostname}
-												</div>
-												<div className="text-xs text-muted-foreground">
-													@{block.matcherName} • {block.directives.length}{" "}
-													directive{block.directives.length !== 1 ? "s" : ""}
+						{virtualBlocks.map((block) => {
+							const handleOpenInBrowser = () => {
+								if (block.hostname) {
+									window.open(
+										`https://${block.hostname}`,
+										"_blank",
+										"noopener,noreferrer",
+									);
+								}
+							};
+
+							return (
+								<Card
+									key={block.id}
+									className="border-l-2 border-l-primary/50 hover:border-primary/50 transition-colors"
+									onMouseEnter={() => onSiteHoverStart?.(block.id)}
+									onMouseLeave={() => onSiteHoverEnd?.()}
+								>
+									<CardContent className="p-4">
+										<div className="flex items-center justify-between gap-4">
+											<div className="flex items-center gap-3 flex-1 min-w-0">
+												<Globe className="h-5 w-5 text-primary flex-shrink-0" />
+												<div className="flex-1 min-w-0">
+													<div className="flex items-center gap-2">
+														<div className="font-mono font-medium truncate">
+															{block.hostname}
+														</div>
+														{block.hostname && (
+															<button
+																type="button"
+																onClick={handleOpenInBrowser}
+																className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
+																title={`Open ${block.hostname} in browser`}
+															>
+																<ExternalLink className="h-4 w-4" />
+															</button>
+														)}
+													</div>
+													<div className="text-sm text-muted-foreground truncate">
+														@{block.matcherName} • {block.directives.length}{" "}
+														directive{block.directives.length !== 1 ? "s" : ""}
+													</div>
 												</div>
 											</div>
+											<div className="flex gap-2 flex-shrink-0">
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => onEditSite(id, block.id)}
+													title="Edit site"
+												>
+													<Settings className="h-4 w-4" />
+												</Button>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => onDeleteSite(id, block.id)}
+													title="Delete site"
+												>
+													<Trash2 className="h-4 w-4" />
+												</Button>
+											</div>
 										</div>
-										<div className="flex gap-1 flex-shrink-0">
-											<Button
-												variant="ghost"
-												size="sm"
-												onClick={() => onEditSite(id, block.id)}
-												className="h-8 px-2"
-											>
-												<Settings className="h-3 w-3 mr-1" />
-												Edit
-											</Button>
-											<Button
-												variant="ghost"
-												size="icon"
-												onClick={() => onDeleteSite(id, block.id)}
-												className="h-8 w-8"
-												title="Delete site"
-											>
-												<Trash2 className="h-3 w-3" />
-											</Button>
-										</div>
-									</div>
-								</CardContent>
-							</Card>
-						))}
+									</CardContent>
+								</Card>
+							);
+						})}
 
 						{/* Add Site Button */}
 						<button
 							type="button"
 							onClick={() => onAddSite(id)}
-							className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-primary/30 hover:border-primary hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+							className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-muted-foreground hover:text-foreground"
 						>
 							<Plus className="h-4 w-4" />
+							<Globe className="h-4 w-4" />
 							<span className="text-sm font-medium">Site</span>
 						</button>
 					</div>

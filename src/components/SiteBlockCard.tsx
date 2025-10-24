@@ -115,17 +115,17 @@ export function SiteBlockCard({
 							variant="outline"
 							size="sm"
 							onClick={() => onEdit(siteBlock.id)}
+							title="Edit site"
 						>
-							<Settings className="h-4 w-4 mr-1" />
-							Edit
+							<Settings className="h-4 w-4" />
 						</Button>
 						<Button
-							variant="ghost"
+							variant="outline"
 							size="sm"
 							onClick={() => setShowDeleteConfirm(true)}
+							title="Delete site"
 						>
-							<Trash2 className="h-4 w-4 mr-1" />
-							Delete
+							<Trash2 className="h-4 w-4" />
 						</Button>
 					</div>
 				</div>

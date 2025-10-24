@@ -1,5 +1,11 @@
 # clubs
 
+## 0.2.1
+
+### Patch Changes
+
+- More style updates. Fix format.
+
 ## 0.2.0
 
 ### Minor Changes

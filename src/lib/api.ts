@@ -131,9 +131,12 @@ export async function loadCaddyfile(preferLive = false): Promise<{
 /**
  * Format Caddyfile using Caddy's built-in formatter
  */
-export async function formatCaddyfile(
-	content: string,
-): Promise<{ success: boolean; formatted?: string; error?: string }> {
+export async function formatCaddyfile(content: string): Promise<{
+	success: boolean;
+	formatted?: string;
+	warning?: string;
+	error?: string;
+}> {
 	try {
 		const response = await fetch(`${API_BASE}/api/caddyfile/format`, {
 			method: "POST",
@@ -151,8 +154,12 @@ export async function formatCaddyfile(
 			};
 		}
 
-		const formatted = await response.text();
-		return { success: true, formatted };
+		const data = await response.json();
+		return {
+			success: true,
+			formatted: data.content,
+			warning: data.formatted ? undefined : data.warning,
+		};
 	} catch (error) {
 		return {
 			success: false,

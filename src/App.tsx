@@ -252,7 +252,15 @@ function App() {
 				} catch (err) {
 					console.error("Parse error after format:", err);
 				}
-				toast.success("Caddyfile formatted!");
+
+				// Show appropriate toast based on whether formatting actually happened
+				if (result.warning) {
+					toast.warning("Caddyfile validated", {
+						description: result.warning,
+					});
+				} else {
+					toast.success("Caddyfile formatted!");
+				}
 			} else {
 				toast.error("Failed to format", {
 					description: result.error,
@@ -607,6 +615,8 @@ function App() {
 																setEditingSite({ containerId, siteId })
 															}
 															onDeleteSite={handleDeleteSite}
+															onSiteHoverStart={setHoveredBlockId}
+															onSiteHoverEnd={() => setHoveredBlockId(null)}
 														/>
 													);
 												}
@@ -632,7 +642,7 @@ function App() {
 														setNewSiteBlockType("physical");
 														setShowNewSiteDialog(true);
 													}}
-													className="flex items-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-muted-foreground hover:text-foreground"
+													className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-muted-foreground hover:text-foreground"
 												>
 													<Plus className="h-4 w-4" />
 													<Globe className="h-4 w-4" />
@@ -644,7 +654,7 @@ function App() {
 														setNewSiteBlockType("virtual-container");
 														setShowNewSiteDialog(true);
 													}}
-													className="flex items-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-muted-foreground hover:text-foreground"
+													className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-muted-foreground hover:text-foreground"
 												>
 													<Plus className="h-4 w-4" />
 													<Container className="h-4 w-4" />
