@@ -30,8 +30,6 @@ interface ContainerCardProps {
 	onAddSite: (containerId: string) => void;
 	onEditSite: (containerId: string, siteId: string) => void;
 	onDeleteSite: (containerId: string, siteId: string) => void;
-	onSiteHoverStart?: (siteId: string) => void;
-	onSiteHoverEnd?: () => void;
 }
 
 export function ContainerCard({
@@ -44,8 +42,6 @@ export function ContainerCard({
 	onAddSite,
 	onEditSite,
 	onDeleteSite,
-	onSiteHoverStart,
-	onSiteHoverEnd,
 }: ContainerCardProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
 
@@ -127,9 +123,7 @@ export function ContainerCard({
 							return (
 								<Card
 									key={block.id}
-									className="border-l-2 border-l-primary/50 hover:border-primary/50 transition-colors"
-									onMouseEnter={() => onSiteHoverStart?.(block.id)}
-									onMouseLeave={() => onSiteHoverEnd?.()}
+									className="border-l-2 border-l-primary/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
 								>
 									<CardContent className="p-4">
 										<div className="flex items-center justify-between gap-4">
