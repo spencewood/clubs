@@ -1,7 +1,7 @@
 {
 	"name": "clubs",
-	"private": true,
 	"version": "0.0.0",
+	"packageManager": "pnpm@10.10.0",
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
@@ -16,7 +16,10 @@
 		"lint": "biome check src server",
 		"lint:fix": "biome check --write src server",
 		"format": "biome format --write src server",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"changeset": "changeset",
+		"version": "changeset version",
+		"release": "pnpm build && pnpm build:server && changeset publish"
 	},
 	"dependencies": {
 		"@codemirror/lang-javascript": "^6.2.4",
@@ -42,6 +45,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.6",
+		"@changesets/cli": "^2.29.7",
 		"@tailwindcss/postcss": "^4.1.14",
 		"@tailwindcss/vite": "^4.1.14",
 		"@testing-library/jest-dom": "^6.9.1",

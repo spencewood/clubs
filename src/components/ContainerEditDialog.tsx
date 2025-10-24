@@ -146,8 +146,7 @@ export function ContainerEditDialog({
 						Edit container
 					</DialogTitle>
 					<DialogDescription>
-						Configure shared settings that apply to all sites in this
-						container
+						Configure shared settings that apply to all sites in this container
 					</DialogDescription>
 				</DialogHeader>
 

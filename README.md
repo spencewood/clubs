@@ -1,5 +1,6 @@
 # ♣ Clubs
 
+[![CI](https://github.com/spencewood/clubs/actions/workflows/ci.yml/badge.svg)](https://github.com/spencewood/clubs/actions/workflows/ci.yml)
 [![Docker Hub](https://img.shields.io/docker/v/spencewood/clubs?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/spencewood/clubs)
 [![Docker Pulls](https://img.shields.io/docker/pulls/spencewood/clubs)](https://hub.docker.com/r/spencewood/clubs)
 
