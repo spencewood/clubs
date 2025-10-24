@@ -21,6 +21,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { serializeCaddyfile } from "@/lib/parser/caddyfile-parser";
+import type { CaddyDirective } from "@/types/caddyfile";
 
 interface VirtualBlock {
 	id: string;
@@ -28,6 +30,7 @@ interface VirtualBlock {
 	hostname: string;
 	description?: string;
 	directives: string[];
+	caddyId?: string;
 }
 
 interface ContainerCardProps {
@@ -58,6 +61,31 @@ export function ContainerCard({
 	const [showDeleteContainerConfirm, setShowDeleteContainerConfirm] =
 		useState(false);
 	const [deletingSiteId, setDeletingSiteId] = useState<string | null>(null);
+
+	// Helper to serialize a virtual block to Caddyfile format for adaptation
+	const getVirtualBlockCaddyfile = (block: VirtualBlock) => {
+		// Convert string[] directives back to CaddyDirective[]
+		const directivesAsObjects: CaddyDirective[] = block.directives.map(
+			(dir, idx) => ({
+				id: `${block.id}-dir-${idx}`,
+				name: dir.split(" ")[0] || dir,
+				args: dir.split(" ").slice(1),
+				raw: dir,
+			}),
+		);
+
+		// Create a standalone site block for this virtual block
+		return serializeCaddyfile({
+			siteBlocks: [
+				{
+					id: block.id,
+					addresses: [block.hostname],
+					directives: directivesAsObjects,
+				},
+			],
+			globalOptions: [],
+		});
+	};
 
 	return (
 		<Card className="border-l-4 border-l-primary bg-muted/30">
@@ -211,12 +239,28 @@ export function ContainerCard({
 				</CardContent>
 			)}
 
-			<InspectConfigModal
-				open={inspectSiteId !== null}
-				onOpenChange={(open) => !open && setInspectSiteId(null)}
-				title={`Inspect: ${virtualBlocks.find((b) => b.id === inspectSiteId)?.hostname || "Site"}`}
-				description="Full Caddy JSON configuration (container sites don't have individual @id tags)"
-			/>
+			{inspectSiteId !== null &&
+				(() => {
+					const block = virtualBlocks.find((b) => b.id === inspectSiteId);
+					if (!block) return null;
+
+					return (
+						<InspectConfigModal
+							open={true}
+							onOpenChange={(open) => !open && setInspectSiteId(null)}
+							title={`Inspect: ${block.hostname}`}
+							description={
+								block.caddyId
+									? `Configuration for @id "${block.caddyId}"`
+									: "JSON configuration adapted from this site's Caddyfile"
+							}
+							caddyId={block.caddyId}
+							caddyfileContent={
+								block.caddyId ? undefined : getVirtualBlockCaddyfile(block)
+							}
+						/>
+					);
+				})()}
 
 			{/* Container Delete Confirmation */}
 			<Dialog

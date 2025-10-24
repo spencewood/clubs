@@ -123,6 +123,8 @@ export interface VirtualBlock {
 	description?: string;
 	/** Service-specific directives inside the handle block */
 	directives: CaddyDirective[];
+	/** The @id tag value for Caddy API access */
+	caddyId?: string;
 }
 
 /**
@@ -270,11 +272,26 @@ export function parseVirtualContainer(
 				: matcherRef;
 			const hostname = matchers.get(matcherName) || "";
 
+			// Extract @id tag from handle block if present
+			let caddyId: string | undefined;
+			const directives = directive.block || [];
+			const filteredDirectives: CaddyDirective[] = [];
+
+			for (const d of directives) {
+				if (d.name === "@id" && d.args.length > 0) {
+					caddyId = d.args[0];
+					// Don't include @id in the directives list
+				} else {
+					filteredDirectives.push(d);
+				}
+			}
+
 			virtualBlocks.push({
 				id: directive.id,
 				matcherName,
 				hostname,
-				directives: directive.block || [],
+				directives: filteredDirectives,
+				caddyId,
 			});
 		}
 	}
@@ -308,12 +325,28 @@ export function serializeVirtualContainer(
 			raw: `@${vBlock.matcherName} host ${vBlock.hostname}`,
 		});
 
+		// Prepare handle block directives
+		const handleBlockDirectives: CaddyDirective[] = [];
+
+		// Add @id tag first if present
+		if (vBlock.caddyId) {
+			handleBlockDirectives.push({
+				id: `${vBlock.id}-id`,
+				name: "@id",
+				args: [vBlock.caddyId],
+				raw: `@id ${vBlock.caddyId}`,
+			});
+		}
+
+		// Add the rest of the directives
+		handleBlockDirectives.push(...vBlock.directives);
+
 		// Add handle block
 		directives.push({
 			id: vBlock.id,
 			name: "handle",
 			args: [`@${vBlock.matcherName}`],
-			block: vBlock.directives,
+			block: handleBlockDirectives,
 			raw: `handle @${vBlock.matcherName}`,
 		});
 	}

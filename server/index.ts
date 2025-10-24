@@ -298,7 +298,27 @@ fastify.post("/api/caddy/adapt", async (request, reply) => {
 			});
 		}
 
-		const config = await adaptResponse.json();
+		const config = (await adaptResponse.json()) as Record<string, unknown>;
+
+		// Extract just the HTTP app's server configuration for this site
+		// This is more focused than returning the entire config
+		const apps = config?.apps as Record<string, unknown> | undefined;
+		const http = apps?.http as Record<string, unknown> | undefined;
+		const servers = http?.servers as Record<string, unknown> | undefined;
+
+		if (servers) {
+			const serverKeys = Object.keys(servers);
+
+			// If there's only one server, return its routes
+			if (serverKeys.length === 1) {
+				return reply.type("application/json").send({
+					server: serverKeys[0],
+					config: servers[serverKeys[0]],
+				});
+			}
+		}
+
+		// Fallback: return the entire config if we can't extract cleanly
 		return reply.type("application/json").send(config);
 	} catch (error) {
 		fastify.log.error({ err: error }, "Failed to adapt Caddyfile");

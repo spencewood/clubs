@@ -1,5 +1,11 @@
 # clubs
 
+## 0.3.4
+
+### Patch Changes
+
+- Fix site id tags and pulling correct config
+
 ## 0.3.3
 
 ### Patch Changes
