@@ -109,9 +109,9 @@ services:
 
   # Add Clubs
   clubs:
-    image: your-dockerhub-username/clubs:latest
+    image: spencewood/clubs:latest
     ports:
-      - "8080:8080"
+      - "8080:80"
     volumes:
       # Point to wherever your Caddyfile lives
       - /path/to/your/caddy/config:/config
@@ -137,9 +137,9 @@ version: '3.8'
 
 services:
   clubs:
-    image: your-dockerhub-username/clubs:latest
+    image: spencewood/clubs:latest
     ports:
-      - "8080:8080"
+      - "8080:80"
     volumes:
       - /path/to/your/existing/caddy/config:/config
     environment:
@@ -175,9 +175,9 @@ version: '3.8'
 
 services:
   clubs:
-    image: your-dockerhub-username/clubs:latest
+    image: spencewood/clubs:latest
     ports:
-      - "8080:8080"
+      - "8080:80"
     volumes:
       - ./config:/config
     environment:
@@ -306,7 +306,7 @@ networks:
 
 ```caddy
 clubs.yourdomain.com {
-    reverse_proxy clubs:8080
+    reverse_proxy clubs:80
 
     # Optional: Add authentication
     basicauth {
@@ -317,7 +317,7 @@ clubs.yourdomain.com {
 
 **Security benefits:**
 - Port 2019 (Caddy Admin API) is never exposed to the host machine
-- Port 8080 (Clubs API) is never exposed to the host machine
+- Port 80 (Clubs UI) is only accessible via Caddy reverse proxy
 - All communication between Clubs and Caddy happens over internal Docker network
 - Only HTTPS traffic from Caddy reaches the outside world
 - You can add authentication/authorization at the Caddy level
@@ -369,7 +369,7 @@ docker-compose logs -f
 |----------|---------|-------------|
 | `CADDYFILE_PATH` | `./config/Caddyfile` | Path to the Caddyfile to edit |
 | `CADDY_API_URL` | `http://localhost:2019` | Caddy Admin API URL |
-| `API_PORT` | `8080` | Port for Clubs web UI |
+| `API_PORT` | `3000` | Port for Clubs backend API (container serves on port 80) |
 | `NODE_ENV` | `development` | Set to `production` in Docker |
 
 #### Caddy Container
@@ -491,7 +491,7 @@ ports:
 3. **Protect Clubs UI** - add authentication in your Caddyfile:
 ```caddy
 clubs.example.com {
-    reverse_proxy clubs:8080
+    reverse_proxy clubs:80
     basicauth {
         admin $2a$14$hashed_password
     }
@@ -520,6 +520,6 @@ See the `examples/` directory for complete docker-compose setups:
 
 ## Getting Help
 
-- **Issues:** https://github.com/your-username/clubs/issues
-- **Discussions:** https://github.com/your-username/clubs/discussions
+- **Issues:** https://github.com/spencewood/clubs/issues
+- **Discussions:** https://github.com/spencewood/clubs/discussions
 - **Caddy Docs:** https://caddyserver.com/docs/
