@@ -1,6 +1,6 @@
 {
 	"name": "clubs",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"private": true,
 	"packageManager": "pnpm@10.10.0",
 	"type": "module",
@@ -37,7 +37,6 @@
 		"@uiw/react-codemirror": "^4.25.2",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
-		"clubs": "link:",
 		"fastify": "^5.3.0",
 		"lucide-react": "^0.546.0",
 		"react": "^19.1.1",

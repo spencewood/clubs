@@ -1,5 +1,11 @@
 # clubs
 
+## 0.3.3
+
+### Patch Changes
+
+- Optimize docker and approve builds
+
 ## 0.3.2
 
 ### Patch Changes

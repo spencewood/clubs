@@ -56,3 +56,6 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/clubs:${{ steps.get_version.outputs.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Use inline cache for better cross-platform caching
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1

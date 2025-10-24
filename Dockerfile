@@ -2,9 +2,17 @@
 FROM node:22-alpine AS builder
 
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+
+# Install pnpm first (cache this layer)
 RUN npm install -g pnpm@10.10.0
+
+# Copy only package files first for better caching
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies (this layer will be cached unless package files change)
 RUN pnpm install --frozen-lockfile
+
+# Copy source files
 COPY . .
 
 # Build frontend and server
@@ -14,18 +22,22 @@ RUN pnpm run build:server
 # Production stage
 FROM node:22-alpine
 
-# Install Caddy
+# Install Caddy (cache this layer)
 RUN apk add --no-cache caddy
+
+# Install pnpm (cache this layer)
+RUN npm install -g pnpm@10.10.0
 
 WORKDIR /app
 
-# Copy built frontend
-COPY --from=builder /app/dist /app/dist
-
-# Copy package files for production dependencies
+# Copy package files for production dependencies first
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm@10.10.0
+
+# Install production dependencies (this layer will be cached unless package files change)
 RUN pnpm install --prod --frozen-lockfile
+
+# Copy built frontend (this happens after dependency install for better caching)
+COPY --from=builder /app/dist /app/dist
 
 # Copy Caddyfile
 COPY Caddyfile /etc/caddy/Caddyfile
