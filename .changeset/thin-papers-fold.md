@@ -1,5 +1,0 @@
----
-"clubs": minor
----
-
-Add metrics

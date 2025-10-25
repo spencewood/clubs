@@ -1,5 +1,16 @@
 # clubs
 
+## 0.4.0
+
+### Minor Changes
+
+- 99ccbde: Add certificates tab and info
+- 0d49017: Add metrics
+
+### Patch Changes
+
+- 3b54ef9: Consolidate upstreams without port. Add offline server.
+
 ## 0.3.5
 
 ### Patch Changes
