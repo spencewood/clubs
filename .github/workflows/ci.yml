@@ -74,7 +74,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Tests
-        run: pnpm test
+        run: pnpm test --run
 
   build:
     name: Build
@@ -95,8 +95,5 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Frontend
+      - name: Build Next.js
         run: pnpm build
-
-      - name: Build Server
-        run: pnpm build:server
