@@ -15,7 +15,7 @@ This will run:
 1. **Linting** - `pnpm lint` - Code quality checks
 2. **Type checking** - `pnpm typecheck` - TypeScript validation
 3. **Unit tests** - `pnpm test --run` - 87 unit tests
-4. **Docker integration tests** - `pnpm test:docker` - Full production build validation
+4. **Docker integration tests** - `pnpm test:docker` - App builds and runs correctly
 
 All checks must pass before the release is ready.
 
@@ -34,93 +34,143 @@ This script will:
 1. Build the production Docker image
 2. Start a test container
 3. Verify Next.js responds correctly
-4. Verify Caddy API is available
-5. Test upstreams endpoint
-6. Test Caddyfile format endpoint (validates Caddy integration)
-7. Clean up test container
+4. Verify app renders properly
+5. Verify API routes work (file mode)
+6. Clean up test container
 
 If all tests pass, you'll see: `✅ All integration tests passed! Docker image is ready to ship.`
 
+## Architecture
+
+The Clubs Docker image contains **only the Next.js application**. It's designed to run behind an external reverse proxy (like Caddy) that provides:
+
+- TLS/HTTPS termination
+- Access to Caddy Admin API (port 2019)
+- Routing to the Clubs container
+
+### Deployment Requirements
+
+Your docker-compose.yml should:
+1. **External Caddy** - Manages TLS, routing, and provides Admin API
+2. **Clubs App** - Runs on port 3000, connects to Caddy API
+
+Example:
+```yaml
+services:
+  caddy:
+    image: caddy:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - CADDY_ADMIN=0.0.0.0:2019
+    volumes:
+      - ./config:/etc/caddy
+    networks:
+      - clubs-network
+
+  clubs:
+    image: spencewood/clubs:latest
+    ports:
+      - "8080:3000"  # Map host:8080 -> container:3000
+    environment:
+      - CADDY_API_URL=http://caddy:2019  # Connect to external Caddy
+      - CADDYFILE_PATH=/config/Caddyfile
+    volumes:
+      - ./config:/config  # Shared with Caddy
+    networks:
+      - clubs-network
+```
+
+### Key Points
+
+- Clubs app runs on **port 3000** inside the container
+- External Caddy should proxy to `http://clubs:3000` (not port 8080!)
+- Clubs connects to Caddy Admin API at `http://caddy:2019`
+- Both containers share the `/config` volume for Caddyfile access
+
 ## Manual Testing
 
-### Production Container
-
-Test the full production build with Caddy.
-
-### Build and Run
+### Test with docker-compose
 
 ```bash
-# Build production image
-docker build -t clubs:latest .
+# Build and start both services
+docker-compose up --build
 
-# Run with docker-compose (includes Caddy)
-docker-compose up
-
-# Or run standalone
-docker run -p 8080:80 \
-  -v $(pwd)/config:/config \
-  -e CADDYFILE_PATH=/config/Caddyfile \
-  clubs:latest
+# Access Clubs UI
+open http://localhost:8080
 ```
 
 ### What to Test
 
-✅ **Production Build**
-- Access http://localhost:8080
-- Should see "File Mode" (no Caddy API in standalone mode)
-- Edit Caddyfile - changes should save to disk
-- No MSW - app uses real file system
+✅ **Live Mode** - Should show "Live Mode" indicator
+- App connects to Caddy Admin API
+- Can view upstreams, certificates
+- Can apply configuration changes
+- Changes reflect in Caddy immediately
 
-✅ **With Caddy Integration**
-```bash
-# Run full stack with docker-compose
-docker-compose up
-```
-- Access http://localhost:8080
-- Should see "Live Mode" (real Caddy API on port 2019)
-- Test live config updates via "Save & Apply"
+✅ **File Operations** - Caddyfile editing works
+- Can edit Caddyfile in the UI
+- Changes save to shared `/config` volume
+- Format and validation work
 
 ## Troubleshooting
 
-### MSW Not Working in Dev Container
+### Connection Refused Errors
 
-Check logs:
-```bash
-docker logs <container-id> | grep MSW
+If you see `dial tcp: connect: connection refused` in Caddy logs:
+
+**Problem**: External Caddy is trying to connect to wrong port
+
+**Solution**: Make sure your Caddy reverse_proxy points to port **3000** (not 8080):
+```caddyfile
+clubs.example.com {
+    reverse_proxy clubs:3000  # Use port 3000!
+}
 ```
 
-Should see: `🔶 MSW enabled for development`
+### App Shows "File Mode" Instead of "Live Mode"
 
-If not:
-- Verify NODE_ENV=development is set
-- Check src/instrumentation.ts is being loaded
-- Verify all dependencies are installed
+**Problem**: Clubs can't connect to Caddy Admin API
 
-### Container Won't Start
+**Check**:
+1. Is `CADDY_API_URL` set correctly? Should be `http://caddy:2019`
+2. Is Caddy Admin API enabled? Check `CADDY_ADMIN=0.0.0.0:2019`
+3. Are both containers on the same Docker network?
+4. Can you curl the API from inside the clubs container?
+   ```bash
+   docker exec clubs curl http://caddy:2019/
+   ```
 
-```bash
-# View logs
-docker logs <container-id>
+### No Certificates Showing
 
-# Check if port is in use
-lsof -i :3000  # dev
-lsof -i :8080  # production
-```
+**Problem**: Either Caddy hasn't issued certs yet, or API connection is broken
 
-### File Permissions
-
-If you see permission errors with mounted volumes:
-```bash
-# Fix config directory permissions
-chmod -R 755 config/
-```
+**Solution**:
+1. Check Live Mode is working (green indicator)
+2. Visit your site via HTTPS to trigger cert issuance
+3. Check Caddy logs: `docker logs caddy`
 
 ## Next Steps
 
-After testing:
-1. ✅ Dev container with MSW - All features work with mock data
-2. ✅ Production build - Next.js builds successfully
-3. ✅ Standalone mode - File editing works
-4. ✅ With Caddy - Live mode works with real API
+After all tests pass:
 
-Once all tests pass, you're ready to ship! 🚀
+```bash
+# Run full quality gate
+pnpm prerelease
+
+# Tag and push to Docker Hub
+docker tag clubs:test spencewood/clubs:latest
+docker tag clubs:test spencewood/clubs:0.5.0
+docker push spencewood/clubs:latest
+docker push spencewood/clubs:0.5.0
+```
+
+Then deploy on your server:
+```bash
+# Pull latest image
+docker pull spencewood/clubs:latest
+
+# Restart services
+docker-compose up -d
+```
