@@ -1,5 +1,16 @@
 # clubs
 
+## 0.5.0
+
+### Minor Changes
+
+- dd70ca4: Move from pure react to Next.js
+
+### Patch Changes
+
+- 88c96bd: Move view full config
+- 613884a: Visual update for site
+
 ## 0.4.0
 
 ### Minor Changes
