@@ -74,11 +74,11 @@ volumes:
 
 **Cloudflare DNS + Clubs:**
 
-See [examples/cloudflare/](examples/cloudflare/) for complete setup.
+See [docs/examples/cloudflare/](docs/examples/cloudflare/) for complete setup.
 
 **Add to existing Caddy:**
 
-See [examples/existing-caddy/](examples/existing-caddy/) for integration guide.
+See [docs/examples/existing-caddy/](docs/examples/existing-caddy/) for integration guide.
 
 ## Development
 
@@ -153,7 +153,7 @@ Clubs manages a **single Caddyfile** shared between two containers:
 │  Reads/Serves    │         │  Edits/Manages   │
 │  Caddyfile       │         │  Caddyfile       │
 │                  │         │                  │
-│  Admin API ◀─────┼─────────┼─ Fastify API     │
+│  Admin API ◀─────┼─────────┼─ Next.js API     │
 │  (Port 2019)     │         │  (Port 8080)     │
 └────────┬─────────┘         └────────┬─────────┘
          │                            │
