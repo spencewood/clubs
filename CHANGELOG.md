@@ -1,5 +1,11 @@
 # clubs
 
+## 0.7.0
+
+### Minor Changes
+
+- 72c0147: Remove caddy from dockerfile
+
 ## 0.6.0
 
 ### Minor Changes
