@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	Activity,
 	AlertCircle,
@@ -33,8 +35,13 @@ function getHealthStatus(server: ConsolidatedServer): {
 		};
 	}
 
-	// Consider unhealthy if fails > 5
-	if (server.totalFails > 5) {
+	// Calculate failure rate
+	const failureRate = server.totalRequests > 0
+		? (server.totalFails / server.totalRequests) * 100
+		: 0;
+
+	// Consider unhealthy if failure rate > 10% or absolute fails > 20
+	if (failureRate > 10 || server.totalFails > 20) {
 		return {
 			status: "unhealthy",
 			label: "Unhealthy",
@@ -43,8 +50,8 @@ function getHealthStatus(server: ConsolidatedServer): {
 		};
 	}
 
-	// Consider degraded if fails > 0 or high request count
-	if (server.totalFails > 0 || server.totalRequests > 100) {
+	// Consider degraded if failure rate > 1% or fails between 5-20
+	if (failureRate > 1 || (server.totalFails >= 5 && server.totalFails <= 20)) {
 		return {
 			status: "degraded",
 			label: "Degraded",
@@ -61,14 +68,17 @@ function getHealthStatus(server: ConsolidatedServer): {
 	};
 }
 
-export function UpstreamsView() {
-	const [upstreams, setUpstreams] = useState<CaddyUpstream[]>([]);
-	const [caddyConfig, setCaddyConfig] = useState<CaddyConfig | null>(null);
-	const [loading, setLoading] = useState(true);
+interface UpstreamsViewProps {
+	initialUpstreams: CaddyUpstream[];
+	initialConfig: CaddyConfig | null;
+}
+
+export function UpstreamsView({ initialUpstreams, initialConfig }: UpstreamsViewProps) {
+	const [upstreams, setUpstreams] = useState<CaddyUpstream[]>(initialUpstreams);
+	const [caddyConfig, setCaddyConfig] = useState<CaddyConfig | null>(initialConfig);
 	const [refreshing, setRefreshing] = useState(false);
 
-	const fetchUpstreams = useCallback(async (showLoadingState = true) => {
-		if (showLoadingState) setLoading(true);
+	const fetchUpstreams = useCallback(async () => {
 		setRefreshing(true);
 
 		try {
@@ -100,7 +110,6 @@ export function UpstreamsView() {
 				description: error instanceof Error ? error.message : "Unknown error",
 			});
 		} finally {
-			if (showLoadingState) setLoading(false);
 			setRefreshing(false);
 		}
 	}, []);
@@ -112,26 +121,13 @@ export function UpstreamsView() {
 	);
 
 	useEffect(() => {
-		fetchUpstreams();
-
-		// Auto-refresh every 5 seconds
+		// Auto-refresh every 5 seconds (skip initial fetch since we have initialUpstreams and initialConfig)
 		const interval = setInterval(() => {
-			fetchUpstreams(false);
+			fetchUpstreams();
 		}, 5000);
 
 		return () => clearInterval(interval);
 	}, [fetchUpstreams]);
-
-	if (loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<div className="text-center space-y-2">
-					<Activity className="w-8 h-8 mx-auto animate-pulse text-muted-foreground" />
-					<p className="text-sm text-muted-foreground">Loading upstreams...</p>
-				</div>
-			</div>
-		);
-	}
 
 	if (consolidatedServers.length === 0) {
 		return (

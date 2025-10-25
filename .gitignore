@@ -12,6 +12,23 @@ dist
 dist-ssr
 *.local
 
+# Next.js build output
+.next/
+out/
+
+# TypeScript build info
+*.tsbuildinfo
+*.tsbuildinfo.*
+
+# Turbopack cache
+.turbo/
+
+# Testing
+coverage/
+
+# Production
+build/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -26,3 +43,6 @@ dist-ssr
 # Personal Caddyfile (not to be committed)
 config/Caddyfile
 config/*.caddy.bak
+
+.claude
+.env.local

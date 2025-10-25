@@ -2,26 +2,220 @@ import { delay, HttpResponse, http } from "msw";
 import type { CaddyAPIStatus } from "@/lib/api";
 
 // Mock data - single Caddyfile
+// This is synchronized with the actual Caddyfile on disk
 let mockCaddyAPIAvailable = true;
-let mockCaddyfile = `# Example configuration
+let mockCaddyfile = `# Example Caddyfile for development
+# This file is used by Clubs for local development and demonstrates various Caddy features
+
+# Global options
+{
+	# Admin API endpoint
+	admin localhost:2019
+
+	# Email for Let's Encrypt (production use)
+	# email admin@example.com
+
+	# Default SNI
+	# default_sni example.com
+}
+
+# Simple reverse proxy with compression
 app.example.com {
 	reverse_proxy localhost:3000
 	encode gzip
+	log {
+		output file /var/log/caddy/app.log
+	}
 }
 
+# API with rate limiting and CORS
 api.example.com {
-	reverse_proxy localhost:8080
+	# Named matcher for API routes
+	@api path /api/*
+
+	handle @api {
+		# CORS headers
+		header {
+			Access-Control-Allow-Origin *
+			Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+			Access-Control-Allow-Headers "Content-Type, Authorization"
+		}
+
+		# Rate limiting (requires rate_limit plugin)
+		# rate_limit {
+		#     zone api_zone
+		#     events 100
+		#     window 1m
+		# }
+
+		reverse_proxy localhost:8080
+	}
+
+	# Handle everything else
+	handle {
+		respond "API endpoint not found" 404
+	}
 }
 
+# Static site with file server
+static.example.com {
+	root * /var/www/html
+	file_server browse
+	encode zstd gzip
+
+	# Try files, fallback to index.html (SPA support)
+	try_files {path} {path}/ /index.html
+}
+
+# Backend with multiple upstreams and health checks
 backend.example.com {
-	# This upstream is offline - configured but not reporting stats
-	reverse_proxy offline-server:9000
-	reverse_proxy offline-server:9001
+	# Named matcher for websocket upgrades
+	@websocket {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+
+	# Handle websockets separately
+	handle @websocket {
+		reverse_proxy offline-server:9000 offline-server:9001 {
+			lb_policy least_conn
+		}
+	}
+
+	# Regular HTTP traffic
+	handle {
+		reverse_proxy offline-server:9000 offline-server:9001 {
+			lb_policy round_robin
+			lb_try_duration 5s
+
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+
+			fail_duration 30s
+			max_fails 3
+		}
+	}
 }
 
+# Path-based routing with matchers
 monitor.example.com {
-	reverse_proxy api.backend.com:443
-	reverse_proxy 192.168.1.100:8000
+	# Named matchers
+	@metrics path /metrics*
+	@api path /api/*
+	@web path /*
+
+	# Metrics endpoint (internal only)
+	handle @metrics {
+		# Restrict to internal IPs
+		@internal remote_ip 127.0.0.1 192.168.0.0/16 172.16.0.0/12
+
+		handle @internal {
+			reverse_proxy localhost:9090
+		}
+
+		handle {
+			respond "Forbidden" 403
+		}
+	}
+
+	# API routes
+	handle @api {
+		reverse_proxy api.backend.com:443 {
+			transport http {
+				tls
+				tls_server_name api.backend.com
+			}
+		}
+	}
+
+	# Web UI
+	handle @web {
+		reverse_proxy 192.168.1.100:8000
+	}
+}
+
+# Redirect and rewrite examples
+redirect.example.com {
+	# Redirect HTTP to HTTPS
+	redir https://app.example.com{uri} permanent
+}
+
+# Authentication example (requires caddy-security plugin)
+secure.example.com {
+	# Basic auth (requires hash)
+	# basicauth {
+	#     admin JDJhJDE0JEVCNmdaNEg2Ti5iejRMYkF3MFZhZ3VtV3E1SzBWZEZ5Q3VWc0tzOEJwZE9TaFlZdEVkZDhX
+	# }
+
+	reverse_proxy localhost:3000
+}
+
+# Multiple domains, one config
+example.com, www.example.com {
+	# Redirect www to non-www
+	@www host www.example.com
+	handle @www {
+		redir https://example.com{uri} permanent
+	}
+
+	root * /var/www/example
+	file_server
+	encode gzip
+}
+
+# Custom error pages
+errors.example.com {
+	handle_errors {
+		@404 expression {http.error.status_code} == 404
+		@5xx expression {http.error.status_code} >= 500 && {http.error.status_code} < 600
+
+		handle @404 {
+			rewrite * /404.html
+			file_server {
+				root /var/www/errors
+			}
+		}
+
+		handle @5xx {
+			rewrite * /500.html
+			file_server {
+				root /var/www/errors
+			}
+		}
+	}
+
+	reverse_proxy localhost:3000
+}
+
+# TLS configuration example
+tls.example.com {
+	tls {
+		protocols tls1.2 tls1.3
+		ciphers TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+	}
+
+	reverse_proxy localhost:3000
+}
+
+# PHP-FPM example
+php.example.com {
+	root * /var/www/php
+	php_fastcgi localhost:9000
+	file_server
+}
+
+# Load balancing with multiple strategies
+loadbalanced.example.com {
+	reverse_proxy localhost:3001 localhost:3002 localhost:3003 {
+		lb_policy ip_hash
+		lb_try_duration 5s
+		lb_try_interval 250ms
+
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
 }`;
 
 // Helper to toggle API availability (for testing)
@@ -38,6 +232,98 @@ export const getMockCaddyfile = () => {
 };
 
 export const handlers = [
+	// Mock Caddy Admin API endpoints (port 2019)
+	// These are called by our API routes via the caddy-api-client
+
+	http.get("http://localhost:2019/config/", async () => {
+		await delay(100);
+		return HttpResponse.json({
+			apps: {
+				http: {
+					servers: {
+						srv0: {
+							listen: [":80", ":443"],
+							routes: [],
+						},
+					},
+				},
+			},
+		});
+	}),
+
+	http.get("http://localhost:2019/reverse_proxy/upstreams", async () => {
+		await delay(100);
+		return HttpResponse.json([
+			// Healthy examples (0 fails or very low failure rate < 1%)
+			{
+				address: "localhost:3000",
+				num_requests: 142,
+				fails: 0,
+			},
+			{
+				address: "localhost:3001",
+				num_requests: 89,
+				fails: 0,
+			},
+			{
+				address: "localhost:3002",
+				num_requests: 500,
+				fails: 2, // 0.4% failure rate - healthy
+			},
+			{
+				address: "localhost:3003",
+				num_requests: 91,
+				fails: 0,
+			},
+			// Degraded example (failure rate between 1-10%)
+			{
+				address: "localhost:8080",
+				num_requests: 300,
+				fails: 8, // 2.67% failure rate - degraded
+			},
+			// More healthy examples
+			{
+				address: "localhost:9000",
+				num_requests: 12,
+				fails: 0,
+			},
+			{
+				address: "localhost:9090",
+				num_requests: 8,
+				fails: 0,
+			},
+			// offline-server:9000 and offline-server:9001 are NOT included
+			// In real Caddy API, unhealthy/offline upstreams don't appear in /reverse_proxy/upstreams
+			// They're configured in the Caddyfile but have no stats, so consolidateUpstreamsWithConfig marks them offline
+			{
+				address: "api.backend.com:443",
+				num_requests: 1000,
+				fails: 3, // 0.3% failure rate - healthy
+			},
+			// Unhealthy example (failure rate > 10%)
+			{
+				address: "192.168.1.100:8000",
+				num_requests: 100,
+				fails: 25, // 25% failure rate - unhealthy
+			},
+		]);
+	}),
+
+	http.get("http://localhost:2019/pki/ca/:caId", async ({ params }) => {
+		await delay(100);
+		const caId = (params.caId as string) || "local";
+		return HttpResponse.json({
+			id: caId,
+			name: caId === "local" ? "Caddy Local Authority" : caId,
+			root_common_name: `Caddy Local Authority - ${new Date().getFullYear()}`,
+			intermediate_common_name: `Caddy Local Authority - ${new Date().getFullYear()} Intermediate`,
+			root_certificate: "-----BEGIN CERTIFICATE-----\nMOCK_ROOT_CERT\n-----END CERTIFICATE-----",
+			intermediate_certificate:
+				"-----BEGIN CERTIFICATE-----\nMOCK_INTERMEDIATE_CERT\n-----END CERTIFICATE-----",
+		});
+	}),
+
+	// Our API routes
 	// Check Caddy API status
 	http.get("/api/caddy/status", async () => {
 		await delay(100); // Simulate network delay
@@ -58,6 +344,39 @@ export const handlers = [
 
 		// Always return file content (we changed the backend to not read from live Caddy)
 		return HttpResponse.text(mockCaddyfile);
+	}),
+
+	// Caddy Admin API - Load/Apply configuration
+	http.post("http://localhost:2019/load", async ({ request }) => {
+		await delay(200);
+		const caddyfileContent = await request.text();
+
+		// Simulate validation
+		if (caddyfileContent.includes("INVALID")) {
+			return new HttpResponse(
+				"adapting config using caddyfile: parsing caddyfile tokens for 'INVALID': unknown directive 'INVALID'",
+				{
+					status: 400,
+					headers: { "Content-Type": "text/plain" },
+				},
+			);
+		}
+
+		// Check for basic syntax issues
+		const openBraces = (caddyfileContent.match(/{/g) || []).length;
+		const closeBraces = (caddyfileContent.match(/}/g) || []).length;
+		if (openBraces !== closeBraces) {
+			return new HttpResponse(
+				"adapting config using caddyfile: mismatched braces",
+				{
+					status: 400,
+					headers: { "Content-Type": "text/plain" },
+				},
+			);
+		}
+
+		// Successfully applied - return 200 with no body (like real Caddy API)
+		return new HttpResponse(null, { status: 200 });
 	}),
 
 	// Save Caddyfile
@@ -142,7 +461,8 @@ export const handlers = [
 		});
 	}),
 
-	// Get current live configuration from Caddy
+	// Get current live configuration from Caddy (via Next.js API route)
+	// This route proxies to http://localhost:2019/config/ which is mocked below
 	http.get("/api/caddy/config", async () => {
 		await delay(150);
 
@@ -153,22 +473,41 @@ export const handlers = [
 			);
 		}
 
+		// Return the same shape as the Caddy Admin API /config/ endpoint
+		// The Next.js API route just passes this through
 		return HttpResponse.json({
-			json: {
-				apps: {
-					http: {
-						servers: {
-							clubs: {
-								listen: [":443", ":80"],
-								routes: [],
-							},
+			apps: {
+				http: {
+					servers: {
+						srv0: {
+							listen: [":443", ":80"],
+							routes: [
+								{
+									match: [{ host: ["app.example.com"] }],
+									handle: [
+										{
+											handler: "reverse_proxy",
+											upstreams: [{ dial: "localhost:3000" }],
+										},
+									],
+								},
+							],
 						},
 					},
 				},
+				tls: {
+					automation: {
+						policies: [
+							{
+								subjects: ["*.example.com"],
+								issuers: [{ module: "acme" }],
+							},
+						],
+					},
+				},
 			},
-			caddyfile: ":80 {\n\troot * /app/dist\n\tfile_server\n}",
-			config: {
-				siteBlocks: [],
+			admin: {
+				listen: "localhost:2019",
 			},
 		});
 	}),
@@ -206,41 +545,9 @@ export const handlers = [
 		});
 	}),
 
-	// Get upstream health status
-	http.get("/api/caddy/upstreams", async () => {
-		await delay(150);
-
-		if (!mockCaddyAPIAvailable) {
-			return HttpResponse.json(
-				{ error: "Caddy API not available" },
-				{ status: 503 },
-			);
-		}
-
-		// Mock upstream data with varying health statuses
-		return HttpResponse.json([
-			{
-				address: "localhost:3000",
-				num_requests: 12,
-				fails: 0,
-			},
-			{
-				address: "localhost:8080",
-				num_requests: 45,
-				fails: 3,
-			},
-			{
-				address: "api.backend.com:443",
-				num_requests: 125,
-				fails: 2,
-			},
-			{
-				address: "192.168.1.100:8000",
-				num_requests: 8,
-				fails: 15,
-			},
-		]);
-	}),
+	// NOTE: /api/caddy/upstreams is NOT mocked here
+	// The Next.js API route calls createCaddyAPIClient() which hits the Caddy Admin API mock below
+	// So we only need the Caddy Admin API mock at http://localhost:2019/reverse_proxy/upstreams
 
 	// Get PKI CA certificate information
 	http.get("/api/caddy/pki/ca/:caId?", async ({ params }) => {

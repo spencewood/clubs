@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	Activity,
 	Circle,
@@ -17,10 +19,27 @@ import {
 	Wand2,
 	Zap,
 } from "lucide-react";
+import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { AddContainerSiteDialog } from "@/components/AddContainerSiteDialog";
-import { CaddyfileEditor } from "@/components/CaddyfileEditor";
+
+// Import CaddyfileEditor dynamically to avoid SSR issues with CodeMirror
+const CaddyfileEditor = dynamic(
+	() =>
+		import("@/components/CaddyfileEditor").then((mod) => ({
+			default: mod.CaddyfileEditor,
+		})),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="flex items-center justify-center p-8">
+				<Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+			</div>
+		),
+	},
+);
 import { CertificatesView } from "@/components/CertificatesView";
 import { ContainerCard } from "@/components/ContainerCard";
 import { ContainerEditDialog } from "@/components/ContainerEditDialog";
@@ -50,13 +69,9 @@ import {
 	parseCaddyfile,
 	serializeCaddyfile,
 } from "@/lib/parser/caddyfile-parser";
+import type { CaddyConfig, CaddyDirective, CaddySiteBlock } from "@/types/caddyfile";
 import { validateCaddyfile } from "@/lib/validator/caddyfile-validator";
-import type {
-	CaddyConfig,
-	CaddyDirective,
-	CaddySiteBlock,
-} from "@/types/caddyfile";
-import packageJson from "../package.json";
+import packageJson from "../../package.json";
 
 function generateId(): string {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -144,10 +159,38 @@ function FullConfigView() {
 	);
 }
 
-function App() {
-	const [config, setConfig] = useState<CaddyConfig | null>(null);
-	const [rawContent, setRawContent] = useState<string>("");
-	const [loading, setLoading] = useState(true);
+export interface CaddyDashboardProps {
+	initialConfig: CaddyConfig;
+	initialRawContent: string;
+	initialIsLiveMode: boolean;
+	initialCaddyStatus: CaddyAPIStatus;
+	initialView: "sites" | "upstreams" | "certificates";
+	initialUpstreams: Array<{
+		address: string;
+		num_requests: number;
+		fails: number;
+	}>;
+	initialCertificates: {
+		id: string;
+		name: string;
+		root_common_name: string;
+		intermediate_common_name: string;
+		root_certificate: string;
+		intermediate_certificate: string;
+	} | null;
+}
+
+export function CaddyDashboard({
+	initialConfig,
+	initialRawContent,
+	initialIsLiveMode,
+	initialCaddyStatus,
+	initialView,
+	initialUpstreams,
+	initialCertificates,
+}: CaddyDashboardProps) {
+	const [config, setConfig] = useState<CaddyConfig | null>(initialConfig);
+	const [rawContent, setRawContent] = useState<string>(initialRawContent);
 	const [saving, setSaving] = useState(false);
 	const [showNewSiteDialog, setShowNewSiteDialog] = useState(false);
 	const [newSiteBlockType, setNewSiteBlockType] = useState<
@@ -155,7 +198,7 @@ function App() {
 	>(null);
 	const [editingSiteBlock, setEditingSiteBlock] =
 		useState<CaddySiteBlock | null>(null);
-	const [caddyStatus, setCaddyStatus] = useState<CaddyAPIStatus | null>(null);
+	const [caddyStatus, setCaddyStatus] = useState<CaddyAPIStatus | null>(initialCaddyStatus);
 	const [applying, setApplying] = useState(false);
 	const [addSiteToContainer, setAddSiteToContainer] = useState<string | null>(
 		null,
@@ -164,23 +207,14 @@ function App() {
 		containerId: string;
 		siteId: string;
 	} | null>(null);
-	const [isLiveMode, setIsLiveMode] = useState(false);
-	const [leftPanelView, setLeftPanelView] = useState<
-		"sites" | "upstreams" | "certificates"
-	>("sites");
+	// Use initialIsLiveMode directly - don't change it based on async checks to avoid flashing
+	const isLiveMode = initialIsLiveMode;
+	const leftPanelView = initialView;
 	const [rightPanelView, setRightPanelView] = useState<"raw" | "config">("raw");
-
-	// Reusable load function that checks mode and loads appropriate config
-	const loadConfig = useCallback(async (showLoadingState = true) => {
-		if (showLoadingState) setLoading(true);
+	const loadConfig = useCallback(async () => {
 		try {
-			// Check if Caddy API is available first
-			const status = await getCaddyAPIStatus();
-			const liveMode = status.available;
-			setIsLiveMode(liveMode);
-
 			// Try to load from live Caddy if available, otherwise from file
-			const result = await loadCaddyfile(liveMode);
+			const result = await loadCaddyfile(isLiveMode);
 
 			if (result.success && result.content) {
 				// Validate the file first
@@ -198,7 +232,7 @@ function App() {
 				setRawContent(result.content);
 			} else if (result.error) {
 				// In live mode without a file, start with empty config
-				if (liveMode && result.error.includes("not found")) {
+				if (isLiveMode && result.error.includes("not found")) {
 					toast.info("Starting with empty configuration", {
 						description:
 							"No Caddyfile found. Create your first site block to get started.",
@@ -216,40 +250,24 @@ function App() {
 				description: error instanceof Error ? error.message : "Unknown error",
 			});
 		} finally {
-			if (showLoadingState) setLoading(false);
 		}
-	}, []);
+	}, [isLiveMode]);
 
-	// Load Caddyfile on mount
-	useEffect(() => {
-		loadConfig();
-	}, [loadConfig]);
-
-	// Check Caddy API status on mount and periodically
+	// Check Caddy API status periodically (not on mount to avoid flashing)
 	useEffect(() => {
 		const checkStatus = async () => {
 			const status = await getCaddyAPIStatus();
-			const wasLiveMode = isLiveMode;
-			const nowLiveMode = status.available;
-
 			setCaddyStatus(status);
 
-			// If mode changed, reload config from new source
-			if (wasLiveMode !== nowLiveMode) {
-				toast.info(
-					nowLiveMode
-						? "Caddy API detected - switching to Live Mode"
-						: "Caddy API unavailable - switching to File Mode",
-				);
-				loadConfig(false);
-			}
+			// If mode changed significantly, could reload config
+			// But we skip this to avoid flashing - rely on server-provided initial data
 		};
 
-		checkStatus();
-		const interval = setInterval(checkStatus, 10000); // Check every 10 seconds
+		// Don't check on mount - only set up periodic checks
+		const interval = setInterval(checkStatus, 30000); // Check every 30 seconds
 
 		return () => clearInterval(interval);
-	}, [isLiveMode, loadConfig]);
+	}, []);
 
 	const handleRawContentChange = (content: string) => {
 		setRawContent(content);
@@ -531,17 +549,6 @@ function App() {
 		setRawContent(serializeCaddyfile(newConfig));
 	};
 
-	if (loading) {
-		return (
-			<div className="min-h-screen bg-background flex items-center justify-center">
-				<div className="text-center">
-					<div className="text-6xl mb-4">♣</div>
-					<p className="text-muted-foreground">Loading Caddyfile...</p>
-				</div>
-			</div>
-		);
-	}
-
 	return (
 		<>
 			<Toaster position="top-right" richColors closeButton />
@@ -557,7 +564,9 @@ function App() {
 									<p className="text-xs text-muted-foreground">
 										Caddyfile Management System{" "}
 										<span className="opacity-60">
-											{import.meta.env.DEV ? "dev" : `v${packageJson.version}`}
+											{process.env.NODE_ENV === "development"
+												? "dev"
+												: `v${packageJson.version}`}
 										</span>
 									</p>
 								</div>
@@ -594,14 +603,13 @@ function App() {
 
 				<main className="container mx-auto px-4 py-6">
 					{config && (
-						<div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-							{/* Left: Sites/Upstreams Panel - Elevated "table" */}
+						<div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+							{/* Left: Sites/Upstreams Panel - Elevated "table" (content height) */}
 							<div className="space-y-4 bg-card border rounded-lg shadow-lg p-6 relative z-10">
 								{/* Tab Navigation */}
 								<div className="flex gap-2 border-b">
-									<button
-										type="button"
-										onClick={() => setLeftPanelView("sites")}
+									<Link
+										href="/"
 										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
 											leftPanelView === "sites"
 												? "border-primary text-foreground"
@@ -610,10 +618,9 @@ function App() {
 									>
 										<Server className="w-4 h-4" />
 										Sites
-									</button>
-									<button
-										type="button"
-										onClick={() => setLeftPanelView("upstreams")}
+									</Link>
+									<Link
+										href="/upstreams"
 										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
 											leftPanelView === "upstreams"
 												? "border-primary text-foreground"
@@ -622,10 +629,9 @@ function App() {
 									>
 										<Activity className="w-4 h-4" />
 										Upstreams
-									</button>
-									<button
-										type="button"
-										onClick={() => setLeftPanelView("certificates")}
+									</Link>
+									<Link
+										href="/certificates"
 										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
 											leftPanelView === "certificates"
 												? "border-primary text-foreground"
@@ -634,13 +640,13 @@ function App() {
 									>
 										<ShieldCheck className="w-4 h-4" />
 										Certificates
-									</button>
+									</Link>
 								</div>
 
 								{leftPanelView === "upstreams" ? (
-									<UpstreamsView />
+									<UpstreamsView initialUpstreams={initialUpstreams} initialConfig={config} />
 								) : leftPanelView === "certificates" ? (
-									<CertificatesView />
+									<CertificatesView initialCertificates={initialCertificates} />
 								) : config.siteBlocks.length === 0 ? (
 									// Empty state - Show two add options
 									<div className="space-y-6">
@@ -780,7 +786,7 @@ function App() {
 											<Code className="w-3.5 h-3.5" />
 											Raw Caddyfile
 										</button>
-										{caddyStatus?.available && (
+										{(caddyStatus?.available || process.env.NODE_ENV === "development") && (
 											<button
 												type="button"
 												onClick={() => setRightPanelView("config")}
@@ -972,7 +978,7 @@ function App() {
 							{/* Right: Actions */}
 							<div className="flex items-center gap-2">
 								<Button
-									onClick={() => loadConfig(false)}
+									onClick={() => loadConfig()}
 									variant="ghost"
 									size="sm"
 									title={isLiveMode ? "Reload from Caddy" : "Reload from file"}
@@ -1008,4 +1014,3 @@ function App() {
 	);
 }
 
-export default App;

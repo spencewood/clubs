@@ -21,11 +21,12 @@ Clubs is a web-based tool for editing and managing Caddy server configurations. 
 
 ## Tech Stack
 
-- **Frontend**: React 19 + TypeScript + Vite
+- **Framework**: Next.js 16 with React 19 + TypeScript
 - **Styling**: Tailwind CSS v4 + shadcn/ui components
-- **Backend**: Fastify (Node.js) for file operations
-- **Web Server**: Caddy
+- **API Routes**: Next.js API Routes (replaces separate backend)
+- **Testing**: Vitest + MSW (Mock Service Worker)
 - **Linting**: Biome
+- **Web Server** (Production): Caddy
 
 ## Quick Start with Docker
 
@@ -92,25 +93,36 @@ See [examples/existing-caddy/](examples/existing-caddy/) for integration guide.
 pnpm install
 ```
 
-### Run Development Servers
+### Setup Environment
 
 ```bash
-# Terminal 1: Frontend
+# Copy the example environment file
+cp .env.example .env.local
+
+# Edit .env.local if needed (defaults work for local development)
+```
+
+The `.env.local` file contains:
+- `CADDYFILE_PATH` - Path to Caddyfile (default: `./config/Caddyfile`)
+- `CADDY_API_URL` - Caddy Admin API URL (default: `http://localhost:2019`)
+
+### Run Development Server
+
+```bash
+# Start Next.js dev server (with MSW mocking enabled by default)
 pnpm dev
 
-# Terminal 2: Backend
-pnpm dev:server
+# The app will be available at http://localhost:3000
+# MSW automatically mocks Caddy API responses for development
+# A sample Caddyfile is provided in config/Caddyfile for testing
+```
 
-# Terminal 3: Caddy with Admin API (optional, for Live Mode)
+**Note**: MSW is enabled by default in development, so you don't need Caddy running to develop!
+
+**Optional**: To test Live Mode integration, run Caddy in a separate terminal:
+```bash
 caddy run --config Caddyfile --adapter caddyfile
 ```
-
-**Dev Mode with MSW** (no backend needed):
-```bash
-pnpm dev:msw
-```
-
-The app will be available at `http://localhost:5173`
 
 ### Run Tests
 

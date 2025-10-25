@@ -1,18 +1,22 @@
+"use client";
+
 import { Award, FileKey, RefreshCw, Shield } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { getCaddyPKICA } from "@/lib/api";
 import type { CaddyPKICA } from "@/types/caddyfile";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
-export function CertificatesView() {
-	const [ca, setCA] = useState<CaddyPKICA | null>(null);
-	const [loading, setLoading] = useState(true);
+interface CertificatesViewProps {
+	initialCertificates: CaddyPKICA | null;
+}
+
+export function CertificatesView({ initialCertificates }: CertificatesViewProps) {
+	const [ca, setCA] = useState<CaddyPKICA | null>(initialCertificates);
 	const [refreshing, setRefreshing] = useState(false);
 
-	const fetchCA = useCallback(async (showLoadingState = true) => {
-		if (showLoadingState) setLoading(true);
+	const fetchCA = useCallback(async () => {
 		setRefreshing(true);
 
 		try {
@@ -30,27 +34,12 @@ export function CertificatesView() {
 				description: error instanceof Error ? error.message : "Unknown error",
 			});
 		} finally {
-			if (showLoadingState) setLoading(false);
 			setRefreshing(false);
 		}
 	}, []);
 
-	useEffect(() => {
-		fetchCA();
-	}, [fetchCA]);
-
-	if (loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<div className="text-center space-y-2">
-					<FileKey className="w-8 h-8 mx-auto animate-pulse text-muted-foreground" />
-					<p className="text-sm text-muted-foreground">
-						Loading certificates...
-					</p>
-				</div>
-			</div>
-		);
-	}
+	// No initial fetch - we use initialCertificates prop
+	// useEffect is removed to prevent unnecessary initial fetch
 
 	if (!ca) {
 		return (

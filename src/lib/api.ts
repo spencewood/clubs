@@ -1,4 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_URL || "";
+// In Next.js, API routes are served from the same origin, so we don't need a base URL
+// If we need to support external API URLs in the future, we can use process.env.NEXT_PUBLIC_API_URL
+const API_BASE = typeof window !== "undefined" ? "" : "http://localhost:3000";
 
 export interface CaddyAPIStatus {
 	available: boolean;

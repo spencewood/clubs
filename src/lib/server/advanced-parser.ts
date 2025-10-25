@@ -23,7 +23,8 @@ export function parseWildcardWithHandles(
 ): ParsedCaddyfile | null {
 	const lines = content.split("\n");
 	const services: ServiceBlock[] = [];
-	const _globalDirectives: string[] = [];
+	// Future: parse global directives
+	// const globalDirectives: string[] = [];
 	let mainAddress = "";
 
 	// First pass: find services by looking for @matcher + handle patterns
@@ -154,57 +155,47 @@ export function getEnhancedStats(content: string): {
 	directives: number;
 	services?: number;
 } {
-	const parsed = parseWildcardWithHandles(content);
+	// First try the wildcard parser for the special * { handle ... } format
+	const wildcardParsed = parseWildcardWithHandles(content);
 
-	if (parsed) {
+	if (wildcardParsed) {
 		return {
 			siteBlocks: 1,
-			directives: parsed.globalDirectives.length,
-			services: parsed.services.length,
+			directives: wildcardParsed.globalDirectives.length,
+			services: wildcardParsed.services.length,
 		};
 	}
 
-	// Fallback to simple counting
-	const lines = content.split("\n");
-	let siteBlocks = 0;
-	let directives = 0;
-	let inBlock = false;
-	let blockDepth = 0;
+	// Use the proper Caddyfile parser for accurate counting
+	const { parseCaddyfile } = require("@/lib/parser/caddyfile-parser");
+	const config = parseCaddyfile(content);
 
-	for (const line of lines) {
-		const trimmed = line.trim();
+	// Count total directives across all site blocks and global options
+	let totalDirectives = 0;
 
-		if (!trimmed || trimmed.startsWith("#")) {
-			continue;
-		}
+	// Count global directives
+	if (config.globalOptions) {
+		totalDirectives += config.globalOptions.length;
+	}
 
-		if (trimmed === "{") {
-			blockDepth++;
-			if (blockDepth === 1) {
-				inBlock = true;
+	// Count directives in all site blocks (recursively)
+	const countDirectives = (directives: any[]): number => {
+		let count = 0;
+		for (const directive of directives) {
+			count++; // Count this directive
+			if (directive.block && Array.isArray(directive.block)) {
+				count += countDirectives(directive.block); // Count nested directives
 			}
-			continue;
 		}
+		return count;
+	};
 
-		if (trimmed === "}") {
-			blockDepth--;
-			if (blockDepth === 0) {
-				inBlock = false;
-			}
-			continue;
-		}
-
-		if (blockDepth === 0 && !trimmed.includes("{")) {
-			siteBlocks++;
-		}
-
-		if (inBlock && blockDepth > 0) {
-			directives++;
-		}
+	for (const siteBlock of config.siteBlocks) {
+		totalDirectives += countDirectives(siteBlock.directives);
 	}
 
 	return {
-		siteBlocks: Math.max(siteBlocks, 1),
-		directives,
+		siteBlocks: config.siteBlocks.length,
+		directives: totalDirectives,
 	};
 }

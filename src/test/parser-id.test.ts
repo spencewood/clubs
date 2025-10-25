@@ -72,4 +72,34 @@ api.example.com {
 		expect(reparsed.siteBlocks[0].caddyId).toBe("mysite");
 		expect(reparsed.siteBlocks[0].directives).toHaveLength(2);
 	});
+
+	it("should split comma-separated addresses", () => {
+		const input = `example.com, www.example.com {
+	reverse_proxy localhost:3000
+}`;
+
+		const config = parseCaddyfile(input);
+
+		expect(config.siteBlocks).toHaveLength(1);
+		expect(config.siteBlocks[0].addresses).toEqual([
+			"example.com",
+			"www.example.com",
+		]);
+		expect(config.siteBlocks[0].directives).toHaveLength(1);
+	});
+
+	it("should handle multiple comma-separated addresses with spaces", () => {
+		const input = `app.local,   api.local,  web.local {
+	reverse_proxy localhost:8080
+}`;
+
+		const config = parseCaddyfile(input);
+
+		expect(config.siteBlocks).toHaveLength(1);
+		expect(config.siteBlocks[0].addresses).toEqual([
+			"app.local",
+			"api.local",
+			"web.local",
+		]);
+	});
 });

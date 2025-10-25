@@ -41,10 +41,13 @@ export function parseCaddyfile(content: string): CaddyConfig {
 		if (line === "}") {
 			if (blockStack.length > 0) {
 				blockStack.pop();
-				if (blockStack.length === 0 && currentBlock) {
-					// End of site block
-					config.siteBlocks.push(currentBlock);
-					currentBlock = null;
+				if (blockStack.length === 0) {
+					if (currentBlock) {
+						// End of site block
+						config.siteBlocks.push(currentBlock);
+						currentBlock = null;
+					}
+					// Always reset isGlobalOptions when blockStack is empty
 					isGlobalOptions = false;
 				}
 			}
@@ -58,7 +61,12 @@ export function parseCaddyfile(content: string): CaddyConfig {
 		// Check if this is a site address (no current block and not in global options)
 		if (!currentBlock && !isGlobalOptions) {
 			// This is a site address line
-			const addresses = tokens.filter((t) => t !== "{");
+			// Split comma-separated addresses (e.g., "example.com, www.example.com")
+			const addresses = tokens
+				.filter((t) => t !== "{")
+				.flatMap((addr) => addr.split(","))
+				.map((addr) => addr.trim())
+				.filter((addr) => addr.length > 0);
 			const hasOpenBrace = tokens.includes("{");
 
 			currentBlock = {
