@@ -317,7 +317,8 @@ export const handlers = [
 			name: caId === "local" ? "Caddy Local Authority" : caId,
 			root_common_name: `Caddy Local Authority - ${new Date().getFullYear()}`,
 			intermediate_common_name: `Caddy Local Authority - ${new Date().getFullYear()} Intermediate`,
-			root_certificate: "-----BEGIN CERTIFICATE-----\nMOCK_ROOT_CERT\n-----END CERTIFICATE-----",
+			root_certificate:
+				"-----BEGIN CERTIFICATE-----\nMOCK_ROOT_CERT\n-----END CERTIFICATE-----",
 			intermediate_certificate:
 				"-----BEGIN CERTIFICATE-----\nMOCK_INTERMEDIATE_CERT\n-----END CERTIFICATE-----",
 		});
@@ -545,9 +546,32 @@ export const handlers = [
 		});
 	}),
 
-	// NOTE: /api/caddy/upstreams is NOT mocked here
-	// The Next.js API route calls createCaddyAPIClient() which hits the Caddy Admin API mock below
-	// So we only need the Caddy Admin API mock at http://localhost:2019/reverse_proxy/upstreams
+	// Get upstream health status (for tests that call getCaddyUpstreams from @/lib/api.ts)
+	// In production/SSR, this Next.js API route would proxy to the Caddy Admin API
+	// But in tests, we mock this route directly to avoid the indirection
+	http.get("/api/caddy/upstreams", async () => {
+		await delay(100);
+
+		if (!mockCaddyAPIAvailable) {
+			return HttpResponse.json(
+				{ error: "Caddy API not available" },
+				{ status: 503 },
+			);
+		}
+
+		// Return same data as Caddy Admin API mock
+		return HttpResponse.json([
+			{ address: "localhost:3000", num_requests: 142, fails: 0 },
+			{ address: "localhost:3001", num_requests: 89, fails: 0 },
+			{ address: "localhost:3002", num_requests: 500, fails: 2 },
+			{ address: "localhost:3003", num_requests: 91, fails: 0 },
+			{ address: "localhost:8080", num_requests: 300, fails: 8 },
+			{ address: "localhost:9000", num_requests: 12, fails: 0 },
+			{ address: "localhost:9090", num_requests: 8, fails: 0 },
+			{ address: "api.backend.com:443", num_requests: 1000, fails: 3 },
+			{ address: "192.168.1.100:8000", num_requests: 100, fails: 25 },
+		]);
+	}),
 
 	// Get PKI CA certificate information
 	http.get("/api/caddy/pki/ca/:caId?", async ({ params }) => {

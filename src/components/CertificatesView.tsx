@@ -12,7 +12,9 @@ interface CertificatesViewProps {
 	initialCertificates: CaddyPKICA | null;
 }
 
-export function CertificatesView({ initialCertificates }: CertificatesViewProps) {
+export function CertificatesView({
+	initialCertificates,
+}: CertificatesViewProps) {
 	const [ca, setCA] = useState<CaddyPKICA | null>(initialCertificates);
 	const [refreshing, setRefreshing] = useState(false);
 

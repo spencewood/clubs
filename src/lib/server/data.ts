@@ -5,9 +5,9 @@
 
 import fs from "node:fs/promises";
 import { parseCaddyfile } from "@/lib/parser/caddyfile-parser";
-import { validateCaddyfile } from "@/lib/validator/caddyfile-validator";
-import type { CaddyConfig, CaddyUpstream, CaddyPKICA } from "@/types/caddyfile";
 import { createCaddyAPIClient } from "@/lib/server/caddy-api-client";
+import { validateCaddyfile } from "@/lib/validator/caddyfile-validator";
+import type { CaddyConfig, CaddyPKICA, CaddyUpstream } from "@/types/caddyfile";
 
 const CADDYFILE_PATH = process.env.CADDYFILE_PATH || "./config/Caddyfile";
 const CADDY_API_URL = process.env.CADDY_API_URL || "http://localhost:2019";
@@ -28,7 +28,10 @@ export interface InitialPageData {
 /**
  * Check if Caddy API is available
  */
-async function checkCaddyAPI(): Promise<{ available: boolean; version?: string }> {
+async function checkCaddyAPI(): Promise<{
+	available: boolean;
+	version?: string;
+}> {
 	try {
 		const response = await fetch(CADDY_API_URL, {
 			method: "GET",
@@ -142,13 +145,15 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 	const caddyStatus = await checkCaddyAPI();
 	// In development with MSW, always try to fetch even if API check fails
 	// MSW will mock the responses
-	const isLiveMode = caddyStatus.available || process.env.NODE_ENV === "development";
+	const isLiveMode =
+		caddyStatus.available || process.env.NODE_ENV === "development";
 
 	// Override caddyStatus.available to match isLiveMode in development
 	// This ensures the UI shows "Live Mode" when using MSW mocks
-	const effectiveCaddyStatus = process.env.NODE_ENV === "development"
-		? { ...caddyStatus, available: isLiveMode }
-		: caddyStatus;
+	const effectiveCaddyStatus =
+		process.env.NODE_ENV === "development"
+			? { ...caddyStatus, available: isLiveMode }
+			: caddyStatus;
 
 	// Fetch upstreams and certificates in parallel (only if Caddy is available or in dev mode)
 	const [upstreams, certificates] = isLiveMode

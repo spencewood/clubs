@@ -19,8 +19,8 @@ import {
 	Wand2,
 	Zap,
 } from "lucide-react";
-import Link from "next/link";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { AddContainerSiteDialog } from "@/components/AddContainerSiteDialog";
@@ -40,6 +40,7 @@ const CaddyfileEditor = dynamic(
 		),
 	},
 );
+
 import { CertificatesView } from "@/components/CertificatesView";
 import { ContainerCard } from "@/components/ContainerCard";
 import { ContainerEditDialog } from "@/components/ContainerEditDialog";
@@ -69,8 +70,12 @@ import {
 	parseCaddyfile,
 	serializeCaddyfile,
 } from "@/lib/parser/caddyfile-parser";
-import type { CaddyConfig, CaddyDirective, CaddySiteBlock } from "@/types/caddyfile";
 import { validateCaddyfile } from "@/lib/validator/caddyfile-validator";
+import type {
+	CaddyConfig,
+	CaddyDirective,
+	CaddySiteBlock,
+} from "@/types/caddyfile";
 import packageJson from "../../package.json";
 
 function generateId(): string {
@@ -198,7 +203,9 @@ export function CaddyDashboard({
 	>(null);
 	const [editingSiteBlock, setEditingSiteBlock] =
 		useState<CaddySiteBlock | null>(null);
-	const [caddyStatus, setCaddyStatus] = useState<CaddyAPIStatus | null>(initialCaddyStatus);
+	const [caddyStatus, setCaddyStatus] = useState<CaddyAPIStatus | null>(
+		initialCaddyStatus,
+	);
 	const [applying, setApplying] = useState(false);
 	const [addSiteToContainer, setAddSiteToContainer] = useState<string | null>(
 		null,
@@ -644,7 +651,10 @@ export function CaddyDashboard({
 								</div>
 
 								{leftPanelView === "upstreams" ? (
-									<UpstreamsView initialUpstreams={initialUpstreams} initialConfig={config} />
+									<UpstreamsView
+										initialUpstreams={initialUpstreams}
+										initialConfig={config}
+									/>
 								) : leftPanelView === "certificates" ? (
 									<CertificatesView initialCertificates={initialCertificates} />
 								) : config.siteBlocks.length === 0 ? (
@@ -786,7 +796,8 @@ export function CaddyDashboard({
 											<Code className="w-3.5 h-3.5" />
 											Raw Caddyfile
 										</button>
-										{(caddyStatus?.available || process.env.NODE_ENV === "development") && (
+										{(caddyStatus?.available ||
+											process.env.NODE_ENV === "development") && (
 											<button
 												type="button"
 												onClick={() => setRightPanelView("config")}
@@ -1013,4 +1024,3 @@ export function CaddyDashboard({
 		</>
 	);
 }
-

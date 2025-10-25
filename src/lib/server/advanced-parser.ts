@@ -2,6 +2,8 @@
  * Enhanced Caddyfile parser that recognizes common patterns
  */
 
+import type { CaddyDirective } from "@/types/caddyfile";
+
 export interface ServiceBlock {
 	matcherName: string;
 	hostname: string;
@@ -179,7 +181,7 @@ export function getEnhancedStats(content: string): {
 	}
 
 	// Count directives in all site blocks (recursively)
-	const countDirectives = (directives: any[]): number => {
+	const countDirectives = (directives: CaddyDirective[]): number => {
 		let count = 0;
 		for (const directive of directives) {
 			count++; // Count this directive
