@@ -219,6 +219,28 @@ fastify.get("/api/caddy/status", async (_request, _reply) => {
 	}
 });
 
+// Get reverse proxy upstream health status
+fastify.get("/api/caddy/upstreams", async (_request, reply) => {
+	try {
+		const result = await caddyAPI.getUpstreams();
+
+		if (!result.success) {
+			return reply.code(500).send({
+				error: "Failed to fetch upstreams",
+				details: result.error,
+			});
+		}
+
+		return result.upstreams || [];
+	} catch (error) {
+		fastify.log.error({ err: error }, "Failed to fetch upstreams");
+		reply.code(500).send({
+			error: "Failed to fetch upstreams",
+			details: error instanceof Error ? error.message : "Unknown error",
+		});
+	}
+});
+
 // Get full Caddy JSON configuration
 fastify.get("/api/caddy/config", async (_request, reply) => {
 	try {

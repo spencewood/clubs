@@ -190,4 +190,40 @@ export const handlers = [
 				"Caddy fmt not available in mock mode - returning unformatted content",
 		});
 	}),
+
+	// Get upstream health status
+	http.get("/api/caddy/upstreams", async () => {
+		await delay(150);
+
+		if (!mockCaddyAPIAvailable) {
+			return HttpResponse.json(
+				{ error: "Caddy API not available" },
+				{ status: 503 },
+			);
+		}
+
+		// Mock upstream data with varying health statuses
+		return HttpResponse.json([
+			{
+				address: "localhost:3000",
+				num_requests: 12,
+				fails: 0,
+			},
+			{
+				address: "localhost:8080",
+				num_requests: 45,
+				fails: 3,
+			},
+			{
+				address: "api.backend.com:443",
+				num_requests: 125,
+				fails: 2,
+			},
+			{
+				address: "192.168.1.100:8000",
+				num_requests: 8,
+				fails: 15,
+			},
+		]);
+	}),
 ];

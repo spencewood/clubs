@@ -17,3 +17,9 @@ export interface CaddyConfig {
 	siteBlocks: CaddySiteBlock[];
 	globalOptions?: CaddyDirective[];
 }
+
+export interface CaddyUpstream {
+	address: string;
+	num_requests: number;
+	fails: number;
+}

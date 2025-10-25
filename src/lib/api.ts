@@ -269,3 +269,39 @@ export async function adaptCaddyfile(content: string): Promise<{
 		};
 	}
 }
+
+/**
+ * Get reverse proxy upstream health status
+ */
+export async function getCaddyUpstreams(): Promise<{
+	success: boolean;
+	upstreams?: Array<{
+		address: string;
+		num_requests: number;
+		fails: number;
+	}>;
+	error?: string;
+}> {
+	try {
+		const response = await fetch(`${API_BASE}/api/caddy/upstreams`);
+
+		if (!response.ok) {
+			const data = await response.json();
+			return {
+				success: false,
+				error: data.error || data.details || "Failed to fetch upstreams",
+			};
+		}
+
+		const upstreams = await response.json();
+		return {
+			success: true,
+			upstreams,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Network error",
+		};
+	}
+}

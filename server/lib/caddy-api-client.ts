@@ -190,6 +190,47 @@ export class CaddyAPIClient {
 			return { running: false };
 		}
 	}
+
+	/**
+	 * Get the health status of all reverse proxy upstreams
+	 */
+	async getUpstreams(): Promise<{
+		success: boolean;
+		upstreams?: Array<{
+			address: string;
+			num_requests: number;
+			fails: number;
+		}>;
+		error?: string;
+	}> {
+		try {
+			const response = await fetch(`${this.baseURL}/reverse_proxy/upstreams`, {
+				method: "GET",
+			});
+
+			if (!response.ok) {
+				return {
+					success: false,
+					error: response.statusText,
+				};
+			}
+
+			const upstreams = await response.json();
+			return {
+				success: true,
+				upstreams: upstreams as Array<{
+					address: string;
+					num_requests: number;
+					fails: number;
+				}>,
+			};
+		} catch (error) {
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	}
 }
 
 /**

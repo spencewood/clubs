@@ -1,4 +1,5 @@
 import {
+	Activity,
 	Circle,
 	Code,
 	Container,
@@ -25,6 +26,7 @@ import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
 import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { UpstreamsView } from "@/components/UpstreamsView";
 import { Button } from "@/components/ui/button";
 import {
 	applyCaddyfileConfig,
@@ -78,6 +80,9 @@ function App() {
 	} | null>(null);
 	const [isLiveMode, setIsLiveMode] = useState(false);
 	const [showFullConfigInspect, setShowFullConfigInspect] = useState(false);
+	const [leftPanelView, setLeftPanelView] = useState<"sites" | "upstreams">(
+		"sites",
+	);
 
 	// Reusable load function that checks mode and loads appropriate config
 	const loadConfig = useCallback(async (showLoadingState = true) => {
@@ -504,9 +509,39 @@ function App() {
 				<main className="container mx-auto px-4 py-6">
 					{config && (
 						<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-							{/* Left: Visual Editor */}
+							{/* Left: Sites/Upstreams Panel */}
 							<div className="space-y-4">
-								{config.siteBlocks.length === 0 ? (
+								{/* Tab Navigation */}
+								<div className="flex gap-2 border-b">
+									<button
+										type="button"
+										onClick={() => setLeftPanelView("sites")}
+										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											leftPanelView === "sites"
+												? "border-primary text-foreground"
+												: "border-transparent text-muted-foreground hover:text-foreground"
+										}`}
+									>
+										<Server className="w-4 h-4" />
+										Sites
+									</button>
+									<button
+										type="button"
+										onClick={() => setLeftPanelView("upstreams")}
+										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											leftPanelView === "upstreams"
+												? "border-primary text-foreground"
+												: "border-transparent text-muted-foreground hover:text-foreground"
+										}`}
+									>
+										<Activity className="w-4 h-4" />
+										Upstreams
+									</button>
+								</div>
+
+								{leftPanelView === "upstreams" ? (
+									<UpstreamsView />
+								) : config.siteBlocks.length === 0 ? (
 									// Empty state - Show two add options
 									<div className="space-y-6">
 										<div className="text-center space-y-2 pt-8">
@@ -553,81 +588,78 @@ function App() {
 										</div>
 									</div>
 								) : (
-									<>
-										<h2 className="text-lg font-semibold mb-4">Sites</h2>
-										<div className="grid gap-3">
-											{config.siteBlocks.map((siteBlock) => {
-												// Check if this is a container
-												if (isVirtualContainer(siteBlock)) {
-													const container = parseVirtualContainer(siteBlock);
-													return (
-														<ContainerCard
-															key={siteBlock.id}
-															id={container.id}
-															wildcardDomain={container.wildcardDomain}
-															sharedConfig={container.sharedConfig.map((d) =>
-																getDirectiveSummary(d),
-															)}
-															virtualBlocks={container.virtualBlocks.map(
-																(vb) => ({
-																	...vb,
-																	directives: vb.directives.map((d) =>
-																		formatDirectiveForDisplay(d),
-																	),
-																}),
-															)}
-															originalSiteBlock={siteBlock}
-															onEdit={handleEditSiteBlock}
-															onDelete={handleDeleteSiteBlock}
-															onAddSite={handleAddSiteToContainer}
-															onEditSite={(containerId, siteId) =>
-																setEditingSite({ containerId, siteId })
-															}
-															onDeleteSite={handleDeleteSite}
-														/>
-													);
-												}
-
-												// Regular site block
+									<div className="grid gap-3">
+										{config.siteBlocks.map((siteBlock) => {
+											// Check if this is a container
+											if (isVirtualContainer(siteBlock)) {
+												const container = parseVirtualContainer(siteBlock);
 												return (
-													<SiteBlockCard
+													<ContainerCard
 														key={siteBlock.id}
-														siteBlock={siteBlock}
+														id={container.id}
+														wildcardDomain={container.wildcardDomain}
+														sharedConfig={container.sharedConfig.map((d) =>
+															getDirectiveSummary(d),
+														)}
+														virtualBlocks={container.virtualBlocks.map(
+															(vb) => ({
+																...vb,
+																directives: vb.directives.map((d) =>
+																	formatDirectiveForDisplay(d),
+																),
+															}),
+														)}
+														originalSiteBlock={siteBlock}
 														onEdit={handleEditSiteBlock}
 														onDelete={handleDeleteSiteBlock}
+														onAddSite={handleAddSiteToContainer}
+														onEditSite={(containerId, siteId) =>
+															setEditingSite({ containerId, siteId })
+														}
+														onDeleteSite={handleDeleteSite}
 													/>
 												);
-											})}
+											}
 
-											{/* Inline Add Buttons (Trello-style) */}
-											<div className="grid grid-cols-2 gap-3">
-												<button
-													type="button"
-													onClick={() => {
-														setNewSiteBlockType("physical");
-														setShowNewSiteDialog(true);
-													}}
-													className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-muted-foreground hover:text-foreground"
-												>
-													<Plus className="h-4 w-4" />
-													<Globe className="h-4 w-4" />
-													<span className="text-sm font-medium">Site</span>
-												</button>
-												<button
-													type="button"
-													onClick={() => {
-														setNewSiteBlockType("virtual-container");
-														setShowNewSiteDialog(true);
-													}}
-													className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-muted-foreground hover:text-foreground"
-												>
-													<Plus className="h-4 w-4" />
-													<Container className="h-4 w-4" />
-													<span className="text-sm font-medium">Container</span>
-												</button>
-											</div>
+											// Regular site block
+											return (
+												<SiteBlockCard
+													key={siteBlock.id}
+													siteBlock={siteBlock}
+													onEdit={handleEditSiteBlock}
+													onDelete={handleDeleteSiteBlock}
+												/>
+											);
+										})}
+
+										{/* Inline Add Buttons (Trello-style) */}
+										<div className="grid grid-cols-2 gap-3">
+											<button
+												type="button"
+												onClick={() => {
+													setNewSiteBlockType("physical");
+													setShowNewSiteDialog(true);
+												}}
+												className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-muted-foreground hover:text-foreground"
+											>
+												<Plus className="h-4 w-4" />
+												<Globe className="h-4 w-4" />
+												<span className="text-sm font-medium">Site</span>
+											</button>
+											<button
+												type="button"
+												onClick={() => {
+													setNewSiteBlockType("virtual-container");
+													setShowNewSiteDialog(true);
+												}}
+												className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-muted-foreground hover:text-foreground"
+											>
+												<Plus className="h-4 w-4" />
+												<Container className="h-4 w-4" />
+												<span className="text-sm font-medium">Container</span>
+											</button>
 										</div>
-									</>
+									</div>
 								)}
 							</div>
 
