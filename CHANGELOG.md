@@ -1,5 +1,11 @@
 # clubs
 
+## 0.6.0
+
+### Minor Changes
+
+- da02da0: Fix container ipv6 issue
+
 ## 0.5.0
 
 ### Minor Changes
