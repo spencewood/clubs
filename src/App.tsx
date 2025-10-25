@@ -3,8 +3,10 @@ import {
 	Circle,
 	Code,
 	Container,
+	Eye,
 	FileJson,
 	Globe,
+	Loader2,
 	Plus,
 	RefreshCw,
 	Save,
@@ -23,7 +25,6 @@ import { CertificatesView } from "@/components/CertificatesView";
 import { ContainerCard } from "@/components/ContainerCard";
 import { ContainerEditDialog } from "@/components/ContainerEditDialog";
 import { EditContainerSiteDialog } from "@/components/EditContainerSiteDialog";
-import { InspectConfigModal } from "@/components/InspectConfigModal";
 import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
 import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
@@ -35,6 +36,7 @@ import {
 	type CaddyAPIStatus,
 	formatCaddyfile,
 	getCaddyAPIStatus,
+	getCaddyConfig,
 	loadCaddyfile,
 	saveCaddyfile,
 } from "@/lib/api";
@@ -60,6 +62,88 @@ function generateId(): string {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
+function FullConfigView() {
+	const [config, setConfig] = useState<unknown | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const [copied, setCopied] = useState(false);
+
+	useEffect(() => {
+		const fetchConfig = async () => {
+			setLoading(true);
+			setError(null);
+
+			try {
+				const result = await getCaddyConfig();
+
+				if (result.success) {
+					setConfig(result.config);
+				} else {
+					setError(result.error || "Failed to fetch configuration");
+				}
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "Unknown error");
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchConfig();
+	}, []);
+
+	const copyToClipboard = () => {
+		if (config) {
+			navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		}
+	};
+
+	if (loading) {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="p-4">
+				<div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
+					<p className="text-sm text-destructive font-medium">Error</p>
+					<p className="text-sm text-destructive/80 mt-1">{error}</p>
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="flex flex-col h-full p-4 gap-3">
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-2 text-xs text-muted-foreground/70">
+					<Eye className="w-3.5 h-3.5" />
+					<span>Internal configuration from Caddy</span>
+				</div>
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={copyToClipboard}
+					className="text-xs opacity-70 hover:opacity-100"
+				>
+					{copied ? "Copied!" : "Copy JSON"}
+				</Button>
+			</div>
+
+			<div className="flex-1 overflow-auto bg-muted/10 rounded-lg p-4 border border-muted-foreground/20 select-text">
+				<pre className="text-xs font-mono select-text">
+					{JSON.stringify(config as Record<string, unknown>, null, 2)}
+				</pre>
+			</div>
+		</div>
+	);
+}
+
 function App() {
 	const [config, setConfig] = useState<CaddyConfig | null>(null);
 	const [rawContent, setRawContent] = useState<string>("");
@@ -81,10 +165,10 @@ function App() {
 		siteId: string;
 	} | null>(null);
 	const [isLiveMode, setIsLiveMode] = useState(false);
-	const [showFullConfigInspect, setShowFullConfigInspect] = useState(false);
 	const [leftPanelView, setLeftPanelView] = useState<
 		"sites" | "upstreams" | "certificates"
 	>("sites");
+	const [rightPanelView, setRightPanelView] = useState<"raw" | "config">("raw");
 
 	// Reusable load function that checks mode and loads appropriate config
 	const loadConfig = useCallback(async (showLoadingState = true) => {
@@ -679,31 +763,66 @@ function App() {
 								)}
 							</div>
 
-							{/* Right: Raw Caddyfile - Recessed "floor" */}
+							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" */}
 							<div className="flex flex-col space-y-4 min-h-[calc(100vh-12rem)] opacity-60 hover:opacity-100 transition-opacity duration-200">
+								{/* Tab Navigation */}
 								<div className="flex items-center justify-between mb-2">
-									<div className="flex items-center gap-2 text-xs text-muted-foreground/70">
-										<Code className="h-3.5 w-3.5" />
-										<span>Raw Caddyfile</span>
+									<div className="flex gap-2 border-b border-muted-foreground/20">
+										<button
+											type="button"
+											onClick={() => setRightPanelView("raw")}
+											className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+												rightPanelView === "raw"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground/70 hover:text-foreground"
+											}`}
+										>
+											<Code className="w-3.5 h-3.5" />
+											Raw Caddyfile
+										</button>
+										{caddyStatus?.available && (
+											<button
+												type="button"
+												onClick={() => setRightPanelView("config")}
+												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+													rightPanelView === "config"
+														? "border-primary text-foreground"
+														: "border-transparent text-muted-foreground/70 hover:text-foreground"
+												}`}
+											>
+												<FileJson className="w-3.5 h-3.5" />
+												Full Config
+											</button>
+										)}
 									</div>
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={handleFormat}
-										disabled={!rawContent.trim()}
-										className="text-xs opacity-70 hover:opacity-100"
-									>
-										<Wand2 className="h-3.5 w-3.5 mr-1" />
-										Format
-									</Button>
+									{rightPanelView === "raw" && (
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={handleFormat}
+											disabled={!rawContent.trim()}
+											className="text-xs opacity-70 hover:opacity-100"
+										>
+											<Wand2 className="h-3.5 w-3.5 mr-1" />
+											Format
+										</Button>
+									)}
 								</div>
-								<div className="flex-1 border border-dashed border-muted-foreground/20 rounded-md overflow-hidden bg-muted/10">
-									<CaddyfileEditor
-										value={rawContent}
-										onChange={handleRawContentChange}
-										placeholder="# Caddyfile configuration..."
-									/>
-								</div>
+
+								{/* Tab Content */}
+								{rightPanelView === "raw" ? (
+									<div className="flex-1 border border-dashed border-muted-foreground/20 rounded-md overflow-hidden bg-muted/10">
+										<CaddyfileEditor
+											value={rawContent}
+											onChange={handleRawContentChange}
+											placeholder="# Caddyfile configuration..."
+										/>
+									</div>
+								) : (
+									<div className="flex-1 border border-dashed border-muted-foreground/20 rounded-md overflow-hidden bg-muted/10">
+										<FullConfigView />
+									</div>
+								)}
 							</div>
 						</div>
 					)}
@@ -880,28 +999,11 @@ function App() {
 										{applying ? "Applying..." : "Apply to Caddy"}
 									</Button>
 								)}
-								{caddyStatus?.available && (
-									<Button
-										onClick={() => setShowFullConfigInspect(true)}
-										size="sm"
-										variant="outline"
-									>
-										<FileJson className="h-4 w-4 mr-2" />
-										View Full Config
-									</Button>
-								)}
 							</div>
 						</div>
 					</div>
 				</footer>
 			</div>
-
-			<InspectConfigModal
-				open={showFullConfigInspect}
-				onOpenChange={setShowFullConfigInspect}
-				title="Full Caddy Configuration"
-				description="Complete JSON configuration as seen by Caddy"
-			/>
 		</>
 	);
 }
