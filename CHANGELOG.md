@@ -1,5 +1,12 @@
 # clubs
 
+## 0.4.1
+
+### Patch Changes
+
+- 88c96bd: Move view full config
+- 613884a: Visual update for site
+
 ## 0.4.0
 
 ### Minor Changes
