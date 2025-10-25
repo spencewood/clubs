@@ -22,7 +22,6 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { serializeCaddyfile } from "@/lib/parser/caddyfile-parser";
-import type { CaddyDirective } from "@/types/caddyfile";
 
 interface VirtualBlock {
 	id: string;
@@ -38,6 +37,7 @@ interface ContainerCardProps {
 	wildcardDomain: string;
 	sharedConfig: string[];
 	virtualBlocks: VirtualBlock[];
+	originalSiteBlock?: import("@/types/caddyfile").CaddySiteBlock; // Original site block for inspection
 	onEdit: (id: string) => void;
 	onDelete: (id: string) => void;
 	onAddSite: (containerId: string) => void;
@@ -50,6 +50,7 @@ export function ContainerCard({
 	wildcardDomain,
 	sharedConfig,
 	virtualBlocks,
+	originalSiteBlock,
 	onEdit,
 	onDelete,
 	onAddSite,
@@ -62,25 +63,37 @@ export function ContainerCard({
 		useState(false);
 	const [deletingSiteId, setDeletingSiteId] = useState<string | null>(null);
 
-	// Helper to serialize a virtual block to Caddyfile format for adaptation
-	const getVirtualBlockCaddyfile = (block: VirtualBlock) => {
-		// Convert string[] directives back to CaddyDirective[]
-		const directivesAsObjects: CaddyDirective[] = block.directives.map(
-			(dir, idx) => ({
-				id: `${block.id}-dir-${idx}`,
-				name: dir.split(" ")[0] || dir,
-				args: dir.split(" ").slice(1),
-				raw: dir,
-			}),
+	// Helper to get the Caddyfile content for a specific handle block
+	const getHandleBlockCaddyfile = (handleId: string) => {
+		if (!originalSiteBlock) return undefined;
+
+		// Find the handle directive in the original site block
+		const handleDirective = originalSiteBlock.directives.find(
+			(d) => d.id === handleId && d.name === "handle",
 		);
 
-		// Create a standalone site block for this virtual block
+		if (!handleDirective || !handleDirective.block) return undefined;
+
+		// Get the matcher from the handle args (e.g., "@clubs")
+		const matcher = handleDirective.args[0];
+		if (!matcher) return undefined;
+
+		// Find the corresponding @matcher definition
+		const matcherDef = originalSiteBlock.directives.find(
+			(d) => d.name === matcher && d.args[0] === "host",
+		);
+
+		if (!matcherDef || matcherDef.args.length < 2) return undefined;
+
+		const hostname = matcherDef.args[1];
+
+		// Create a simple site block with the handle's contents
 		return serializeCaddyfile({
 			siteBlocks: [
 				{
-					id: block.id,
-					addresses: [block.hostname],
-					directives: directivesAsObjects,
+					id: handleId,
+					addresses: [hostname],
+					directives: handleDirective.block,
 				},
 			],
 			globalOptions: [],
@@ -256,7 +269,7 @@ export function ContainerCard({
 							}
 							caddyId={block.caddyId}
 							caddyfileContent={
-								block.caddyId ? undefined : getVirtualBlockCaddyfile(block)
+								block.caddyId ? undefined : getHandleBlockCaddyfile(block.id)
 							}
 						/>
 					);

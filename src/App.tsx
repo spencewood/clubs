@@ -576,6 +576,7 @@ function App() {
 																	),
 																}),
 															)}
+															originalSiteBlock={siteBlock}
 															onEdit={handleEditSiteBlock}
 															onDelete={handleDeleteSiteBlock}
 															onAddSite={handleAddSiteToContainer}

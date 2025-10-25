@@ -1,5 +1,11 @@
 # clubs
 
+## 0.3.5
+
+### Patch Changes
+
+- Fix caddy site inspect
+
 ## 0.3.4
 
 ### Patch Changes

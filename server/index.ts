@@ -298,7 +298,12 @@ fastify.post("/api/caddy/adapt", async (request, reply) => {
 			});
 		}
 
-		const config = (await adaptResponse.json()) as Record<string, unknown>;
+		const adaptResult = (await adaptResponse.json()) as Record<string, unknown>;
+
+		// Caddy's /adapt endpoint may return { warnings, result } or just the config
+		// Extract the actual config
+		const config =
+			(adaptResult.result as Record<string, unknown>) || adaptResult;
 
 		// Extract just the HTTP app's server configuration for this site
 		// This is more focused than returning the entire config
