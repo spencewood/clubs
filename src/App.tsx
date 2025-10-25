@@ -510,9 +510,9 @@ function App() {
 
 				<main className="container mx-auto px-4 py-6">
 					{config && (
-						<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-							{/* Left: Sites/Upstreams Panel */}
-							<div className="space-y-4">
+						<div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+							{/* Left: Sites/Upstreams Panel - Elevated "table" */}
+							<div className="space-y-4 bg-card border rounded-lg shadow-lg p-6 relative z-10">
 								{/* Tab Navigation */}
 								<div className="flex gap-2 border-b">
 									<button
@@ -679,24 +679,25 @@ function App() {
 								)}
 							</div>
 
-							{/* Right: Raw Caddyfile */}
-							<div className="flex flex-col space-y-4 min-h-[calc(100vh-12rem)]">
+							{/* Right: Raw Caddyfile - Recessed "floor" */}
+							<div className="flex flex-col space-y-4 min-h-[calc(100vh-12rem)] opacity-60 hover:opacity-100 transition-opacity duration-200">
 								<div className="flex items-center justify-between mb-2">
-									<div className="flex items-center gap-2 text-sm text-muted-foreground">
-										<Code className="h-4 w-4" />
+									<div className="flex items-center gap-2 text-xs text-muted-foreground/70">
+										<Code className="h-3.5 w-3.5" />
 										<span>Raw Caddyfile</span>
 									</div>
 									<Button
-										variant="outline"
+										variant="ghost"
 										size="sm"
 										onClick={handleFormat}
 										disabled={!rawContent.trim()}
+										className="text-xs opacity-70 hover:opacity-100"
 									>
-										<Wand2 className="h-4 w-4 mr-1" />
+										<Wand2 className="h-3.5 w-3.5 mr-1" />
 										Format
 									</Button>
 								</div>
-								<div className="flex-1">
+								<div className="flex-1 border border-dashed border-muted-foreground/20 rounded-md overflow-hidden bg-muted/10">
 									<CaddyfileEditor
 										value={rawContent}
 										onChange={handleRawContentChange}
