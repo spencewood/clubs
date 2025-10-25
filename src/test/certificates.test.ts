@@ -71,8 +71,12 @@ describe("PKI Certificates", () => {
 
 			if (result.ca) {
 				// Check root certificate is PEM format
-				expect(result.ca.root_certificate).toContain("-----BEGIN CERTIFICATE-----");
-				expect(result.ca.root_certificate).toContain("-----END CERTIFICATE-----");
+				expect(result.ca.root_certificate).toContain(
+					"-----BEGIN CERTIFICATE-----",
+				);
+				expect(result.ca.root_certificate).toContain(
+					"-----END CERTIFICATE-----",
+				);
 
 				// Check intermediate certificate is PEM format
 				expect(result.ca.intermediate_certificate).toContain(
@@ -165,9 +169,7 @@ describe("PKI Certificates", () => {
 			expect(result.success).toBe(true);
 			if (result.ca) {
 				// Get middle lines (between BEGIN and END)
-				const rootLines = result.ca.root_certificate
-					.split("\n")
-					.slice(1, -1);
+				const rootLines = result.ca.root_certificate.split("\n").slice(1, -1);
 				const intLines = result.ca.intermediate_certificate
 					.split("\n")
 					.slice(1, -1);
@@ -202,7 +204,7 @@ describe("PKI Certificates", () => {
 			expect(result.success).toBe(false);
 			expect(result.error).toBeDefined();
 			expect(typeof result.error).toBe("string");
-			expect(result.error!.length).toBeGreaterThan(0);
+			expect(result.error?.length).toBeGreaterThan(0);
 		});
 
 		it("should handle network errors gracefully", async () => {
