@@ -10,6 +10,7 @@ import {
 	Save,
 	Server,
 	Shield,
+	ShieldCheck,
 	Sparkles,
 	Wand2,
 	Zap,
@@ -18,6 +19,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { AddContainerSiteDialog } from "@/components/AddContainerSiteDialog";
 import { CaddyfileEditor } from "@/components/CaddyfileEditor";
+import { CertificatesView } from "@/components/CertificatesView";
 import { ContainerCard } from "@/components/ContainerCard";
 import { ContainerEditDialog } from "@/components/ContainerEditDialog";
 import { EditContainerSiteDialog } from "@/components/EditContainerSiteDialog";
@@ -80,9 +82,9 @@ function App() {
 	} | null>(null);
 	const [isLiveMode, setIsLiveMode] = useState(false);
 	const [showFullConfigInspect, setShowFullConfigInspect] = useState(false);
-	const [leftPanelView, setLeftPanelView] = useState<"sites" | "upstreams">(
-		"sites",
-	);
+	const [leftPanelView, setLeftPanelView] = useState<
+		"sites" | "upstreams" | "certificates"
+	>("sites");
 
 	// Reusable load function that checks mode and loads appropriate config
 	const loadConfig = useCallback(async (showLoadingState = true) => {
@@ -537,10 +539,24 @@ function App() {
 										<Activity className="w-4 h-4" />
 										Upstreams
 									</button>
+									<button
+										type="button"
+										onClick={() => setLeftPanelView("certificates")}
+										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											leftPanelView === "certificates"
+												? "border-primary text-foreground"
+												: "border-transparent text-muted-foreground hover:text-foreground"
+										}`}
+									>
+										<ShieldCheck className="w-4 h-4" />
+										Certificates
+									</button>
 								</div>
 
 								{leftPanelView === "upstreams" ? (
 									<UpstreamsView />
+								) : leftPanelView === "certificates" ? (
+									<CertificatesView />
 								) : config.siteBlocks.length === 0 ? (
 									// Empty state - Show two add options
 									<div className="space-y-6">

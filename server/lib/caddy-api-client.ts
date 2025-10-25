@@ -231,6 +231,53 @@ export class CaddyAPIClient {
 			};
 		}
 	}
+
+	/**
+	 * Get PKI CA information (defaults to 'local' CA)
+	 */
+	async getPKICA(caId = "local"): Promise<{
+		success: boolean;
+		ca?: {
+			id: string;
+			name: string;
+			root_common_name: string;
+			intermediate_common_name: string;
+			root_certificate: string;
+			intermediate_certificate: string;
+		};
+		error?: string;
+	}> {
+		try {
+			const response = await fetch(`${this.baseURL}/pki/ca/${caId}`, {
+				method: "GET",
+			});
+
+			if (!response.ok) {
+				return {
+					success: false,
+					error: response.statusText,
+				};
+			}
+
+			const ca = await response.json();
+			return {
+				success: true,
+				ca: ca as {
+					id: string;
+					name: string;
+					root_common_name: string;
+					intermediate_common_name: string;
+					root_certificate: string;
+					intermediate_certificate: string;
+				},
+			};
+		} catch (error) {
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	}
 }
 
 /**

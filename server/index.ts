@@ -241,6 +241,29 @@ fastify.get("/api/caddy/upstreams", async (_request, reply) => {
 	}
 });
 
+// Get PKI CA certificate information
+fastify.get("/api/caddy/pki/ca/:caId?", async (request, reply) => {
+	try {
+		const { caId } = request.params as { caId?: string };
+		const result = await caddyAPI.getPKICA(caId || "local");
+
+		if (!result.success) {
+			return reply.code(500).send({
+				error: "Failed to fetch PKI CA",
+				details: result.error,
+			});
+		}
+
+		return result.ca;
+	} catch (error) {
+		fastify.log.error({ err: error }, "Failed to fetch PKI CA");
+		reply.code(500).send({
+			error: "Failed to fetch PKI CA",
+			details: error instanceof Error ? error.message : "Unknown error",
+		});
+	}
+});
+
 // Get full Caddy JSON configuration
 fastify.get("/api/caddy/config", async (_request, reply) => {
 	try {

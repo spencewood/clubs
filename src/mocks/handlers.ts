@@ -226,4 +226,40 @@ export const handlers = [
 			},
 		]);
 	}),
+
+	// Get PKI CA certificate information
+	http.get("/api/caddy/pki/ca/:caId?", async ({ params }) => {
+		await delay(150);
+
+		if (!mockCaddyAPIAvailable) {
+			return HttpResponse.json(
+				{ error: "Caddy API not available" },
+				{ status: 503 },
+			);
+		}
+
+		const { caId = "local" } = params;
+
+		// Mock PKI CA data
+		return HttpResponse.json({
+			id: caId,
+			name: "Caddy Local Authority",
+			root_common_name: `Caddy Local Authority - ${new Date().getFullYear()} ECC Root`,
+			intermediate_common_name: `Caddy Local Authority - ECC Intermediate`,
+			root_certificate: `-----BEGIN CERTIFICATE-----
+MIIBtjCCAVygAwIBAgIRAMp8rgWvpYmqKrFKSwEHyuswCgYIKoZIzj0EAwIwOjE4
+MDYGA1UEAxMvQ2FkZHkgTG9jYWwgQXV0aG9yaXR5IC0gMjAyNCBFQ0MgUm9vdDAe
+Fw0yNDAxMDEwMDAwMDBaFw0zNDEyMzEyMzU5NTlaMDoxODA2BgNVBAMTL0NhZGR5
+IExvY2FsIEF1dGhvcml0eSAtIDIwMjQgRUNDIFJvb3QwWTATBgcqhkjOPQIBBggq
+hkjOPQMBBwNCAATXVqfYe7pCPv1xP6wZLcJXvf5WNHPjpzV3MZYbq7d8XGJ0dLc8
+-----END CERTIFICATE-----`,
+			intermediate_certificate: `-----BEGIN CERTIFICATE-----
+MIICFDCCAbqgAwIBAgIQPZNK7tGKHu7QLWwI8fKHCTAKBggqhkjOPQQDAjA6MTgw
+NgYDVQQDEy9DYWRkeSBMb2NhbCBBdXRob3JpdHkgLSAyMDI0IEVDQyBSb290MB4X
+DTI0MDEwMTAwMDAwMFoXDTM0MTIzMTIzNTk1OVowPDE6MDgGA1UEAxMxQ2FkZHkg
+TG9jYWwgQXV0aG9yaXR5IC0gRUNDIEludGVybWVkaWF0ZTBZMBMGByqGSM49AgEG
+CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
+-----END CERTIFICATE-----`,
+		});
+	}),
 ];

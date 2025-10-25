@@ -23,3 +23,12 @@ export interface CaddyUpstream {
 	num_requests: number;
 	fails: number;
 }
+
+export interface CaddyPKICA {
+	id: string;
+	name: string;
+	root_common_name: string;
+	intermediate_common_name: string;
+	root_certificate: string;
+	intermediate_certificate: string;
+}

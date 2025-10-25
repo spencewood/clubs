@@ -305,3 +305,42 @@ export async function getCaddyUpstreams(): Promise<{
 		};
 	}
 }
+
+/**
+ * Get PKI CA certificate information
+ */
+export async function getCaddyPKICA(caId = "local"): Promise<{
+	success: boolean;
+	ca?: {
+		id: string;
+		name: string;
+		root_common_name: string;
+		intermediate_common_name: string;
+		root_certificate: string;
+		intermediate_certificate: string;
+	};
+	error?: string;
+}> {
+	try {
+		const response = await fetch(`${API_BASE}/api/caddy/pki/ca/${caId}`);
+
+		if (!response.ok) {
+			const data = await response.json();
+			return {
+				success: false,
+				error: data.error || data.details || "Failed to fetch PKI CA",
+			};
+		}
+
+		const ca = await response.json();
+		return {
+			success: true,
+			ca,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Network error",
+		};
+	}
+}
