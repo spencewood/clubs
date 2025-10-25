@@ -6,8 +6,8 @@ WORKDIR /app
 # Disable Next.js telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install pnpm first (cache this layer)
-RUN npm install -g pnpm@10.10.0
+# Enable corepack and install pnpm (cache this layer)
+RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
 
 # Copy only package files first for better caching
 COPY package.json pnpm-lock.yaml ./

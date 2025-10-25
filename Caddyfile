@@ -11,5 +11,5 @@
 # Next.js handles both UI and API routes
 :80 {
 	# Proxy all requests to Next.js server
-	reverse_proxy localhost:3000
+	reverse_proxy 127.0.0.1:3000
 }
