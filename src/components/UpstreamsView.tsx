@@ -1,19 +1,40 @@
-import { Activity, AlertCircle, CheckCircle, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import {
+	Activity,
+	AlertCircle,
+	CheckCircle,
+	RefreshCw,
+	WifiOff,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { getCaddyUpstreams } from "@/lib/api";
-import type { CaddyUpstream } from "@/types/caddyfile";
+import { getCaddyUpstreams, loadCaddyfile } from "@/lib/api";
+import { parseCaddyfile } from "@/lib/parser/caddyfile-parser";
+import {
+	type ConsolidatedServer,
+	consolidateUpstreamsWithConfig,
+} from "@/lib/upstream-utils";
+import type { CaddyConfig, CaddyUpstream } from "@/types/caddyfile";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
-function getHealthStatus(upstream: CaddyUpstream): {
-	status: "healthy" | "degraded" | "unhealthy";
+function getHealthStatus(server: ConsolidatedServer): {
+	status: "healthy" | "degraded" | "unhealthy" | "offline";
 	label: string;
 	color: string;
-	icon: typeof CheckCircle;
+	icon: typeof CheckCircle | typeof WifiOff;
 } {
+	// Check if offline first
+	if (server.isOffline) {
+		return {
+			status: "offline",
+			label: "Offline",
+			color: "text-gray-500",
+			icon: WifiOff,
+		};
+	}
+
 	// Consider unhealthy if fails > 5
-	if (upstream.fails > 5) {
+	if (server.totalFails > 5) {
 		return {
 			status: "unhealthy",
 			label: "Unhealthy",
@@ -23,7 +44,7 @@ function getHealthStatus(upstream: CaddyUpstream): {
 	}
 
 	// Consider degraded if fails > 0 or high request count
-	if (upstream.fails > 0 || upstream.num_requests > 100) {
+	if (server.totalFails > 0 || server.totalRequests > 100) {
 		return {
 			status: "degraded",
 			label: "Degraded",
@@ -42,6 +63,7 @@ function getHealthStatus(upstream: CaddyUpstream): {
 
 export function UpstreamsView() {
 	const [upstreams, setUpstreams] = useState<CaddyUpstream[]>([]);
+	const [caddyConfig, setCaddyConfig] = useState<CaddyConfig | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 
@@ -50,14 +72,28 @@ export function UpstreamsView() {
 		setRefreshing(true);
 
 		try {
-			const result = await getCaddyUpstreams();
+			// Fetch both upstreams stats and Caddyfile config
+			const [upstreamsResult, caddyfileResult] = await Promise.all([
+				getCaddyUpstreams(),
+				loadCaddyfile(),
+			]);
 
-			if (result.success && result.upstreams) {
-				setUpstreams(result.upstreams);
+			if (upstreamsResult.success && upstreamsResult.upstreams) {
+				setUpstreams(upstreamsResult.upstreams);
 			} else {
 				toast.error("Failed to fetch upstreams", {
-					description: result.error || "Unknown error",
+					description: upstreamsResult.error || "Unknown error",
 				});
+			}
+
+			if (caddyfileResult.success && caddyfileResult.content) {
+				try {
+					const config = parseCaddyfile(caddyfileResult.content);
+					setCaddyConfig(config);
+				} catch (parseError) {
+					console.error("Failed to parse Caddyfile:", parseError);
+					setCaddyConfig(null);
+				}
 			}
 		} catch (error) {
 			toast.error("Error fetching upstreams", {
@@ -68,6 +104,12 @@ export function UpstreamsView() {
 			setRefreshing(false);
 		}
 	}, []);
+
+	// Consolidate upstreams by server (ignoring port) and include offline ones
+	const consolidatedServers = useMemo(
+		() => consolidateUpstreamsWithConfig(upstreams, caddyConfig),
+		[upstreams, caddyConfig],
+	);
 
 	useEffect(() => {
 		fetchUpstreams();
@@ -91,7 +133,7 @@ export function UpstreamsView() {
 		);
 	}
 
-	if (upstreams.length === 0) {
+	if (consolidatedServers.length === 0) {
 		return (
 			<div className="flex items-center justify-center py-12">
 				<div className="text-center space-y-3">
@@ -114,14 +156,17 @@ export function UpstreamsView() {
 		);
 	}
 
-	const healthyCount = upstreams.filter(
-		(u) => getHealthStatus(u).status === "healthy",
+	const healthyCount = consolidatedServers.filter(
+		(s) => getHealthStatus(s).status === "healthy",
 	).length;
-	const degradedCount = upstreams.filter(
-		(u) => getHealthStatus(u).status === "degraded",
+	const degradedCount = consolidatedServers.filter(
+		(s) => getHealthStatus(s).status === "degraded",
 	).length;
-	const unhealthyCount = upstreams.filter(
-		(u) => getHealthStatus(u).status === "unhealthy",
+	const unhealthyCount = consolidatedServers.filter(
+		(s) => getHealthStatus(s).status === "unhealthy",
+	).length;
+	const offlineCount = consolidatedServers.filter(
+		(s) => getHealthStatus(s).status === "offline",
 	).length;
 
 	return (
@@ -148,13 +193,13 @@ export function UpstreamsView() {
 			</div>
 
 			{/* Summary stats */}
-			<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+			<div className="grid grid-cols-2 md:grid-cols-5 gap-4">
 				<Card className="p-4">
 					<div className="flex items-center gap-3">
 						<Activity className="w-5 h-5 text-muted-foreground" />
 						<div>
-							<p className="text-2xl font-bold">{upstreams.length}</p>
-							<p className="text-xs text-muted-foreground">Total Upstreams</p>
+							<p className="text-2xl font-bold">{consolidatedServers.length}</p>
+							<p className="text-xs text-muted-foreground">Upstream Hosts</p>
 						</div>
 					</div>
 				</Card>
@@ -188,32 +233,57 @@ export function UpstreamsView() {
 						</div>
 					</div>
 				</Card>
+
+				<Card className="p-4">
+					<div className="flex items-center gap-3">
+						<WifiOff className="w-5 h-5 text-gray-500" />
+						<div>
+							<p className="text-2xl font-bold">{offlineCount}</p>
+							<p className="text-xs text-muted-foreground">Offline</p>
+						</div>
+					</div>
+				</Card>
 			</div>
 
-			{/* Upstreams list */}
+			{/* Servers list */}
 			<div className="space-y-3">
-				{upstreams.map((upstream, index) => {
-					const health = getHealthStatus(upstream);
+				{consolidatedServers.map((server) => {
+					const health = getHealthStatus(server);
 					const Icon = health.icon;
 
 					return (
-						<Card key={`${upstream.address}-${index}`} className="p-4">
+						<Card key={server.server} className="p-4">
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-3 flex-1">
 									<Icon className={`w-5 h-5 ${health.color}`} />
 									<div className="flex-1">
 										<div className="font-mono font-semibold">
-											{upstream.address}
+											{server.server}
 										</div>
 										<div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-											<span>
-												<span className="font-medium">Requests:</span>{" "}
-												{upstream.num_requests}
-											</span>
-											<span>
-												<span className="font-medium">Failures:</span>{" "}
-												{upstream.fails}
-											</span>
+											{server.ports.length > 0 && (
+												<span>
+													<span className="font-medium">Ports:</span>{" "}
+													{server.ports.join(", ")}
+												</span>
+											)}
+											{!server.isOffline && (
+												<>
+													<span>
+														<span className="font-medium">Requests:</span>{" "}
+														{server.totalRequests}
+													</span>
+													<span>
+														<span className="font-medium">Failures:</span>{" "}
+														{server.totalFails}
+													</span>
+												</>
+											)}
+											{server.isOffline && (
+												<span className="text-gray-500">
+													No stats available
+												</span>
+											)}
 										</div>
 									</div>
 								</div>

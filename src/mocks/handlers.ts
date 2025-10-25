@@ -7,6 +7,21 @@ let mockCaddyfile = `# Example configuration
 app.example.com {
 	reverse_proxy localhost:3000
 	encode gzip
+}
+
+api.example.com {
+	reverse_proxy localhost:8080
+}
+
+backend.example.com {
+	# This upstream is offline - configured but not reporting stats
+	reverse_proxy offline-server:9000
+	reverse_proxy offline-server:9001
+}
+
+monitor.example.com {
+	reverse_proxy api.backend.com:443
+	reverse_proxy 192.168.1.100:8000
 }`;
 
 // Helper to toggle API availability (for testing)
