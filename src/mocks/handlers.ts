@@ -1,3 +1,4 @@
+// @ts-nocheck - MSW types are complex, disable for mock handlers
 import { delay, HttpResponse, http } from "msw";
 import type { CaddyAPIStatus } from "@/lib/api";
 

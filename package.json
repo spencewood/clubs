@@ -11,10 +11,12 @@
 		"test": "vitest",
 		"test:ui": "vitest --ui",
 		"test:coverage": "vitest --coverage",
+		"test:docker": "./test-docker.sh",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",
 		"typecheck": "tsc --noEmit",
+		"prerelease": "pnpm lint && pnpm typecheck && pnpm test --run && pnpm test:docker",
 		"changeset": "changeset",
 		"version": "changeset version"
 	},
