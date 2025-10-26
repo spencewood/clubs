@@ -1,30 +1,44 @@
 "use client";
 
-import { BarChart3, RefreshCw, TrendingUp, XCircle, AlertTriangle } from "lucide-react";
+import {
+	AlertTriangle,
+	BarChart3,
+	RefreshCw,
+	TrendingUp,
+	XCircle,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
-	BarChart,
+	Area,
+	AreaChart,
 	Bar,
+	BarChart,
+	CartesianGrid,
 	XAxis,
 	YAxis,
-	CartesianGrid,
-	AreaChart,
-	Area,
 } from "recharts";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import {
+	type ChartConfig,
 	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
 	ChartLegend,
 	ChartLegendContent,
-	type ChartConfig,
+	ChartTooltip,
+	ChartTooltipContent,
 } from "./ui/chart";
 
 // Custom tick component that truncates long names intelligently
-const CustomYAxisTick = ({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
+const CustomYAxisTick = ({
+	x,
+	y,
+	payload,
+}: {
+	x: number;
+	y: number;
+	payload: { value: string };
+}) => {
 	const maxLength = 20;
 	const text = payload.value;
 
@@ -106,15 +120,12 @@ export function MetricsView() {
 			const now = new Date();
 			const hours = now.getHours();
 			const mins = now.getMinutes().toString().padStart(2, "0");
-			const timeLabel = hours + ":" + mins;
+			const timeLabel = `${hours}:${mins}`;
 			const totalRequests = upstreams.reduce(
 				(sum, u) => sum + u.num_requests,
-				0
+				0,
 			);
-			const totalFails = upstreams.reduce(
-				(sum, u) => sum + u.fails,
-				0
-			);
+			const totalFails = upstreams.reduce((sum, u) => sum + u.fails, 0);
 
 			setHistoricalData((prev) => {
 				const newData = [
@@ -166,7 +177,7 @@ export function MetricsView() {
 		.slice(0, 10)
 		.map((u) => ({
 			name:
-				u.address.length > 20 ? u.address.substring(0, 20) + "..." : u.address,
+				u.address.length > 20 ? `${u.address.substring(0, 20)}...` : u.address,
 			requests: u.num_requests,
 		}));
 
@@ -180,8 +191,11 @@ export function MetricsView() {
 		.slice(0, 8)
 		.map((u) => ({
 			name:
-				u.address.length > 18 ? u.address.substring(0, 18) + "..." : u.address,
-			rate: u.num_requests > 0 ? Number(((u.fails / u.num_requests) * 100).toFixed(2)) : 0,
+				u.address.length > 18 ? `${u.address.substring(0, 18)}...` : u.address,
+			rate:
+				u.num_requests > 0
+					? Number(((u.fails / u.num_requests) * 100).toFixed(2))
+					: 0,
 		}));
 
 	return (
@@ -200,7 +214,7 @@ export function MetricsView() {
 					disabled={refreshing}
 				>
 					<RefreshCw
-						className={"w-4 h-4 mr-2 " + (refreshing ? "animate-spin" : "")}
+						className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
 					/>
 					Refresh
 				</Button>
@@ -218,9 +232,9 @@ export function MetricsView() {
 				</Card>
 				<Card className="p-4">
 					<div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-					<XCircle className="w-3 h-3" />
-					Total Failures
-				</div>
+						<XCircle className="w-3 h-3" />
+						Total Failures
+					</div>
 					<div className="text-2xl font-bold text-destructive">
 						{totalFails.toLocaleString()}
 					</div>
@@ -284,23 +298,21 @@ export function MetricsView() {
 									fill="url(#fillRequests)"
 									fillOpacity={0.4}
 									stroke="var(--color-requests)"
-												/>
+								/>
 								<Area
 									dataKey="fails"
 									type="monotone"
 									fill="url(#fillFails)"
 									fillOpacity={0.4}
 									stroke="var(--color-fails)"
-												/>
+								/>
 							</AreaChart>
 						</ChartContainer>
 					</Card>
 				)}
 
 				<Card className="p-6">
-					<h3 className="text-lg font-semibold mb-4">
-						Traffic Distribution
-					</h3>
+					<h3 className="text-lg font-semibold mb-4">Traffic Distribution</h3>
 					<ChartContainer config={chartConfig}>
 						<BarChart data={trafficData} layout="vertical">
 							<CartesianGrid horizontal={false} />
@@ -336,9 +348,7 @@ export function MetricsView() {
 									width={140}
 									tick={<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />}
 								/>
-								<ChartTooltip
-									content={<ChartTooltipContent />}
-								/>
+								<ChartTooltip content={<ChartTooltipContent />} />
 								<Bar dataKey="rate" fill="var(--color-rate)" radius={4} />
 							</BarChart>
 						</ChartContainer>

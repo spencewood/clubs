@@ -587,15 +587,51 @@ export const handlers = [
 		const requestMultiplier = 1 + (timeSinceStart / 60000) * 0.5;
 
 		return HttpResponse.json([
-			{ address: "localhost:3000", num_requests: Math.floor(142 * requestMultiplier), fails: 0 },
-			{ address: "localhost:3001", num_requests: Math.floor(89 * requestMultiplier), fails: 0 },
-			{ address: "localhost:3002", num_requests: Math.floor(500 * requestMultiplier), fails: Math.floor(2 * requestMultiplier) },
-			{ address: "localhost:3003", num_requests: Math.floor(91 * requestMultiplier), fails: 0 },
-			{ address: "localhost:8080", num_requests: Math.floor(300 * requestMultiplier), fails: Math.floor(8 * requestMultiplier) },
-			{ address: "localhost:9000", num_requests: Math.floor(1250 * requestMultiplier), fails: Math.floor(3 * requestMultiplier) },
-			{ address: "localhost:9090", num_requests: Math.floor(856 * requestMultiplier), fails: Math.floor(1 * requestMultiplier) },
-			{ address: "api.backend.com:443", num_requests: Math.floor(10485 * requestMultiplier), fails: Math.floor(31 * requestMultiplier) },
-			{ address: "192.168.1.100:8000", num_requests: Math.floor(100 * requestMultiplier), fails: Math.floor(25 * requestMultiplier) },
+			{
+				address: "localhost:3000",
+				num_requests: Math.floor(142 * requestMultiplier),
+				fails: 0,
+			},
+			{
+				address: "localhost:3001",
+				num_requests: Math.floor(89 * requestMultiplier),
+				fails: 0,
+			},
+			{
+				address: "localhost:3002",
+				num_requests: Math.floor(500 * requestMultiplier),
+				fails: Math.floor(2 * requestMultiplier),
+			},
+			{
+				address: "localhost:3003",
+				num_requests: Math.floor(91 * requestMultiplier),
+				fails: 0,
+			},
+			{
+				address: "localhost:8080",
+				num_requests: Math.floor(300 * requestMultiplier),
+				fails: Math.floor(8 * requestMultiplier),
+			},
+			{
+				address: "localhost:9000",
+				num_requests: Math.floor(1250 * requestMultiplier),
+				fails: Math.floor(3 * requestMultiplier),
+			},
+			{
+				address: "localhost:9090",
+				num_requests: Math.floor(856 * requestMultiplier),
+				fails: Math.floor(1 * requestMultiplier),
+			},
+			{
+				address: "api.backend.com:443",
+				num_requests: Math.floor(10485 * requestMultiplier),
+				fails: Math.floor(31 * requestMultiplier),
+			},
+			{
+				address: "192.168.1.100:8000",
+				num_requests: Math.floor(100 * requestMultiplier),
+				fails: Math.floor(25 * requestMultiplier),
+			},
 		]);
 	}),
 

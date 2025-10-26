@@ -1,4 +1,4 @@
-import { recordApiCall } from './metrics';
+import { recordApiCall } from "./metrics";
 
 // Caddy JSON Config type (simplified for API usage)
 export interface CaddyJSONConfig {
@@ -30,10 +30,10 @@ export class CaddyAPIClient {
 	 */
 	private async fetchWithMetrics(
 		url: string,
-		options: RequestInit & { endpoint?: string } = {}
+		options: RequestInit & { endpoint?: string } = {},
 	): Promise<Response> {
 		const startTime = performance.now();
-		const method = options.method || 'GET';
+		const method = options.method || "GET";
 		const endpoint = options.endpoint || new URL(url).pathname;
 
 		try {
@@ -179,14 +179,17 @@ export class CaddyAPIClient {
 		error?: string;
 	}> {
 		try {
-			const response = await this.fetchWithMetrics(`${this.baseURL}/config/${path}`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
+			const response = await this.fetchWithMetrics(
+				`${this.baseURL}/config/${path}`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(value),
+					endpoint: `/config/${path}`,
 				},
-				body: JSON.stringify(value),
-				endpoint: `/config/${path}`,
-			});
+			);
 
 			const text = await response.text();
 
@@ -243,10 +246,13 @@ export class CaddyAPIClient {
 		error?: string;
 	}> {
 		try {
-			const response = await this.fetchWithMetrics(`${this.baseURL}/reverse_proxy/upstreams`, {
-				method: "GET",
-				endpoint: "/reverse_proxy/upstreams",
-			});
+			const response = await this.fetchWithMetrics(
+				`${this.baseURL}/reverse_proxy/upstreams`,
+				{
+					method: "GET",
+					endpoint: "/reverse_proxy/upstreams",
+				},
+			);
 
 			if (!response.ok) {
 				return {
@@ -288,10 +294,13 @@ export class CaddyAPIClient {
 		error?: string;
 	}> {
 		try {
-			const response = await this.fetchWithMetrics(`${this.baseURL}/pki/ca/${caId}`, {
-				method: "GET",
-				endpoint: `/pki/ca/${caId}`,
-			});
+			const response = await this.fetchWithMetrics(
+				`${this.baseURL}/pki/ca/${caId}`,
+				{
+					method: "GET",
+					endpoint: `/pki/ca/${caId}`,
+				},
+			);
 
 			if (!response.ok) {
 				return {
