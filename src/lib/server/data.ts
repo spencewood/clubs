@@ -33,6 +33,7 @@ async function checkCaddyAPI(): Promise<{
 	version?: string;
 }> {
 	try {
+		console.log(`[checkCaddyAPI] Checking Caddy API at ${CADDY_API_URL}`);
 		const response = await fetch(CADDY_API_URL, {
 			method: "GET",
 			headers: { "Content-Type": "application/json" },
@@ -41,13 +42,23 @@ async function checkCaddyAPI(): Promise<{
 
 		if (response.ok) {
 			const data = await response.json();
+			console.log(
+				`[checkCaddyAPI] ✓ Caddy API available (version: ${data.version || "unknown"})`,
+			);
 			return {
 				available: true,
 				version: data.version,
 			};
 		}
+
+		console.warn(
+			`[checkCaddyAPI] ✗ Caddy API returned non-OK status: ${response.status} ${response.statusText}`,
+		);
 		return { available: false };
-	} catch {
+	} catch (error) {
+		console.error(
+			`[checkCaddyAPI] ✗ Failed to connect to Caddy API: ${error instanceof Error ? error.message : "Unknown error"}`,
+		);
 		return { available: false };
 	}
 }
@@ -97,30 +108,21 @@ async function loadFromFile(): Promise<string | null> {
 }
 
 /**
- * Fetch upstreams from Caddy API with timeout
+ * Fetch upstreams from Caddy API
  */
 async function fetchUpstreams(): Promise<CaddyUpstream[]> {
 	try {
 		const caddyAPI = createCaddyAPIClient(CADDY_API_URL);
+		const result = await caddyAPI.getUpstreams();
 
-		// Add timeout to prevent hanging during SSR
-		const timeoutPromise = new Promise<{ success: false }>((resolve) => {
-			setTimeout(() => resolve({ success: false }), 5000); // 5 second timeout
-		});
-
-		const result = await Promise.race([
-			caddyAPI.getUpstreams(),
-			timeoutPromise,
-		]);
-
-		if (result.success && "upstreams" in result && result.upstreams) {
+		if (result.success && result.upstreams) {
 			console.log(
 				`[fetchUpstreams] Successfully fetched ${result.upstreams.length} upstreams`,
 			);
 			return result.upstreams;
 		}
 
-		console.warn("[fetchUpstreams] Failed to fetch upstreams or timed out");
+		console.warn("[fetchUpstreams] Failed to fetch upstreams from Caddy API");
 		return [];
 	} catch (error) {
 		console.error("[fetchUpstreams] Error fetching upstreams:", error);
@@ -129,28 +131,19 @@ async function fetchUpstreams(): Promise<CaddyUpstream[]> {
 }
 
 /**
- * Fetch certificates from Caddy API with timeout
+ * Fetch certificates from Caddy API
  */
 async function fetchCertificates(): Promise<CaddyPKICA | null> {
 	try {
 		const caddyAPI = createCaddyAPIClient(CADDY_API_URL);
+		const result = await caddyAPI.getPKICA("local");
 
-		// Add timeout to prevent hanging during SSR
-		const timeoutPromise = new Promise<{ success: false }>((resolve) => {
-			setTimeout(() => resolve({ success: false }), 5000); // 5 second timeout
-		});
-
-		const result = await Promise.race([
-			caddyAPI.getPKICA("local"),
-			timeoutPromise,
-		]);
-
-		if (result.success && "ca" in result && result.ca) {
+		if (result.success && result.ca) {
 			console.log("[fetchCertificates] Successfully fetched PKI CA");
 			return result.ca;
 		}
 
-		console.warn("[fetchCertificates] Failed to fetch PKI CA or timed out");
+		console.warn("[fetchCertificates] Failed to fetch PKI CA from Caddy API");
 		return null;
 	} catch (error) {
 		console.error("[fetchCertificates] Error fetching certificates:", error);

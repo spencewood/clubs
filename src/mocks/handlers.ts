@@ -236,6 +236,14 @@ export const handlers = [
 	// Mock Caddy Admin API endpoints (port 2019)
 	// These are called by our API routes via the caddy-api-client
 
+	// Root endpoint - Returns Caddy version info (used for health checks)
+	http.get("http://localhost:2019/", async () => {
+		await delay(50);
+		return HttpResponse.json({
+			version: "v2.7.6",
+		});
+	}),
+
 	http.get("http://localhost:2019/config/", async ({ request }) => {
 		await delay(100);
 
