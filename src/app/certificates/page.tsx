@@ -1,6 +1,9 @@
 import { CaddyDashboard } from "@/components/CaddyDashboard";
 import { getInitialPageData } from "@/lib/server/data";
 
+// Force dynamic rendering - this page fetches live data from Caddy API
+export const dynamic = "force-dynamic";
+
 /**
  * Certificates page - Server Component
  * Shows PKI certificates and CA information

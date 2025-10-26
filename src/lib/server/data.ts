@@ -66,7 +66,8 @@ async function checkCaddyAPI(): Promise<{
 
 /**
  * Load Caddyfile from Caddy API (Live Mode)
- * Request Caddyfile format directly using Accept header
+ * NOTE: Many Caddy installations don't support text/caddyfile format and only return JSON.
+ * We try to request Caddyfile format, but if we get JSON back, we return null and fall back to file.
  */
 async function loadFromCaddyAPI(): Promise<string | null> {
 	try {
@@ -78,6 +79,16 @@ async function loadFromCaddyAPI(): Promise<string | null> {
 
 		if (response.ok) {
 			const content = await response.text();
+
+			// Check if the response is JSON (starts with { or [)
+			const trimmed = content.trim();
+			if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+				console.warn(
+					"[loadFromCaddyAPI] Caddy returned JSON instead of Caddyfile format - falling back to file",
+				);
+				return null;
+			}
+
 			console.log(
 				"[loadFromCaddyAPI] Successfully loaded Caddyfile from Caddy API",
 			);

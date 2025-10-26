@@ -1,6 +1,9 @@
 import { CaddyDashboard } from "@/components/CaddyDashboard";
 import { getInitialPageData } from "@/lib/server/data";
 
+// Force dynamic rendering - this page fetches live data from Caddy API
+export const dynamic = "force-dynamic";
+
 /**
  * Main page - Server Component
  * Fetches all initial data on the server, eliminating the loading screen

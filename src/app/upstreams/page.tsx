@@ -1,6 +1,9 @@
 import { CaddyDashboard } from "@/components/CaddyDashboard";
 import { getInitialPageData } from "@/lib/server/data";
 
+// Force dynamic rendering - this page fetches live data from Caddy API
+export const dynamic = "force-dynamic";
+
 /**
  * Upstreams page - Server Component
  * Shows upstream health status and metrics
