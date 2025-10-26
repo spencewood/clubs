@@ -2,6 +2,7 @@
 
 import {
 	Activity,
+	BarChart3,
 	Circle,
 	Code,
 	Container,
@@ -45,6 +46,7 @@ import { CertificatesView } from "@/components/CertificatesView";
 import { ContainerCard } from "@/components/ContainerCard";
 import { ContainerEditDialog } from "@/components/ContainerEditDialog";
 import { EditContainerSiteDialog } from "@/components/EditContainerSiteDialog";
+import { MetricsView } from "@/components/MetricsView";
 import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
 import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
@@ -169,7 +171,7 @@ export interface CaddyDashboardProps {
 	initialRawContent: string;
 	initialIsLiveMode: boolean;
 	initialCaddyStatus: CaddyAPIStatus;
-	initialView: "sites" | "upstreams" | "certificates";
+	initialView: "sites" | "upstreams" | "certificates" | "metrics";
 	initialUpstreams: Array<{
 		address: string;
 		num_requests: number;
@@ -610,7 +612,7 @@ export function CaddyDashboard({
 
 				<main className="container mx-auto px-4 py-6">
 					{config && (
-						<div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+						<div className={`grid grid-cols-1 ${leftPanelView === "metrics" ? "" : "xl:grid-cols-2"} gap-8 items-start`}>
 							{/* Left: Sites/Upstreams Panel - Elevated "table" (content height) */}
 							<div className="space-y-4 bg-card border rounded-lg shadow-lg p-6 relative z-10">
 								{/* Tab Navigation */}
@@ -648,6 +650,17 @@ export function CaddyDashboard({
 										<ShieldCheck className="w-4 h-4" />
 										Certificates
 									</Link>
+									<Link
+										href="/metrics"
+										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											leftPanelView === "metrics"
+												? "border-primary text-foreground"
+												: "border-transparent text-muted-foreground hover:text-foreground"
+										}`}
+									>
+										<BarChart3 className="w-4 h-4" />
+										Metrics
+									</Link>
 								</div>
 
 								{leftPanelView === "upstreams" ? (
@@ -657,6 +670,8 @@ export function CaddyDashboard({
 									/>
 								) : leftPanelView === "certificates" ? (
 									<CertificatesView initialCertificates={initialCertificates} />
+								) : leftPanelView === "metrics" ? (
+									<MetricsView />
 								) : config.siteBlocks.length === 0 ? (
 									// Empty state - Show two add options
 									<div className="space-y-6">
@@ -779,7 +794,8 @@ export function CaddyDashboard({
 								)}
 							</div>
 
-							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" */}
+							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (hidden when metrics view) */}
+							{leftPanelView !== "metrics" && (
 							<div className="flex flex-col space-y-4 min-h-[calc(100vh-12rem)] opacity-60 hover:opacity-100 transition-opacity duration-200">
 								{/* Tab Navigation */}
 								<div className="flex items-center justify-between mb-2">
@@ -841,6 +857,7 @@ export function CaddyDashboard({
 									</div>
 								)}
 							</div>
+							)}
 						</div>
 					)}
 				</main>
