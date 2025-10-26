@@ -1,5 +1,16 @@
 # clubs
 
+## 0.9.0
+
+### Minor Changes
+
+- a3288c2: Add metrics tab in left panel
+
+### Patch Changes
+
+- a758633: Move editor under left pane on smaller screens
+- b4274ee: Fix response type for caddyfile
+
 ## 0.8.2
 
 ### Patch Changes
