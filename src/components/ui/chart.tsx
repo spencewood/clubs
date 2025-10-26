@@ -267,9 +267,9 @@ const ChartLegendContent = React.forwardRef<
 	HTMLDivElement,
 	React.ComponentProps<"div"> & {
 		hideIcon?: boolean;
-		nameKey?: string;
 		payload?: any[];
 		verticalAlign?: "top" | "bottom";
+		nameKey?: string;
 	}
 >(
 	(

@@ -615,10 +615,14 @@ export function CaddyDashboard({
 
 				<main className="container mx-auto px-4 py-6">
 					{config && (
-						<div className="flex flex-col xl:flex-row gap-8 items-start">
+						<div className="relative xl:flex xl:flex-row gap-8 items-start">
 							{/* Left: Sites/Upstreams Panel - Elevated "table" (content height) */}
 							<div
-								className={`space-y-4 bg-card border rounded-lg shadow-lg p-6 relative z-10 transition-all duration-300 ease-in-out ${leftPanelExpanded ? "w-full" : "xl:w-1/2"}`}
+								className={`space-y-4 bg-card border rounded-lg shadow-lg p-6 relative transition-all duration-300 ease-in-out ${
+									leftPanelExpanded
+										? "-translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto xl:w-full z-20 xl:z-10"
+										: "translate-x-0 opacity-100 z-20 xl:z-10 xl:w-1/2"
+								}`}
 							>
 								{/* Tab Navigation with Expand/Collapse */}
 								<div className="flex items-center justify-between gap-2 border-b pb-2">
@@ -672,16 +676,27 @@ export function CaddyDashboard({
 										variant="ghost"
 										size="sm"
 										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-										className="h-8 px-2"
+										className="h-8 px-2 xl:block hidden"
 										title={
 											leftPanelExpanded ? "Collapse panel" : "Expand panel"
 										}
 									>
+										{/* On desktop: left to collapse, right to expand */}
 										{leftPanelExpanded ? (
 											<ChevronLeft className="w-4 h-4" />
 										) : (
 											<ChevronRight className="w-4 h-4" />
 										)}
+									</Button>
+									{/* On mobile: left chevron to collapse panel and show editor */}
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
+										className="h-8 px-2 xl:hidden"
+										title="Hide panel / Show editor"
+									>
+										<ChevronLeft className="w-4 h-4" />
 									</Button>
 								</div>
 
@@ -816,40 +831,56 @@ export function CaddyDashboard({
 								)}
 							</div>
 
-							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (hidden when expanded) */}
+							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (visible when left panel collapsed on mobile, hidden when expanded on desktop) */}
 							<div
-								className={`flex-col space-y-4 min-h-[calc(100vh-12rem)] opacity-60 hover:opacity-100 transition-all duration-300 ease-in-out overflow-hidden ${leftPanelExpanded ? "w-0 hidden" : "xl:flex xl:w-1/2"}`}
+								className={`flex-col space-y-4 min-h-[calc(100vh-12rem)] transition-all duration-300 ease-in-out overflow-hidden ${
+									leftPanelExpanded
+										? "absolute inset-0 z-10 flex opacity-100 xl:w-0 xl:hidden xl:opacity-0"
+										: "absolute inset-0 z-10 opacity-60 hover:opacity-100 xl:relative xl:z-auto xl:flex xl:w-1/2 xl:opacity-60 xl:hover:opacity-100"
+								}`}
 							>
 								{/* Tab Navigation */}
 								<div className="flex items-center justify-between mb-2">
-									<div className="flex gap-2 border-b border-muted-foreground/20">
-										<button
-											type="button"
-											onClick={() => setRightPanelView("raw")}
-											className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
-												rightPanelView === "raw"
-													? "border-primary text-foreground"
-													: "border-transparent text-muted-foreground/70 hover:text-foreground"
-											}`}
+									<div className="flex items-center gap-2">
+										{/* Show panel restore button on mobile when panel is collapsed */}
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => setLeftPanelExpanded(false)}
+											className="xl:hidden h-7 px-2"
+											title="Show panel"
 										>
-											<Code className="w-3.5 h-3.5" />
-											Raw Caddyfile
-										</button>
-										{(caddyStatus?.available ||
-											process.env.NODE_ENV === "development") && (
+											<ChevronRight className="w-4 h-4" />
+										</Button>
+										<div className="flex gap-2 border-b border-muted-foreground/20">
 											<button
 												type="button"
-												onClick={() => setRightPanelView("config")}
+												onClick={() => setRightPanelView("raw")}
 												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
-													rightPanelView === "config"
+													rightPanelView === "raw"
 														? "border-primary text-foreground"
 														: "border-transparent text-muted-foreground/70 hover:text-foreground"
 												}`}
 											>
-												<FileJson className="w-3.5 h-3.5" />
-												Full Config
+												<Code className="w-3.5 h-3.5" />
+												Raw Caddyfile
 											</button>
-										)}
+											{(caddyStatus?.available ||
+												process.env.NODE_ENV === "development") && (
+												<button
+													type="button"
+													onClick={() => setRightPanelView("config")}
+													className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+														rightPanelView === "config"
+															? "border-primary text-foreground"
+															: "border-transparent text-muted-foreground/70 hover:text-foreground"
+													}`}
+												>
+													<FileJson className="w-3.5 h-3.5" />
+													Full Config
+												</button>
+											)}
+										</div>
 									</div>
 									{rightPanelView === "raw" && (
 										<Button
