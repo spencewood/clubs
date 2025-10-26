@@ -245,7 +245,7 @@ export function MetricsView() {
 					}
 				>
 					<TrendingUp
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-info)] opacity-10"
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-info)] opacity-20"
 						strokeWidth={1.5}
 					/>
 					<div className="relative">
@@ -264,7 +264,7 @@ export function MetricsView() {
 					}
 				>
 					<XCircle
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-error)] opacity-10"
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-error)] opacity-20"
 						strokeWidth={1.5}
 					/>
 					<div className="relative">
@@ -283,7 +283,7 @@ export function MetricsView() {
 					}
 				>
 					<AlertTriangle
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-warning)] opacity-10"
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-warning)] opacity-20"
 						strokeWidth={1.5}
 					/>
 					<div className="relative">

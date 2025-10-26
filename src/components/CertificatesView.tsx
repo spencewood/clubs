@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, Check, Copy, FileKey, RefreshCw, Shield } from "lucide-react";
+import { Check, Copy, FileKey, RefreshCw, ShieldCheck } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { getCaddyPKICA } from "@/lib/api";
@@ -89,7 +89,7 @@ export function CertificatesView({
 			<Card className="p-6">
 				<div className="flex items-start gap-4">
 					<div className="p-3 bg-primary/10 rounded-lg">
-						<Shield className="w-6 h-6 text-primary" />
+						<ShieldCheck className="w-6 h-6 text-primary" />
 					</div>
 					<div className="flex-1 space-y-4">
 						<div>
@@ -100,7 +100,7 @@ export function CertificatesView({
 						<div className="grid gap-4 md:grid-cols-2">
 							<div className="space-y-1">
 								<div className="flex items-center gap-2 text-sm font-medium">
-									<Award className="w-4 h-4 text-muted-foreground" />
+									<ShieldCheck className="w-4 h-4 text-muted-foreground" />
 									Root Certificate
 								</div>
 								<p className="text-sm text-muted-foreground font-mono">
@@ -127,7 +127,7 @@ export function CertificatesView({
 				<div className="space-y-3">
 					<div className="flex items-center justify-between">
 						<h4 className="font-semibold flex items-center gap-2">
-							<Award className="w-4 h-4" />
+							<ShieldCheck className="w-4 h-4" />
 							Root Certificate (PEM)
 						</h4>
 						<Button
