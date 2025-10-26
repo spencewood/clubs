@@ -1,5 +1,11 @@
 # clubs
 
+## 0.8.2
+
+### Patch Changes
+
+- a02c1aa: Fix status endpoint
+
 ## 0.8.1
 
 ### Patch Changes
