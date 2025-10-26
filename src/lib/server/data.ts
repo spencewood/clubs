@@ -66,32 +66,32 @@ async function checkCaddyAPI(): Promise<{
 
 /**
  * Load Caddyfile from Caddy API (Live Mode)
+ * Request Caddyfile format directly using Accept header
  */
 async function loadFromCaddyAPI(): Promise<string | null> {
 	try {
 		const response = await fetch(`${CADDY_API_URL}/config/`, {
 			method: "GET",
-			headers: { Accept: "application/json" },
+			headers: { Accept: "text/caddyfile" },
 			cache: "no-store",
 		});
 
 		if (response.ok) {
-			const config = await response.json();
-			// Convert JSON config back to Caddyfile format
-			// For now, we'll use the adapter endpoint
-			const adaptResponse = await fetch(`${CADDY_API_URL}/adapt`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(config),
-				cache: "no-store",
-			});
-
-			if (adaptResponse.ok) {
-				return await adaptResponse.text();
-			}
+			const content = await response.text();
+			console.log(
+				"[loadFromCaddyAPI] Successfully loaded Caddyfile from Caddy API",
+			);
+			return content;
 		}
+
+		console.warn(
+			`[loadFromCaddyAPI] Failed to load from Caddy API: ${response.status} ${response.statusText}`,
+		);
 		return null;
-	} catch {
+	} catch (error) {
+		console.error(
+			`[loadFromCaddyAPI] Error loading from Caddy API: ${error instanceof Error ? error.message : "Unknown error"}`,
+		);
 		return null;
 	}
 }
