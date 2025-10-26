@@ -1,5 +1,11 @@
 # clubs
 
+## 0.9.1
+
+### Patch Changes
+
+- f96ee9e: Fall back to caddyfile when endpoint is json
+
 ## 0.9.0
 
 ### Minor Changes
