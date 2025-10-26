@@ -3,11 +3,13 @@
 import {
 	Activity,
 	BarChart3,
+	Check,
 	ChevronLeft,
 	ChevronRight,
 	Circle,
 	Code,
 	Container,
+	Copy,
 	Eye,
 	FileJson,
 	Globe,
@@ -19,6 +21,7 @@ import {
 	Shield,
 	ShieldCheck,
 	Sparkles,
+	Upload,
 	Wand2,
 	Zap,
 } from "lucide-react";
@@ -155,7 +158,17 @@ function FullConfigView() {
 					onClick={copyToClipboard}
 					className="text-xs opacity-70 hover:opacity-100"
 				>
-					{copied ? "Copied!" : "Copy JSON"}
+					{copied ? (
+						<>
+							<Check className="h-3.5 w-3.5" />
+							<span className="ml-1.5">Copied!</span>
+						</>
+					) : (
+						<>
+							<Copy className="h-3.5 w-3.5" />
+							<span className="ml-1.5">Copy JSON</span>
+						</>
+					)}
 				</Button>
 			</div>
 
@@ -899,8 +912,8 @@ export function CaddyDashboard({
 										}`}
 										title="Format Caddyfile"
 									>
-										<Wand2 className="h-3.5 w-3.5 sm:mr-1" />
-										<span className="hidden sm:inline">Format</span>
+										<Wand2 className="h-3.5 w-3.5" />
+										<span className="hidden sm:inline ml-2">Format</span>
 									</Button>
 								</div>
 
@@ -1073,6 +1086,7 @@ export function CaddyDashboard({
 									title={isLiveMode ? "Reload from Caddy" : "Reload from file"}
 								>
 									<RefreshCw className="h-4 w-4" />
+									<span className="hidden sm:inline ml-2">Reload</span>
 								</Button>
 								<Button
 									onClick={handleSave}
@@ -1080,7 +1094,11 @@ export function CaddyDashboard({
 									variant="default"
 									size="sm"
 								>
-									<Save className="h-4 w-4 mr-2" />
+									{saving ? (
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									) : (
+										<Save className="h-4 w-4 mr-2" />
+									)}
 									{saving ? "Saving..." : isLiveMode ? "Save & Apply" : "Save"}
 								</Button>
 								{!isLiveMode && caddyStatus?.available && (
@@ -1090,7 +1108,11 @@ export function CaddyDashboard({
 										size="sm"
 										variant="outline"
 									>
-										<Zap className="h-4 w-4 mr-2" />
+										{applying ? (
+											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										) : (
+											<Zap className="h-4 w-4 mr-2" />
+										)}
 										{applying ? "Applying..." : "Apply to Caddy"}
 									</Button>
 								)}

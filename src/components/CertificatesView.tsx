@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, FileKey, RefreshCw, Shield } from "lucide-react";
+import { Award, Check, Copy, FileKey, RefreshCw, Shield } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { getCaddyPKICA } from "@/lib/api";
@@ -17,6 +17,8 @@ export function CertificatesView({
 }: CertificatesViewProps) {
 	const [ca, setCA] = useState<CaddyPKICA | null>(initialCertificates);
 	const [refreshing, setRefreshing] = useState(false);
+	const [copiedRoot, setCopiedRoot] = useState(false);
+	const [copiedIntermediate, setCopiedIntermediate] = useState(false);
 
 	const fetchCA = useCallback(async () => {
 		setRefreshing(true);
@@ -79,6 +81,7 @@ export function CertificatesView({
 					<RefreshCw
 						className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
 					/>
+					<span className="hidden sm:inline ml-2">Refresh</span>
 				</Button>
 			</div>
 
@@ -133,9 +136,21 @@ export function CertificatesView({
 							onClick={() => {
 								navigator.clipboard.writeText(ca.root_certificate);
 								toast.success("Copied to clipboard");
+								setCopiedRoot(true);
+								setTimeout(() => setCopiedRoot(false), 2000);
 							}}
 						>
-							Copy
+							{copiedRoot ? (
+								<>
+									<Check className="h-4 w-4" />
+									<span className="ml-2">Copied!</span>
+								</>
+							) : (
+								<>
+									<Copy className="h-4 w-4" />
+									<span className="ml-2">Copy</span>
+								</>
+							)}
 						</Button>
 					</div>
 					<pre className="text-xs bg-muted p-4 rounded-lg overflow-x-auto font-mono">
@@ -158,9 +173,21 @@ export function CertificatesView({
 							onClick={() => {
 								navigator.clipboard.writeText(ca.intermediate_certificate);
 								toast.success("Copied to clipboard");
+								setCopiedIntermediate(true);
+								setTimeout(() => setCopiedIntermediate(false), 2000);
 							}}
 						>
-							Copy
+							{copiedIntermediate ? (
+								<>
+									<Check className="h-4 w-4" />
+									<span className="ml-2">Copied!</span>
+								</>
+							) : (
+								<>
+									<Copy className="h-4 w-4" />
+									<span className="ml-2">Copy</span>
+								</>
+							)}
 						</Button>
 					</div>
 					<pre className="text-xs bg-muted p-4 rounded-lg overflow-x-auto font-mono">

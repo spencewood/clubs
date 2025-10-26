@@ -229,6 +229,7 @@ export function MetricsView() {
 					<RefreshCw
 						className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
 					/>
+					<span className="hidden sm:inline ml-2">Refresh</span>
 				</Button>
 			</div>
 
