@@ -122,10 +122,13 @@ export function MetricsView() {
 			const mins = now.getMinutes().toString().padStart(2, "0");
 			const timeLabel = `${hours}:${mins}`;
 			const totalRequests = upstreams.reduce(
-				(sum, u) => sum + u.num_requests,
+				(sum: number, u: UpstreamMetric) => sum + u.num_requests,
 				0,
 			);
-			const totalFails = upstreams.reduce((sum, u) => sum + u.fails, 0);
+			const totalFails = upstreams.reduce(
+				(sum: number, u: UpstreamMetric) => sum + u.fails,
+				0,
+			);
 
 			setHistoricalData((prev) => {
 				const newData = [
