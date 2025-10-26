@@ -97,41 +97,63 @@ async function loadFromFile(): Promise<string | null> {
 }
 
 /**
- * Fetch upstreams from Caddy API
+ * Fetch upstreams from Caddy API with timeout
  */
 async function fetchUpstreams(): Promise<CaddyUpstream[]> {
 	try {
 		const caddyAPI = createCaddyAPIClient(CADDY_API_URL);
-		const result = await caddyAPI.getUpstreams();
 
-		if (result.success && result.upstreams) {
+		// Add timeout to prevent hanging during SSR
+		const timeoutPromise = new Promise<{ success: false }>((resolve) => {
+			setTimeout(() => resolve({ success: false }), 5000); // 5 second timeout
+		});
+
+		const result = await Promise.race([
+			caddyAPI.getUpstreams(),
+			timeoutPromise,
+		]);
+
+		if (result.success && "upstreams" in result && result.upstreams) {
+			console.log(
+				`[fetchUpstreams] Successfully fetched ${result.upstreams.length} upstreams`,
+			);
 			return result.upstreams;
 		}
+
+		console.warn("[fetchUpstreams] Failed to fetch upstreams or timed out");
 		return [];
 	} catch (error) {
-		console.error("Failed to fetch upstreams:", error);
+		console.error("[fetchUpstreams] Error fetching upstreams:", error);
 		return [];
 	}
 }
 
 /**
- * Fetch certificates from Caddy API
+ * Fetch certificates from Caddy API with timeout
  */
 async function fetchCertificates(): Promise<CaddyPKICA | null> {
 	try {
-		const response = await fetch(`${CADDY_API_URL}/pki/ca/local`, {
-			method: "GET",
-			headers: { Accept: "application/json" },
-			cache: "no-store",
+		const caddyAPI = createCaddyAPIClient(CADDY_API_URL);
+
+		// Add timeout to prevent hanging during SSR
+		const timeoutPromise = new Promise<{ success: false }>((resolve) => {
+			setTimeout(() => resolve({ success: false }), 5000); // 5 second timeout
 		});
 
-		if (response.ok) {
-			const ca = await response.json();
-			return ca as CaddyPKICA;
+		const result = await Promise.race([
+			caddyAPI.getPKICA("local"),
+			timeoutPromise,
+		]);
+
+		if (result.success && "ca" in result && result.ca) {
+			console.log("[fetchCertificates] Successfully fetched PKI CA");
+			return result.ca;
 		}
+
+		console.warn("[fetchCertificates] Failed to fetch PKI CA or timed out");
 		return null;
 	} catch (error) {
-		console.error("Failed to fetch certificates:", error);
+		console.error("[fetchCertificates] Error fetching certificates:", error);
 		return null;
 	}
 }
