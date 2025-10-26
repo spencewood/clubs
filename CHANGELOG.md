@@ -1,5 +1,12 @@
 # clubs
 
+## 0.8.1
+
+### Patch Changes
+
+- 8911091: Add logging and better handling for status
+- 2b7f5ee: Fix upstream and certificate endpoints
+
 ## 0.8.0
 
 ### Minor Changes
