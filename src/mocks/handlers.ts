@@ -271,58 +271,63 @@ export const handlers = [
 
 	http.get("http://localhost:2019/reverse_proxy/upstreams", async () => {
 		await delay(100);
+
+		// Simulate increasing request counts over time for realistic metrics
+		const timeSinceStart = Date.now() % 60000; // Reset every minute
+		const requestMultiplier = 1 + (timeSinceStart / 60000) * 0.5;
+
 		return HttpResponse.json([
 			// Healthy examples (0 fails or very low failure rate < 1%)
 			{
 				address: "localhost:3000",
-				num_requests: 142,
+				num_requests: Math.floor(142 * requestMultiplier),
 				fails: 0,
 			},
 			{
 				address: "localhost:3001",
-				num_requests: 89,
+				num_requests: Math.floor(89 * requestMultiplier),
 				fails: 0,
 			},
 			{
 				address: "localhost:3002",
-				num_requests: 500,
-				fails: 2, // 0.4% failure rate - healthy
+				num_requests: Math.floor(500 * requestMultiplier),
+				fails: Math.floor(2 * requestMultiplier), // ~0.4% failure rate - healthy
 			},
 			{
 				address: "localhost:3003",
-				num_requests: 91,
+				num_requests: Math.floor(91 * requestMultiplier),
 				fails: 0,
 			},
 			// Degraded example (failure rate between 1-10%)
 			{
 				address: "localhost:8080",
-				num_requests: 300,
-				fails: 8, // 2.67% failure rate - degraded
+				num_requests: Math.floor(300 * requestMultiplier),
+				fails: Math.floor(8 * requestMultiplier), // ~2.67% failure rate - degraded
 			},
 			// More healthy examples
 			{
 				address: "localhost:9000",
-				num_requests: 12,
-				fails: 0,
+				num_requests: Math.floor(1250 * requestMultiplier),
+				fails: Math.floor(3 * requestMultiplier), // ~0.24% - healthy
 			},
 			{
 				address: "localhost:9090",
-				num_requests: 8,
-				fails: 0,
+				num_requests: Math.floor(856 * requestMultiplier),
+				fails: Math.floor(1 * requestMultiplier), // ~0.12% - healthy
 			},
 			// offline-server:9000 and offline-server:9001 are NOT included
 			// In real Caddy API, unhealthy/offline upstreams don't appear in /reverse_proxy/upstreams
 			// They're configured in the Caddyfile but have no stats, so consolidateUpstreamsWithConfig marks them offline
 			{
 				address: "api.backend.com:443",
-				num_requests: 1000,
-				fails: 3, // 0.3% failure rate - healthy
+				num_requests: Math.floor(10485 * requestMultiplier),
+				fails: Math.floor(31 * requestMultiplier), // ~0.3% failure rate - healthy
 			},
 			// Unhealthy example (failure rate > 10%)
 			{
 				address: "192.168.1.100:8000",
-				num_requests: 100,
-				fails: 25, // 25% failure rate - unhealthy
+				num_requests: Math.floor(100 * requestMultiplier),
+				fails: Math.floor(25 * requestMultiplier), // 25% failure rate - unhealthy
 			},
 		]);
 	}),
@@ -577,17 +582,56 @@ export const handlers = [
 			);
 		}
 
-		// Return same data as Caddy Admin API mock
+		// Return same data as Caddy Admin API mock (with dynamic metrics)
+		const timeSinceStart = Date.now() % 60000;
+		const requestMultiplier = 1 + (timeSinceStart / 60000) * 0.5;
+
 		return HttpResponse.json([
-			{ address: "localhost:3000", num_requests: 142, fails: 0 },
-			{ address: "localhost:3001", num_requests: 89, fails: 0 },
-			{ address: "localhost:3002", num_requests: 500, fails: 2 },
-			{ address: "localhost:3003", num_requests: 91, fails: 0 },
-			{ address: "localhost:8080", num_requests: 300, fails: 8 },
-			{ address: "localhost:9000", num_requests: 12, fails: 0 },
-			{ address: "localhost:9090", num_requests: 8, fails: 0 },
-			{ address: "api.backend.com:443", num_requests: 1000, fails: 3 },
-			{ address: "192.168.1.100:8000", num_requests: 100, fails: 25 },
+			{
+				address: "localhost:3000",
+				num_requests: Math.floor(142 * requestMultiplier),
+				fails: 0,
+			},
+			{
+				address: "localhost:3001",
+				num_requests: Math.floor(89 * requestMultiplier),
+				fails: 0,
+			},
+			{
+				address: "localhost:3002",
+				num_requests: Math.floor(500 * requestMultiplier),
+				fails: Math.floor(2 * requestMultiplier),
+			},
+			{
+				address: "localhost:3003",
+				num_requests: Math.floor(91 * requestMultiplier),
+				fails: 0,
+			},
+			{
+				address: "localhost:8080",
+				num_requests: Math.floor(300 * requestMultiplier),
+				fails: Math.floor(8 * requestMultiplier),
+			},
+			{
+				address: "localhost:9000",
+				num_requests: Math.floor(1250 * requestMultiplier),
+				fails: Math.floor(3 * requestMultiplier),
+			},
+			{
+				address: "localhost:9090",
+				num_requests: Math.floor(856 * requestMultiplier),
+				fails: Math.floor(1 * requestMultiplier),
+			},
+			{
+				address: "api.backend.com:443",
+				num_requests: Math.floor(10485 * requestMultiplier),
+				fails: Math.floor(31 * requestMultiplier),
+			},
+			{
+				address: "192.168.1.100:8000",
+				num_requests: Math.floor(100 * requestMultiplier),
+				fails: Math.floor(25 * requestMultiplier),
+			},
 		]);
 	}),
 

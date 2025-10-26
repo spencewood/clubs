@@ -2,13 +2,14 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createCaddyAPIClient } from "@/lib/server/caddy-api-client";
 
 const CADDY_API_URL = process.env.CADDY_API_URL || "http://localhost:2019";
-const caddyAPI = createCaddyAPIClient(CADDY_API_URL);
 
 export async function GET(
 	_request: NextRequest,
 	{ params }: { params: Promise<{ caId?: string[] }> },
 ) {
 	try {
+		// Create a fresh client for each request to avoid stale connections during hot reloads
+		const caddyAPI = createCaddyAPIClient(CADDY_API_URL);
 		const { caId } = await params;
 		const id = caId?.[0] || "local";
 		const result = await caddyAPI.getPKICA(id);

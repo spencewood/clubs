@@ -1,3 +1,5 @@
+import { recordApiCall } from "./metrics";
+
 // Caddy JSON Config type (simplified for API usage)
 export interface CaddyJSONConfig {
 	apps?: {
@@ -9,15 +11,47 @@ export interface CaddyJSONConfig {
 export interface CaddyAPIConfig {
 	baseURL: string; // e.g., "http://localhost:2019"
 	timeout?: number; // Request timeout in ms
+	enableMetrics?: boolean; // Track API calls in Prometheus metrics
 }
 
 export class CaddyAPIClient {
 	private baseURL: string;
 	private timeout: number;
+	private enableMetrics: boolean;
 
 	constructor(config: CaddyAPIConfig) {
 		this.baseURL = config.baseURL;
 		this.timeout = config.timeout || 5000;
+		this.enableMetrics = config.enableMetrics ?? true;
+	}
+
+	/**
+	 * Wrapper for fetch that tracks metrics
+	 */
+	private async fetchWithMetrics(
+		url: string,
+		options: RequestInit & { endpoint?: string } = {},
+	): Promise<Response> {
+		const startTime = performance.now();
+		const method = options.method || "GET";
+		const endpoint = options.endpoint || new URL(url).pathname;
+
+		try {
+			const response = await fetch(url, options);
+
+			if (this.enableMetrics) {
+				const durationSeconds = (performance.now() - startTime) / 1000;
+				recordApiCall(endpoint, method, response.status, durationSeconds);
+			}
+
+			return response;
+		} catch (error) {
+			if (this.enableMetrics) {
+				const durationSeconds = (performance.now() - startTime) / 1000;
+				recordApiCall(endpoint, method, 0, durationSeconds);
+			}
+			throw error;
+		}
 	}
 
 	/**
@@ -28,9 +62,10 @@ export class CaddyAPIClient {
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-			const response = await fetch(`${this.baseURL}/config/`, {
+			const response = await this.fetchWithMetrics(`${this.baseURL}/config/`, {
 				method: "GET",
 				signal: controller.signal,
+				endpoint: "/config/",
 			});
 
 			clearTimeout(timeoutId);
@@ -44,11 +79,12 @@ export class CaddyAPIClient {
 	 * Get the current configuration from Caddy
 	 */
 	async getConfig(): Promise<CaddyJSONConfig> {
-		const response = await fetch(`${this.baseURL}/config/`, {
+		const response = await this.fetchWithMetrics(`${this.baseURL}/config/`, {
 			method: "GET",
 			headers: {
 				"Content-Type": "application/json",
 			},
+			endpoint: "/config/",
 		});
 
 		if (!response.ok) {
@@ -66,13 +102,13 @@ export class CaddyAPIClient {
 		error?: string;
 	}> {
 		try {
-			const response = await fetch(`${this.baseURL}/load`, {
+			const response = await this.fetchWithMetrics(`${this.baseURL}/load`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(config),
-				// Add validate query parameter
+				endpoint: "/load",
 			});
 
 			// Note: Caddy doesn't have a separate validate endpoint
@@ -104,12 +140,13 @@ export class CaddyAPIClient {
 		error?: string;
 	}> {
 		try {
-			const response = await fetch(`${this.baseURL}/load`, {
+			const response = await this.fetchWithMetrics(`${this.baseURL}/load`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(config),
+				endpoint: "/load",
 			});
 
 			const text = await response.text();
@@ -142,13 +179,17 @@ export class CaddyAPIClient {
 		error?: string;
 	}> {
 		try {
-			const response = await fetch(`${this.baseURL}/config/${path}`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
+			const response = await this.fetchWithMetrics(
+				`${this.baseURL}/config/${path}`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(value),
+					endpoint: `/config/${path}`,
 				},
-				body: JSON.stringify(value),
-			});
+			);
 
 			const text = await response.text();
 
@@ -176,8 +217,9 @@ export class CaddyAPIClient {
 		version?: string;
 	}> {
 		try {
-			const response = await fetch(`${this.baseURL}/`, {
+			const response = await this.fetchWithMetrics(`${this.baseURL}/`, {
 				method: "GET",
+				endpoint: "/",
 			});
 
 			if (!response.ok) {
@@ -204,9 +246,13 @@ export class CaddyAPIClient {
 		error?: string;
 	}> {
 		try {
-			const response = await fetch(`${this.baseURL}/reverse_proxy/upstreams`, {
-				method: "GET",
-			});
+			const response = await this.fetchWithMetrics(
+				`${this.baseURL}/reverse_proxy/upstreams`,
+				{
+					method: "GET",
+					endpoint: "/reverse_proxy/upstreams",
+				},
+			);
 
 			if (!response.ok) {
 				return {
@@ -248,9 +294,13 @@ export class CaddyAPIClient {
 		error?: string;
 	}> {
 		try {
-			const response = await fetch(`${this.baseURL}/pki/ca/${caId}`, {
-				method: "GET",
-			});
+			const response = await this.fetchWithMetrics(
+				`${this.baseURL}/pki/ca/${caId}`,
+				{
+					method: "GET",
+					endpoint: `/pki/ca/${caId}`,
+				},
+			);
 
 			if (!response.ok) {
 				return {
