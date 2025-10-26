@@ -249,7 +249,9 @@ export function MetricsView() {
 						strokeWidth={1.5}
 					/>
 					<div className="relative">
-						<p className="text-2xl font-bold">{totalRequests.toLocaleString()}</p>
+						<p className="text-2xl font-bold">
+							{totalRequests.toLocaleString()}
+						</p>
 						<p className="text-xs text-muted-foreground">Total Requests</p>
 					</div>
 				</Card>
@@ -376,7 +378,11 @@ export function MetricsView() {
 									}
 									stroke="var(--color-requests)"
 									strokeWidth={
-										metricFilter === "requests" ? 3 : metricFilter === "all" ? 2 : 1
+										metricFilter === "requests"
+											? 3
+											: metricFilter === "all"
+												? 2
+												: 1
 									}
 								/>
 								<Area
@@ -437,7 +443,11 @@ export function MetricsView() {
 									tick={<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />}
 								/>
 								<ChartTooltip content={<ChartTooltipContent />} />
-								<Bar dataKey="requests" fill="var(--color-requests)" radius={4} />
+								<Bar
+									dataKey="requests"
+									fill="var(--color-requests)"
+									radius={4}
+								/>
 							</BarChart>
 						</ChartContainer>
 					)}

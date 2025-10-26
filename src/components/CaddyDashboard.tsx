@@ -21,7 +21,6 @@ import {
 	Shield,
 	ShieldCheck,
 	Sparkles,
-	Upload,
 	Wand2,
 	Zap,
 } from "lucide-react";
@@ -736,40 +735,40 @@ export function CaddyDashboard({
 												</p>
 											</div>
 											<div className="grid gap-3">
-											<button
-												type="button"
-												onClick={() => {
-													setNewSiteBlockType("physical");
-													setShowNewSiteDialog(true);
-												}}
-												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-success)] hover:bg-[var(--color-success)]/5 transition-colors text-left"
-											>
-												<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-												<Globe className="h-6 w-6 text-[var(--color-success)] flex-shrink-0" />
-												<div className="flex-1">
-													<h4 className="font-semibold">Site</h4>
-													<p className="text-xs text-muted-foreground mt-0.5">
-														Single domain with its own configuration
-													</p>
-												</div>
-											</button>
-											<button
-												type="button"
-												onClick={() => {
-													setNewSiteBlockType("virtual-container");
-													setShowNewSiteDialog(true);
-												}}
-												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-info)] hover:bg-[var(--color-info)]/5 transition-colors text-left"
-											>
-												<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-												<Container className="h-6 w-6 text-[var(--color-info)] flex-shrink-0" />
-												<div className="flex-1">
-													<h4 className="font-semibold">Container</h4>
-													<p className="text-xs text-muted-foreground mt-0.5">
-														Wildcard domain hosting multiple services
-													</p>
-												</div>
-											</button>
+												<button
+													type="button"
+													onClick={() => {
+														setNewSiteBlockType("physical");
+														setShowNewSiteDialog(true);
+													}}
+													className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-success)] hover:bg-[var(--color-success)]/5 transition-colors text-left"
+												>
+													<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+													<Globe className="h-6 w-6 text-[var(--color-success)] flex-shrink-0" />
+													<div className="flex-1">
+														<h4 className="font-semibold">Site</h4>
+														<p className="text-xs text-muted-foreground mt-0.5">
+															Single domain with its own configuration
+														</p>
+													</div>
+												</button>
+												<button
+													type="button"
+													onClick={() => {
+														setNewSiteBlockType("virtual-container");
+														setShowNewSiteDialog(true);
+													}}
+													className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-info)] hover:bg-[var(--color-info)]/5 transition-colors text-left"
+												>
+													<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+													<Container className="h-6 w-6 text-[var(--color-info)] flex-shrink-0" />
+													<div className="flex-1">
+														<h4 className="font-semibold">Container</h4>
+														<p className="text-xs text-muted-foreground mt-0.5">
+															Wildcard domain hosting multiple services
+														</p>
+													</div>
+												</button>
 											</div>
 										</div>
 									</div>

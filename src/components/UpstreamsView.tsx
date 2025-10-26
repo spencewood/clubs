@@ -232,7 +232,10 @@ export function UpstreamsView({
 					}`}
 					onClick={() => setStatusFilter("all")}
 				>
-					<Server className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-info)] opacity-20" strokeWidth={1.5} />
+					<Server
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-info)] opacity-20"
+						strokeWidth={1.5}
+					/>
 					<div className="relative">
 						<p className="text-2xl font-bold">{consolidatedServers.length}</p>
 						<p className="text-xs text-muted-foreground">Upstream Hosts</p>
@@ -247,7 +250,10 @@ export function UpstreamsView({
 					}`}
 					onClick={() => setStatusFilter("healthy")}
 				>
-					<CheckCircle className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-success)] opacity-20" strokeWidth={1.5} />
+					<CheckCircle
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-success)] opacity-20"
+						strokeWidth={1.5}
+					/>
 					<div className="relative">
 						<p className="text-2xl font-bold">{healthyCount}</p>
 						<p className="text-xs text-muted-foreground">Healthy</p>
@@ -262,7 +268,10 @@ export function UpstreamsView({
 					}`}
 					onClick={() => setStatusFilter("degraded")}
 				>
-					<AlertTriangle className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-warning)] opacity-20" strokeWidth={1.5} />
+					<AlertTriangle
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-warning)] opacity-20"
+						strokeWidth={1.5}
+					/>
 					<div className="relative">
 						<p className="text-2xl font-bold">{degradedCount}</p>
 						<p className="text-xs text-muted-foreground">Degraded</p>
@@ -277,7 +286,10 @@ export function UpstreamsView({
 					}`}
 					onClick={() => setStatusFilter("unhealthy")}
 				>
-					<XCircle className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-error)] opacity-20" strokeWidth={1.5} />
+					<XCircle
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-error)] opacity-20"
+						strokeWidth={1.5}
+					/>
 					<div className="relative">
 						<p className="text-2xl font-bold">{unhealthyCount}</p>
 						<p className="text-xs text-muted-foreground">Unhealthy</p>
@@ -292,7 +304,10 @@ export function UpstreamsView({
 					}`}
 					onClick={() => setStatusFilter("offline")}
 				>
-					<WifiOff className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-muted-foreground)] opacity-20" strokeWidth={1.5} />
+					<WifiOff
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-muted-foreground)] opacity-20"
+						strokeWidth={1.5}
+					/>
 					<div className="relative">
 						<p className="text-2xl font-bold">{offlineCount}</p>
 						<p className="text-xs text-muted-foreground">Offline</p>
@@ -327,56 +342,56 @@ export function UpstreamsView({
 					</Card>
 				) : (
 					filteredServers.map((server) => {
-					const health = getHealthStatus(server);
-					const Icon = health.icon;
+						const health = getHealthStatus(server);
+						const Icon = health.icon;
 
-					return (
-						<Card key={server.server} className="p-4">
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-3 flex-1">
-									<Icon className={`w-5 h-5 ${health.color}`} />
-									<div className="flex-1">
-										<div className="font-mono font-semibold">
-											{server.server}
+						return (
+							<Card key={server.server} className="p-4">
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-3 flex-1">
+										<Icon className={`w-5 h-5 ${health.color}`} />
+										<div className="flex-1">
+											<div className="font-mono font-semibold">
+												{server.server}
+											</div>
+											<div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+												{server.ports.length > 0 && (
+													<span>
+														<span className="font-medium">Ports:</span>{" "}
+														{server.ports.join(", ")}
+													</span>
+												)}
+												{!server.isOffline && (
+													<>
+														<span>
+															<span className="font-medium">Requests:</span>{" "}
+															{server.totalRequests}
+														</span>
+														<span>
+															<span className="font-medium">Failures:</span>{" "}
+															{server.totalFails}
+														</span>
+													</>
+												)}
+												{server.isOffline && (
+													<span className="text-gray-500">
+														No stats available
+													</span>
+												)}
+											</div>
 										</div>
-										<div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-											{server.ports.length > 0 && (
-												<span>
-													<span className="font-medium">Ports:</span>{" "}
-													{server.ports.join(", ")}
-												</span>
-											)}
-											{!server.isOffline && (
-												<>
-													<span>
-														<span className="font-medium">Requests:</span>{" "}
-														{server.totalRequests}
-													</span>
-													<span>
-														<span className="font-medium">Failures:</span>{" "}
-														{server.totalFails}
-													</span>
-												</>
-											)}
-											{server.isOffline && (
-												<span className="text-gray-500">
-													No stats available
-												</span>
-											)}
+									</div>
+									<div className="text-right">
+										<div
+											className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${health.color} bg-opacity-10`}
+										>
+											{health.label}
 										</div>
 									</div>
 								</div>
-								<div className="text-right">
-									<div
-										className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${health.color} bg-opacity-10`}
-									>
-										{health.label}
-									</div>
-								</div>
-							</div>
-						</Card>
-					);
-				})
+							</Card>
+						);
+					})
 				)}
 			</div>
 
