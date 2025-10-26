@@ -4,7 +4,7 @@ import { createCaddyAPIClient } from "@/lib/server/caddy-api-client";
 const CADDY_API_URL = process.env.CADDY_API_URL || "http://localhost:2019";
 
 // Force dynamic rendering to avoid caching issues during hot reloads
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET() {

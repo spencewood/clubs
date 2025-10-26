@@ -3,6 +3,8 @@
 import {
 	Activity,
 	BarChart3,
+	ChevronLeft,
+	ChevronRight,
 	Circle,
 	Code,
 	Container,
@@ -220,6 +222,7 @@ export function CaddyDashboard({
 	const isLiveMode = initialIsLiveMode;
 	const leftPanelView = initialView;
 	const [rightPanelView, setRightPanelView] = useState<"raw" | "config">("raw");
+	const [leftPanelExpanded, setLeftPanelExpanded] = useState(false);
 	const loadConfig = useCallback(async () => {
 		try {
 			// Try to load from live Caddy if available, otherwise from file
@@ -612,55 +615,74 @@ export function CaddyDashboard({
 
 				<main className="container mx-auto px-4 py-6">
 					{config && (
-						<div className={`relative ${leftPanelView === "metrics" ? "" : "xl:flex xl:flex-row"} gap-8 items-start`}>
+						<div className="flex flex-col xl:flex-row gap-8 items-start">
 							{/* Left: Sites/Upstreams Panel - Elevated "table" (content height) */}
-							<div className="space-y-4 bg-card border rounded-lg shadow-lg p-6 relative z-20 xl:z-10">
-								{/* Tab Navigation */}
-								<div className="flex gap-2 border-b">
-									<Link
-										href="/"
-										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-											leftPanelView === "sites"
-												? "border-primary text-foreground"
-												: "border-transparent text-muted-foreground hover:text-foreground"
-										}`}
+							<div
+								className={`space-y-4 bg-card border rounded-lg shadow-lg p-6 relative z-10 transition-all duration-300 ease-in-out ${leftPanelExpanded ? "w-full" : "xl:w-1/2"}`}
+							>
+								{/* Tab Navigation with Expand/Collapse */}
+								<div className="flex items-center justify-between gap-2 border-b pb-2">
+									<div className="flex gap-2">
+										<Link
+											href="/"
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+												leftPanelView === "sites"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<Server className="w-4 h-4" />
+											Sites
+										</Link>
+										<Link
+											href="/upstreams"
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+												leftPanelView === "upstreams"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<Activity className="w-4 h-4" />
+											Upstreams
+										</Link>
+										<Link
+											href="/certificates"
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+												leftPanelView === "certificates"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<ShieldCheck className="w-4 h-4" />
+											Certificates
+										</Link>
+										<Link
+											href="/metrics"
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+												leftPanelView === "metrics"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<BarChart3 className="w-4 h-4" />
+											Metrics
+										</Link>
+									</div>
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
+										className="h-8 px-2"
+										title={
+											leftPanelExpanded ? "Collapse panel" : "Expand panel"
+										}
 									>
-										<Server className="w-4 h-4" />
-										Sites
-									</Link>
-									<Link
-										href="/upstreams"
-										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-											leftPanelView === "upstreams"
-												? "border-primary text-foreground"
-												: "border-transparent text-muted-foreground hover:text-foreground"
-										}`}
-									>
-										<Activity className="w-4 h-4" />
-										Upstreams
-									</Link>
-									<Link
-										href="/certificates"
-										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-											leftPanelView === "certificates"
-												? "border-primary text-foreground"
-												: "border-transparent text-muted-foreground hover:text-foreground"
-										}`}
-									>
-										<ShieldCheck className="w-4 h-4" />
-										Certificates
-									</Link>
-									<Link
-										href="/metrics"
-										className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-											leftPanelView === "metrics"
-												? "border-primary text-foreground"
-												: "border-transparent text-muted-foreground hover:text-foreground"
-										}`}
-									>
-										<BarChart3 className="w-4 h-4" />
-										Metrics
-									</Link>
+										{leftPanelExpanded ? (
+											<ChevronLeft className="w-4 h-4" />
+										) : (
+											<ChevronRight className="w-4 h-4" />
+										)}
+									</Button>
 								</div>
 
 								{leftPanelView === "upstreams" ? (
@@ -794,9 +816,10 @@ export function CaddyDashboard({
 								)}
 							</div>
 
-							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (hidden when metrics view) */}
-							{leftPanelView !== "metrics" && (
-							<div className="absolute inset-0 z-10 xl:relative xl:z-auto flex flex-col space-y-4 min-h-[calc(100vh-12rem)] opacity-60 hover:opacity-100 transition-opacity duration-200">
+							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (hidden when expanded) */}
+							<div
+								className={`flex-col space-y-4 min-h-[calc(100vh-12rem)] opacity-60 hover:opacity-100 transition-all duration-300 ease-in-out overflow-hidden ${leftPanelExpanded ? "w-0 hidden" : "xl:flex xl:w-1/2"}`}
+							>
 								{/* Tab Navigation */}
 								<div className="flex items-center justify-between mb-2">
 									<div className="flex gap-2 border-b border-muted-foreground/20">
@@ -857,7 +880,6 @@ export function CaddyDashboard({
 									</div>
 								)}
 							</div>
-							)}
 						</div>
 					)}
 				</main>
