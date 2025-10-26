@@ -236,8 +236,17 @@ export const handlers = [
 	// Mock Caddy Admin API endpoints (port 2019)
 	// These are called by our API routes via the caddy-api-client
 
-	http.get("http://localhost:2019/config/", async () => {
+	http.get("http://localhost:2019/config/", async ({ request }) => {
 		await delay(100);
+
+		// Check Accept header to determine response format
+		const acceptHeader = request.headers.get("accept");
+		if (acceptHeader?.includes("text/caddyfile")) {
+			// Return Caddyfile format
+			return HttpResponse.text(mockCaddyfile);
+		}
+
+		// Default: Return JSON format
 		return HttpResponse.json({
 			apps: {
 				http: {

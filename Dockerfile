@@ -22,12 +22,15 @@ COPY . .
 # Build Next.js application
 RUN pnpm run build
 
-# Production stage - app only, no Caddy
+# Production stage - app + Caddy CLI (for caddy fmt)
 FROM node:22-alpine
 
 # Disable Next.js telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+
+# Install Caddy (for CLI commands like 'caddy fmt')
+RUN apk add --no-cache caddy
 
 WORKDIR /app
 
@@ -43,4 +46,5 @@ RUN mkdir -p /config
 EXPOSE 3000
 
 # Start Next.js on all interfaces
+# Note: We only run Next.js, not Caddy as a server
 CMD ["sh", "-c", "HOSTNAME=0.0.0.0 PORT=3000 node server.js"]
