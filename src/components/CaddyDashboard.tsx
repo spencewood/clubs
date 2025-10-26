@@ -677,7 +677,9 @@ export function CaddyDashboard({
 										size="sm"
 										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
 										className="h-8 px-2 xl:block hidden"
-										title={leftPanelExpanded ? "Collapse panel" : "Expand panel"}
+										title={
+											leftPanelExpanded ? "Collapse panel" : "Expand panel"
+										}
 									>
 										{/* On desktop: left to collapse, right to expand */}
 										{leftPanelExpanded ? (
