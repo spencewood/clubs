@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, RefreshCw, TrendingUp } from "lucide-react";
+import { BarChart3, RefreshCw, TrendingUp, XCircle, AlertTriangle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	BarChart,
@@ -8,53 +8,87 @@ import {
 	XAxis,
 	YAxis,
 	CartesianGrid,
-	Tooltip,
-	Legend,
-	ResponsiveContainer,
-	PieChart,
-	Pie,
-	Cell,
+	AreaChart,
+	Area,
 } from "recharts";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import {
+	ChartContainer,
+	ChartTooltip,
+	ChartTooltipContent,
+	ChartLegend,
+	ChartLegendContent,
+	type ChartConfig,
+} from "./ui/chart";
+
+// Custom tick component that truncates long names intelligently
+const CustomYAxisTick = ({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
+	const maxLength = 20;
+	const text = payload.value;
+
+	let displayText = text;
+	if (text.length > maxLength) {
+		// Try to show start and end with ellipsis in middle
+		const start = text.substring(0, 10);
+		const end = text.substring(text.length - 7);
+		displayText = `${start}...${end}`;
+	}
+
+	return (
+		<g transform={`translate(${x},${y})`}>
+			<title>{text}</title>
+			<text
+				x={0}
+				y={0}
+				dy={4}
+				textAnchor="end"
+				fill="currentColor"
+				fontSize={12}
+				className="fill-muted-foreground"
+			>
+				{displayText}
+			</text>
+		</g>
+	);
+};
 
 interface UpstreamMetric {
 	address: string;
 	num_requests: number;
 	fails: number;
-	failureRate: number;
-	healthStatus: "healthy" | "degraded" | "unhealthy" | "offline";
 }
 
-const HEALTH_COLORS = {
-	healthy: "hsl(142, 76%, 36%)",
-	degraded: "hsl(48, 96%, 53%)",
-	unhealthy: "hsl(0, 84%, 60%)",
-	offline: "hsl(240, 5%, 34%)",
-};
-
-function calculateHealthStatus(
-	numRequests: number,
-	fails: number
-): "healthy" | "degraded" | "unhealthy" | "offline" {
-	if (numRequests === 0 && fails === 0) {
-		return "offline";
-	}
-
-	const failureRate = numRequests > 0 ? (fails / numRequests) * 100 : 0;
-
-	if (failureRate > 10 || fails > 20) {
-		return "unhealthy";
-	} else if (failureRate > 1) {
-		return "degraded";
-	} else {
-		return "healthy";
-	}
-}
+const chartConfig = {
+	requests: {
+		label: "Requests",
+		theme: {
+			light: "#2563eb",
+			dark: "#60a5fa",
+		},
+	},
+	fails: {
+		label: "Failures",
+		theme: {
+			light: "#dc2626",
+			dark: "#f87171",
+		},
+	},
+	rate: {
+		label: "Error Rate",
+		theme: {
+			light: "#f59e0b",
+			dark: "#fbbf24",
+		},
+	},
+} satisfies ChartConfig;
 
 export function MetricsView() {
 	const [metricsData, setMetricsData] = useState<UpstreamMetric[]>([]);
+	const [historicalData, setHistoricalData] = useState<
+		Array<{ time: string; requests: number; fails: number }>
+	>([]);
 	const [refreshing, setRefreshing] = useState(false);
 
 	const fetchMetrics = useCallback(async () => {
@@ -67,29 +101,28 @@ export function MetricsView() {
 			}
 
 			const upstreams = await response.json();
+			setMetricsData(upstreams);
 
-			const processedUpstreams: UpstreamMetric[] = upstreams.map(
-				(upstream: { address: string; num_requests: number; fails: number }) => {
-					const failureRate =
-						upstream.num_requests > 0
-							? (upstream.fails / upstream.num_requests) * 100
-							: 0;
-					const healthStatus = calculateHealthStatus(
-						upstream.num_requests,
-						upstream.fails
-					);
-
-					return {
-						address: upstream.address,
-						num_requests: upstream.num_requests,
-						fails: upstream.fails,
-						failureRate,
-						healthStatus,
-					};
-				}
+			const now = new Date();
+			const hours = now.getHours();
+			const mins = now.getMinutes().toString().padStart(2, "0");
+			const timeLabel = hours + ":" + mins;
+			const totalRequests = upstreams.reduce(
+				(sum, u) => sum + u.num_requests,
+				0
+			);
+			const totalFails = upstreams.reduce(
+				(sum, u) => sum + u.fails,
+				0
 			);
 
-			setMetricsData(processedUpstreams);
+			setHistoricalData((prev) => {
+				const newData = [
+					...prev,
+					{ time: timeLabel, requests: totalRequests, fails: totalFails },
+				];
+				return newData.slice(-20);
+			});
 		} catch (err) {
 			toast.error("Failed to fetch metrics", {
 				description: err instanceof Error ? err.message : "Unknown error",
@@ -128,55 +161,36 @@ export function MetricsView() {
 			? ((totalFails / totalRequests) * 100).toFixed(2)
 			: "0.00";
 
-	const healthyCounts = metricsData.reduce(
-		(counts, u) => {
-			counts[u.healthStatus]++;
-			return counts;
-		},
-		{ healthy: 0, degraded: 0, unhealthy: 0, offline: 0 }
-	);
-
-	const pieData = [
-		{
-			name: "Healthy",
-			value: healthyCounts.healthy,
-			color: HEALTH_COLORS.healthy,
-		},
-		{
-			name: "Degraded",
-			value: healthyCounts.degraded,
-			color: HEALTH_COLORS.degraded,
-		},
-		{
-			name: "Unhealthy",
-			value: healthyCounts.unhealthy,
-			color: HEALTH_COLORS.unhealthy,
-		},
-		{
-			name: "Offline",
-			value: healthyCounts.offline,
-			color: HEALTH_COLORS.offline,
-		},
-	].filter((item) => item.value > 0);
-
-	const topUpstreamsData = metricsData
+	const trafficData = metricsData
 		.sort((a, b) => b.num_requests - a.num_requests)
-		.slice(0, 8)
+		.slice(0, 10)
 		.map((u) => ({
 			name:
 				u.address.length > 20 ? u.address.substring(0, 20) + "..." : u.address,
 			requests: u.num_requests,
-			fails: u.fails,
+		}));
+
+	const errorData = metricsData
+		.filter((u) => u.fails > 0)
+		.sort((a, b) => {
+			const rateA = a.num_requests > 0 ? (a.fails / a.num_requests) * 100 : 0;
+			const rateB = b.num_requests > 0 ? (b.fails / b.num_requests) * 100 : 0;
+			return rateB - rateA;
+		})
+		.slice(0, 8)
+		.map((u) => ({
+			name:
+				u.address.length > 18 ? u.address.substring(0, 18) + "..." : u.address,
+			rate: u.num_requests > 0 ? Number(((u.fails / u.num_requests) * 100).toFixed(2)) : 0,
 		}));
 
 	return (
 		<div className="space-y-6">
-			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<h2 className="text-2xl font-bold">Metrics</h2>
+					<h2 className="text-2xl font-bold">Analytics</h2>
 					<p className="text-sm text-muted-foreground">
-						Upstream performance and health metrics
+						Traffic patterns and performance trends
 					</p>
 				</div>
 				<Button
@@ -186,20 +200,16 @@ export function MetricsView() {
 					disabled={refreshing}
 				>
 					<RefreshCw
-						className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+						className={"w-4 h-4 mr-2 " + (refreshing ? "animate-spin" : "")}
 					/>
 					Refresh
 				</Button>
 			</div>
 
-			{/* Summary Stats */}
-			<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+			<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
 				<Card className="p-4">
-					<div className="text-xs text-muted-foreground mb-1">Upstreams</div>
-					<div className="text-2xl font-bold">{metricsData.length}</div>
-				</Card>
-				<Card className="p-4">
-					<div className="text-xs text-muted-foreground mb-1">
+					<div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+						<TrendingUp className="w-3 h-3" />
 						Total Requests
 					</div>
 					<div className="text-2xl font-bold">
@@ -207,159 +217,135 @@ export function MetricsView() {
 					</div>
 				</Card>
 				<Card className="p-4">
-					<div className="text-xs text-muted-foreground mb-1">Failures</div>
+					<div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+					<XCircle className="w-3 h-3" />
+					Total Failures
+				</div>
 					<div className="text-2xl font-bold text-destructive">
 						{totalFails.toLocaleString()}
 					</div>
 				</Card>
 				<Card className="p-4">
-					<div className="text-xs text-muted-foreground mb-1">Failure Rate</div>
+					<div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+						<AlertTriangle className="w-3 h-3" />
+						Overall Error Rate
+					</div>
 					<div className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">
 						{overallFailureRate}%
 					</div>
 				</Card>
 			</div>
 
-			{/* Charts Grid */}
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-				{/* Health Distribution */}
-				<Card className="p-6">
-					<h3 className="text-lg font-semibold mb-4">Health Distribution</h3>
-					<ResponsiveContainer width="100%" height={250}>
-						<PieChart>
-							<Pie
-								data={pieData}
-								cx="50%"
-								cy="50%"
-								labelLine={false}
-								label={({ name, percent }) =>
-									`${name}: ${(percent * 100).toFixed(0)}%`
-								}
-								outerRadius={80}
-								fill="#8884d8"
-								dataKey="value"
-							>
-								{pieData.map((entry, index) => (
-									<Cell key={`cell-${index}`} fill={entry.color} />
-								))}
-							</Pie>
-							<Tooltip
-								contentStyle={{
-									backgroundColor: "hsl(var(--card))",
-									border: "1px solid hsl(var(--border))",
-									borderRadius: "var(--radius)",
-								}}
-							/>
-						</PieChart>
-					</ResponsiveContainer>
-				</Card>
+				{historicalData.length > 0 && (
+					<Card className="p-6 lg:col-span-2">
+						<h3 className="text-lg font-semibold mb-4">Traffic Trend</h3>
+						<ChartContainer config={chartConfig}>
+							<AreaChart data={historicalData}>
+								<defs>
+									<linearGradient id="fillRequests" x1="0" y1="0" x2="0" y2="1">
+										<stop
+											offset="5%"
+											stopColor="var(--color-requests)"
+											stopOpacity={0.8}
+										/>
+										<stop
+											offset="95%"
+											stopColor="var(--color-requests)"
+											stopOpacity={0.1}
+										/>
+									</linearGradient>
+									<linearGradient id="fillFails" x1="0" y1="0" x2="0" y2="1">
+										<stop
+											offset="5%"
+											stopColor="var(--color-fails)"
+											stopOpacity={0.8}
+										/>
+										<stop
+											offset="95%"
+											stopColor="var(--color-fails)"
+											stopOpacity={0.1}
+										/>
+									</linearGradient>
+								</defs>
+								<CartesianGrid vertical={false} />
+								<XAxis
+									dataKey="time"
+									tickLine={false}
+									axisLine={false}
+									tickMargin={8}
+								/>
+								<YAxis tickLine={false} axisLine={false} tickMargin={8} />
+								<ChartTooltip content={<ChartTooltipContent />} />
+								<ChartLegend content={<ChartLegendContent />} />
+								<Area
+									dataKey="requests"
+									type="monotone"
+									fill="url(#fillRequests)"
+									fillOpacity={0.4}
+									stroke="var(--color-requests)"
+												/>
+								<Area
+									dataKey="fails"
+									type="monotone"
+									fill="url(#fillFails)"
+									fillOpacity={0.4}
+									stroke="var(--color-fails)"
+												/>
+							</AreaChart>
+						</ChartContainer>
+					</Card>
+				)}
 
-				{/* Top Upstreams */}
 				<Card className="p-6">
 					<h3 className="text-lg font-semibold mb-4">
-						Top Upstreams by Traffic
+						Traffic Distribution
 					</h3>
-					<ResponsiveContainer width="100%" height={250}>
-						<BarChart data={topUpstreamsData}>
-							<CartesianGrid
-								strokeDasharray="3 3"
-								stroke="hsl(var(--border))"
-							/>
-							<XAxis
-								dataKey="name"
-								stroke="hsl(var(--muted-foreground))"
-								tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-								angle={-45}
-								textAnchor="end"
-								height={80}
-							/>
+					<ChartContainer config={chartConfig}>
+						<BarChart data={trafficData} layout="vertical">
+							<CartesianGrid horizontal={false} />
+							<XAxis type="number" hide />
 							<YAxis
-								stroke="hsl(var(--muted-foreground))"
-								tick={{ fill: "hsl(var(--muted-foreground))" }}
+								dataKey="name"
+								type="category"
+								tickLine={false}
+								tickMargin={10}
+								axisLine={false}
+								width={140}
+								tick={<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />}
 							/>
-							<Tooltip
-								contentStyle={{
-									backgroundColor: "hsl(var(--card))",
-									border: "1px solid hsl(var(--border))",
-									borderRadius: "var(--radius)",
-								}}
-							/>
-							<Legend />
-							<Bar dataKey="requests" fill="hsl(217, 91%, 60%)" name="Requests" />
-							<Bar dataKey="fails" fill="hsl(0, 84%, 60%)" name="Failures" />
+							<ChartTooltip content={<ChartTooltipContent />} />
+							<Bar dataKey="requests" fill="var(--color-requests)" radius={4} />
 						</BarChart>
-					</ResponsiveContainer>
+					</ChartContainer>
 				</Card>
+
+				{errorData.length > 0 && (
+					<Card className="p-6">
+						<h3 className="text-lg font-semibold mb-4">Error Rates</h3>
+						<ChartContainer config={chartConfig}>
+							<BarChart data={errorData} layout="vertical">
+								<CartesianGrid horizontal={false} />
+								<XAxis type="number" hide />
+								<YAxis
+									dataKey="name"
+									type="category"
+									tickLine={false}
+									tickMargin={10}
+									axisLine={false}
+									width={140}
+									tick={<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />}
+								/>
+								<ChartTooltip
+									content={<ChartTooltipContent />}
+								/>
+								<Bar dataKey="rate" fill="var(--color-rate)" radius={4} />
+							</BarChart>
+						</ChartContainer>
+					</Card>
+				)}
 			</div>
 
-			{/* Detailed Metrics Table */}
-			<Card className="p-6">
-				<h3 className="text-lg font-semibold mb-4">All Upstreams</h3>
-				<div className="overflow-x-auto">
-					<table className="w-full text-sm">
-						<thead>
-							<tr className="border-b">
-								<th className="text-left py-2 px-3 font-medium text-muted-foreground">
-									Address
-								</th>
-								<th className="text-right py-2 px-3 font-medium text-muted-foreground">
-									Requests
-								</th>
-								<th className="text-right py-2 px-3 font-medium text-muted-foreground">
-									Failures
-								</th>
-								<th className="text-right py-2 px-3 font-medium text-muted-foreground">
-									Failure Rate
-								</th>
-								<th className="text-right py-2 px-3 font-medium text-muted-foreground">
-									Status
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							{metricsData
-								.sort((a, b) => b.num_requests - a.num_requests)
-								.map((upstream) => {
-									const statusColors = {
-										healthy: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
-										degraded: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
-										unhealthy: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
-										offline: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
-									};
-
-									return (
-										<tr
-											key={upstream.address}
-											className="border-b last:border-0 hover:bg-muted/50"
-										>
-											<td className="py-2 px-3 font-mono text-xs">
-												{upstream.address}
-											</td>
-											<td className="py-2 px-3 text-right">
-												{upstream.num_requests.toLocaleString()}
-											</td>
-											<td className="py-2 px-3 text-right text-destructive">
-												{upstream.fails}
-											</td>
-											<td className="py-2 px-3 text-right">
-												{upstream.failureRate.toFixed(2)}%
-											</td>
-											<td className="py-2 px-3 text-right">
-												<span
-													className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColors[upstream.healthStatus]}`}
-												>
-													{upstream.healthStatus}
-												</span>
-											</td>
-										</tr>
-									);
-								})}
-						</tbody>
-					</table>
-				</div>
-			</Card>
-
-			{/* Auto-refresh indicator */}
 			<div className="text-center text-xs text-muted-foreground">
 				Auto-refreshes every 5 seconds
 			</div>

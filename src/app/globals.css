@@ -22,6 +22,13 @@
 	--color-input: #e4e4e7;
 	--color-ring: #22c55e;
 	--radius: 0.5rem;
+
+	/* Chart colors */
+	--color-chart-1: #2563eb;
+	--color-chart-2: #dc2626;
+	--color-chart-3: #f59e0b;
+	--color-chart-4: #8b5cf6;
+	--color-chart-5: #10b981;
 }
 
 /* Dark mode colors */
@@ -45,6 +52,13 @@
 	--color-border: #27272a;
 	--color-input: #27272a;
 	--color-ring: #22c55e;
+
+	/* Chart colors for dark mode */
+	--color-chart-1: #60a5fa;
+	--color-chart-2: #f87171;
+	--color-chart-3: #fbbf24;
+	--color-chart-4: #a78bfa;
+	--color-chart-5: #34d399;
 }
 
 * {
