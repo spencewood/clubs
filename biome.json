@@ -41,5 +41,13 @@
 				"organizeImports": "on"
 			}
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["public/mockServiceWorker.js"],
+			"linter": {
+				"enabled": false
+			}
+		}
+	]
 }

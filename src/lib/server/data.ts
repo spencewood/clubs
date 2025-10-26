@@ -27,27 +27,28 @@ export interface InitialPageData {
 
 /**
  * Check if Caddy API is available
+ * Note: When Caddy is started with a config file, the root endpoint (/) returns 404.
+ * We use /config/ instead which always returns 200 if the Admin API is accessible.
  */
 async function checkCaddyAPI(): Promise<{
 	available: boolean;
 	version?: string;
 }> {
 	try {
-		console.log(`[checkCaddyAPI] Checking Caddy API at ${CADDY_API_URL}`);
-		const response = await fetch(CADDY_API_URL, {
+		console.log(
+			`[checkCaddyAPI] Checking Caddy API at ${CADDY_API_URL}/config/`,
+		);
+		const response = await fetch(`${CADDY_API_URL}/config/`, {
 			method: "GET",
 			headers: { "Content-Type": "application/json" },
 			cache: "no-store",
 		});
 
 		if (response.ok) {
-			const data = await response.json();
-			console.log(
-				`[checkCaddyAPI] ✓ Caddy API available (version: ${data.version || "unknown"})`,
-			);
+			console.log("[checkCaddyAPI] ✓ Caddy API available");
 			return {
 				available: true,
-				version: data.version,
+				version: undefined, // Version info not available from /config/ endpoint
 			};
 		}
 
