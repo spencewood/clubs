@@ -178,7 +178,13 @@ export function MetricsView() {
 			? ((totalFails / totalRequests) * 100).toFixed(2)
 			: "0.00";
 
-	const trafficData = metricsData
+	// Filter data based on selected metric
+	const filteredMetricsData =
+		metricFilter === "failures" || metricFilter === "errors"
+			? metricsData.filter((u) => u.fails > 0)
+			: metricsData;
+
+	const trafficData = filteredMetricsData
 		.sort((a, b) => b.num_requests - a.num_requests)
 		.slice(0, 10)
 		.map((u) => ({
@@ -187,7 +193,7 @@ export function MetricsView() {
 			requests: u.num_requests,
 		}));
 
-	const errorData = metricsData
+	const errorData = filteredMetricsData
 		.filter((u) => u.fails > 0)
 		.sort((a, b) => {
 			const rateA = a.num_requests > 0 ? (a.fails / a.num_requests) * 100 : 0;
@@ -230,8 +236,8 @@ export function MetricsView() {
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						metricFilter === "requests"
-							? "border-[3px] border-[var(--color-info-dark)] shadow-md"
-							: "border-[3px] border-transparent hover:border-muted-foreground/40"
+							? "border-2 border-[var(--color-info-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() =>
 						setMetricFilter(metricFilter === "requests" ? "all" : "requests")
@@ -249,8 +255,8 @@ export function MetricsView() {
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						metricFilter === "failures"
-							? "border-[3px] border-[var(--color-error-dark)] shadow-md"
-							: "border-[3px] border-transparent hover:border-muted-foreground/40"
+							? "border-2 border-[var(--color-error-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() =>
 						setMetricFilter(metricFilter === "failures" ? "all" : "failures")
@@ -268,8 +274,8 @@ export function MetricsView() {
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						metricFilter === "errors"
-							? "border-[3px] border-[var(--color-warning-dark)] shadow-md"
-							: "border-[3px] border-transparent hover:border-muted-foreground/40"
+							? "border-2 border-[var(--color-warning-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() =>
 						setMetricFilter(metricFilter === "errors" ? "all" : "errors")
@@ -286,10 +292,40 @@ export function MetricsView() {
 				</Card>
 			</div>
 
+			{metricFilter !== "all" && (
+				<div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border">
+					<AlertTriangle className="w-4 h-4 text-muted-foreground" />
+					<p className="text-sm text-muted-foreground">
+						Filtering:{" "}
+						<span className="font-medium text-foreground">
+							{metricFilter === "requests"
+								? "Showing all upstreams by request volume"
+								: metricFilter === "failures"
+									? "Showing only upstreams with failures"
+									: "Showing only upstreams with errors"}
+						</span>
+					</p>
+					<button
+						type="button"
+						onClick={() => setMetricFilter("all")}
+						className="ml-auto text-xs text-muted-foreground hover:text-foreground underline"
+					>
+						Clear filter
+					</button>
+				</div>
+			)}
+
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				{historicalData.length > 0 && (
 					<Card className="p-6 lg:col-span-2">
-						<h3 className="text-lg font-semibold mb-4">Traffic Trend</h3>
+						<h3 className="text-lg font-semibold mb-4">
+							Traffic Trend
+							{metricFilter !== "all" && (
+								<span className="text-sm font-normal text-muted-foreground ml-2">
+									(filtered)
+								</span>
+							)}
+						</h3>
 						<ChartContainer config={chartConfig}>
 							<AreaChart data={historicalData}>
 								<defs>
@@ -368,29 +404,54 @@ export function MetricsView() {
 				)}
 
 				<Card className="p-6">
-					<h3 className="text-lg font-semibold mb-4">Traffic Distribution</h3>
-					<ChartContainer config={chartConfig}>
-						<BarChart data={trafficData} layout="vertical">
-							<CartesianGrid horizontal={false} />
-							<XAxis type="number" hide />
-							<YAxis
-								dataKey="name"
-								type="category"
-								tickLine={false}
-								tickMargin={10}
-								axisLine={false}
-								width={140}
-								tick={<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />}
-							/>
-							<ChartTooltip content={<ChartTooltipContent />} />
-							<Bar dataKey="requests" fill="var(--color-requests)" radius={4} />
-						</BarChart>
-					</ChartContainer>
+					<h3 className="text-lg font-semibold mb-4">
+						Traffic Distribution
+						{metricFilter !== "all" && (
+							<span className="text-sm font-normal text-muted-foreground ml-2">
+								(filtered)
+							</span>
+						)}
+					</h3>
+					{trafficData.length === 0 ? (
+						<div className="flex items-center justify-center py-12">
+							<div className="text-center space-y-2">
+								<BarChart3 className="w-12 h-12 mx-auto text-muted-foreground opacity-50" />
+								<p className="text-sm text-muted-foreground">
+									No traffic data available
+								</p>
+							</div>
+						</div>
+					) : (
+						<ChartContainer config={chartConfig}>
+							<BarChart data={trafficData} layout="vertical">
+								<CartesianGrid horizontal={false} />
+								<XAxis type="number" hide />
+								<YAxis
+									dataKey="name"
+									type="category"
+									tickLine={false}
+									tickMargin={10}
+									axisLine={false}
+									width={140}
+									tick={<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />}
+								/>
+								<ChartTooltip content={<ChartTooltipContent />} />
+								<Bar dataKey="requests" fill="var(--color-requests)" radius={4} />
+							</BarChart>
+						</ChartContainer>
+					)}
 				</Card>
 
 				{errorData.length > 0 && (
 					<Card className="p-6">
-						<h3 className="text-lg font-semibold mb-4">Error Rates</h3>
+						<h3 className="text-lg font-semibold mb-4">
+							Error Rates
+							{metricFilter !== "all" && (
+								<span className="text-sm font-normal text-muted-foreground ml-2">
+									(filtered)
+								</span>
+							)}
+						</h3>
 						<ChartContainer config={chartConfig}>
 							<BarChart data={errorData} layout="vertical">
 								<CartesianGrid horizontal={false} />

@@ -226,8 +226,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "all"
-							? "border-[3px] border-[var(--color-info-dark)] shadow-md"
-							: "border-[3px] border-transparent hover:border-muted-foreground/40"
+							? "border-2 border-[var(--color-info-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("all")}
 				>
@@ -241,8 +241,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "healthy"
-							? "border-[3px] border-[var(--color-success-dark)] shadow-md"
-							: "border-[3px] border-transparent hover:border-muted-foreground/40"
+							? "border-2 border-[var(--color-success-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("healthy")}
 				>
@@ -256,8 +256,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "degraded"
-							? "border-[3px] border-[var(--color-warning-dark)] shadow-md"
-							: "border-[3px] border-transparent hover:border-muted-foreground/40"
+							? "border-2 border-[var(--color-warning-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("degraded")}
 				>
@@ -271,8 +271,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "unhealthy"
-							? "border-[3px] border-[var(--color-error-dark)] shadow-md"
-							: "border-[3px] border-transparent hover:border-muted-foreground/40"
+							? "border-2 border-[var(--color-error-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("unhealthy")}
 				>
@@ -286,8 +286,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "offline"
-							? "border-[3px] border-[var(--color-muted-foreground)] shadow-md"
-							: "border-[3px] border-transparent hover:border-muted-foreground/40"
+							? "border-2 border-[var(--color-muted-foreground)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("offline")}
 				>
@@ -301,7 +301,31 @@ export function UpstreamsView({
 
 			{/* Servers list */}
 			<div className="space-y-3">
-				{filteredServers.map((server) => {
+				{filteredServers.length === 0 ? (
+					<Card className="p-8">
+						<div className="text-center space-y-2">
+							<Server className="w-12 h-12 mx-auto text-muted-foreground opacity-50" />
+							<h3 className="font-semibold text-muted-foreground">
+								No Upstreams Found
+							</h3>
+							<p className="text-sm text-muted-foreground">
+								{statusFilter === "all"
+									? "No upstream servers are configured."
+									: `No ${statusFilter} upstreams found.`}
+							</p>
+							{statusFilter !== "all" && (
+								<button
+									type="button"
+									onClick={() => setStatusFilter("all")}
+									className="text-xs text-muted-foreground hover:text-foreground underline mt-2"
+								>
+									Clear filter
+								</button>
+							)}
+						</div>
+					</Card>
+				) : (
+					filteredServers.map((server) => {
 					const health = getHealthStatus(server);
 					const Icon = health.icon;
 
@@ -351,7 +375,8 @@ export function UpstreamsView({
 							</div>
 						</Card>
 					);
-				})}
+				})
+				)}
 			</div>
 
 			<div className="text-xs text-muted-foreground text-center pt-2">

@@ -623,8 +623,8 @@ export function CaddyDashboard({
 							<div
 								className={`space-y-4 bg-card border rounded-lg shadow-lg p-6 relative transition-all duration-300 ease-in-out ${
 									leftPanelExpanded
-										? "-translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto xl:w-full z-20 xl:z-10"
-										: "translate-x-0 opacity-100 z-20 xl:z-10 xl:w-1/2"
+										? "-translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:flex-[999] xl:basis-0"
+										: "translate-x-0 opacity-100 z-20 xl:z-10 xl:flex-1 xl:basis-0"
 								}`}
 							>
 								{/* Tab Navigation with Expand/Collapse */}
@@ -714,14 +714,15 @@ export function CaddyDashboard({
 									<CertificatesView initialCertificates={initialCertificates} />
 								) : config.siteBlocks.length === 0 ? (
 									// Empty state - Show two add options
-									<div className="space-y-6">
-										<div className="text-center space-y-2 pt-8">
-											<h2 className="text-lg font-semibold">Get Started</h2>
-											<p className="text-sm text-muted-foreground">
-												Create your first site or container
-											</p>
-										</div>
-										<div className="grid gap-3 max-w-md mx-auto">
+									<div className="py-12">
+										<div className="space-y-6 max-w-md mx-auto px-4">
+											<div className="text-center space-y-2">
+												<h2 className="text-lg font-semibold">Get Started</h2>
+												<p className="text-sm text-muted-foreground">
+													Create your first site or container
+												</p>
+											</div>
+											<div className="grid gap-3">
 											<button
 												type="button"
 												onClick={() => {
@@ -756,6 +757,7 @@ export function CaddyDashboard({
 													</p>
 												</div>
 											</button>
+											</div>
 										</div>
 									</div>
 								) : (
@@ -836,10 +838,10 @@ export function CaddyDashboard({
 
 							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (visible when left panel collapsed on mobile, hidden when expanded on desktop) */}
 							<div
-								className={`flex-col space-y-4 min-h-[calc(100vh-12rem)] transition-all duration-300 ease-in-out overflow-hidden ${
+								className={`flex-col space-y-4 min-h-[calc(100vh-12rem)] transition-all duration-300 ease-in-out overflow-hidden xl:relative xl:z-auto xl:flex ${
 									leftPanelExpanded
-										? "absolute inset-0 z-10 flex opacity-100 xl:w-0 xl:hidden xl:opacity-0"
-										: "absolute inset-0 z-10 opacity-60 hover:opacity-100 xl:relative xl:z-auto xl:flex xl:w-1/2 xl:opacity-60 xl:hover:opacity-100"
+										? "absolute inset-0 z-10 flex opacity-100 xl:opacity-0 xl:pointer-events-none xl:flex-[0.001] xl:basis-0"
+										: "absolute inset-0 z-10 opacity-60 hover:opacity-100 xl:opacity-60 xl:hover:opacity-100 xl:flex-1 xl:basis-0"
 								}`}
 							>
 								{/* Tab Navigation */}
