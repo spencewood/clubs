@@ -1,5 +1,11 @@
 # clubs
 
+## 0.9.2
+
+### Patch Changes
+
+- c67d97b: Consistency updates and style cleanup
+
 ## 0.9.1
 
 ### Patch Changes
