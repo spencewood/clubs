@@ -3,9 +3,12 @@
 import {
 	Activity,
 	AlertCircle,
+	AlertTriangle,
 	CheckCircle,
 	RefreshCw,
+	Server,
 	WifiOff,
+	XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -30,7 +33,7 @@ function getHealthStatus(server: ConsolidatedServer): {
 		return {
 			status: "offline",
 			label: "Offline",
-			color: "text-gray-500",
+			color: "text-[var(--color-muted-foreground)]",
 			icon: WifiOff,
 		};
 	}
@@ -46,7 +49,7 @@ function getHealthStatus(server: ConsolidatedServer): {
 		return {
 			status: "unhealthy",
 			label: "Unhealthy",
-			color: "text-red-500",
+			color: "text-[var(--color-error)]",
 			icon: AlertCircle,
 		};
 	}
@@ -56,7 +59,7 @@ function getHealthStatus(server: ConsolidatedServer): {
 		return {
 			status: "degraded",
 			label: "Degraded",
-			color: "text-yellow-500",
+			color: "text-[var(--color-warning)]",
 			icon: AlertCircle,
 		};
 	}
@@ -64,7 +67,7 @@ function getHealthStatus(server: ConsolidatedServer): {
 	return {
 		status: "healthy",
 		label: "Healthy",
-		color: "text-green-500",
+		color: "text-[var(--color-success)]",
 		icon: CheckCircle,
 	};
 }
@@ -83,6 +86,9 @@ export function UpstreamsView({
 		initialConfig,
 	);
 	const [refreshing, setRefreshing] = useState(false);
+	const [statusFilter, setStatusFilter] = useState<
+		"all" | "healthy" | "degraded" | "unhealthy" | "offline"
+	>("all");
 
 	const fetchUpstreams = useCallback(async () => {
 		setRefreshing(true);
@@ -121,10 +127,23 @@ export function UpstreamsView({
 	}, []);
 
 	// Consolidate upstreams by server (ignoring port) and include offline ones
-	const consolidatedServers = useMemo(
-		() => consolidateUpstreamsWithConfig(upstreams, caddyConfig),
-		[upstreams, caddyConfig],
-	);
+	const consolidatedServers = useMemo(() => {
+		const servers = consolidateUpstreamsWithConfig(upstreams, caddyConfig);
+
+		// Sort by health status: healthy -> degraded -> unhealthy -> offline
+		const statusOrder = { healthy: 0, degraded: 1, unhealthy: 2, offline: 3 };
+
+		return servers.sort((a, b) => {
+			const statusA = getHealthStatus(a).status;
+			const statusB = getHealthStatus(b).status;
+
+			const orderDiff = statusOrder[statusA] - statusOrder[statusB];
+			if (orderDiff !== 0) return orderDiff;
+
+			// Within same health status, sort alphabetically by server
+			return a.server.localeCompare(b.server);
+		});
+	}, [upstreams, caddyConfig]);
 
 	useEffect(() => {
 		// Auto-refresh every 5 seconds (skip initial fetch since we have initialUpstreams and initialConfig)
@@ -158,6 +177,14 @@ export function UpstreamsView({
 		);
 	}
 
+	// Filter servers based on selected status
+	const filteredServers =
+		statusFilter === "all"
+			? consolidatedServers
+			: consolidatedServers.filter(
+					(s) => getHealthStatus(s).status === statusFilter,
+				);
+
 	const healthyCount = consolidatedServers.filter(
 		(s) => getHealthStatus(s).status === "healthy",
 	).length;
@@ -186,120 +213,186 @@ export function UpstreamsView({
 					size="sm"
 					onClick={() => fetchUpstreams()}
 					disabled={refreshing}
+					title="Refresh upstreams"
 				>
 					<RefreshCw
-						className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+						className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
 					/>
-					Refresh
+					<span className="hidden sm:inline ml-2">Refresh</span>
 				</Button>
 			</div>
 
-			{/* Summary stats */}
+			{/* Summary stats - clickable filters */}
 			<div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-				<Card className="p-4">
-					<div className="flex items-center gap-3">
-						<Activity className="w-5 h-5 text-muted-foreground" />
-						<div>
-							<p className="text-2xl font-bold">{consolidatedServers.length}</p>
-							<p className="text-xs text-muted-foreground">Upstream Hosts</p>
-						</div>
+				<Card
+					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+						statusFilter === "all"
+							? "border-2 border-[var(--color-info-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
+					}`}
+					onClick={() => setStatusFilter("all")}
+				>
+					<Server
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-info)] opacity-20"
+						strokeWidth={1.5}
+					/>
+					<div className="relative">
+						<p className="text-2xl font-bold">{consolidatedServers.length}</p>
+						<p className="text-xs text-muted-foreground">Upstream Hosts</p>
 					</div>
 				</Card>
 
-				<Card className="p-4">
-					<div className="flex items-center gap-3">
-						<CheckCircle className="w-5 h-5 text-green-500" />
-						<div>
-							<p className="text-2xl font-bold">{healthyCount}</p>
-							<p className="text-xs text-muted-foreground">Healthy</p>
-						</div>
+				<Card
+					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+						statusFilter === "healthy"
+							? "border-2 border-[var(--color-success-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
+					}`}
+					onClick={() => setStatusFilter("healthy")}
+				>
+					<CheckCircle
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-success)] opacity-20"
+						strokeWidth={1.5}
+					/>
+					<div className="relative">
+						<p className="text-2xl font-bold">{healthyCount}</p>
+						<p className="text-xs text-muted-foreground">Healthy</p>
 					</div>
 				</Card>
 
-				<Card className="p-4">
-					<div className="flex items-center gap-3">
-						<AlertCircle className="w-5 h-5 text-yellow-500" />
-						<div>
-							<p className="text-2xl font-bold">{degradedCount}</p>
-							<p className="text-xs text-muted-foreground">Degraded</p>
-						</div>
+				<Card
+					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+						statusFilter === "degraded"
+							? "border-2 border-[var(--color-warning-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
+					}`}
+					onClick={() => setStatusFilter("degraded")}
+				>
+					<AlertTriangle
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-warning)] opacity-20"
+						strokeWidth={1.5}
+					/>
+					<div className="relative">
+						<p className="text-2xl font-bold">{degradedCount}</p>
+						<p className="text-xs text-muted-foreground">Degraded</p>
 					</div>
 				</Card>
 
-				<Card className="p-4">
-					<div className="flex items-center gap-3">
-						<AlertCircle className="w-5 h-5 text-red-500" />
-						<div>
-							<p className="text-2xl font-bold">{unhealthyCount}</p>
-							<p className="text-xs text-muted-foreground">Unhealthy</p>
-						</div>
+				<Card
+					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+						statusFilter === "unhealthy"
+							? "border-2 border-[var(--color-error-dark)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
+					}`}
+					onClick={() => setStatusFilter("unhealthy")}
+				>
+					<XCircle
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-error)] opacity-20"
+						strokeWidth={1.5}
+					/>
+					<div className="relative">
+						<p className="text-2xl font-bold">{unhealthyCount}</p>
+						<p className="text-xs text-muted-foreground">Unhealthy</p>
 					</div>
 				</Card>
 
-				<Card className="p-4">
-					<div className="flex items-center gap-3">
-						<WifiOff className="w-5 h-5 text-gray-500" />
-						<div>
-							<p className="text-2xl font-bold">{offlineCount}</p>
-							<p className="text-xs text-muted-foreground">Offline</p>
-						</div>
+				<Card
+					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+						statusFilter === "offline"
+							? "border-2 border-[var(--color-muted-foreground)] shadow-md"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
+					}`}
+					onClick={() => setStatusFilter("offline")}
+				>
+					<WifiOff
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-muted-foreground)] opacity-20"
+						strokeWidth={1.5}
+					/>
+					<div className="relative">
+						<p className="text-2xl font-bold">{offlineCount}</p>
+						<p className="text-xs text-muted-foreground">Offline</p>
 					</div>
 				</Card>
 			</div>
 
 			{/* Servers list */}
 			<div className="space-y-3">
-				{consolidatedServers.map((server) => {
-					const health = getHealthStatus(server);
-					const Icon = health.icon;
+				{filteredServers.length === 0 ? (
+					<Card className="p-8">
+						<div className="text-center space-y-2">
+							<Server className="w-12 h-12 mx-auto text-muted-foreground opacity-50" />
+							<h3 className="font-semibold text-muted-foreground">
+								No Upstreams Found
+							</h3>
+							<p className="text-sm text-muted-foreground">
+								{statusFilter === "all"
+									? "No upstream servers are configured."
+									: `No ${statusFilter} upstreams found.`}
+							</p>
+							{statusFilter !== "all" && (
+								<button
+									type="button"
+									onClick={() => setStatusFilter("all")}
+									className="text-xs text-muted-foreground hover:text-foreground underline mt-2"
+								>
+									Clear filter
+								</button>
+							)}
+						</div>
+					</Card>
+				) : (
+					filteredServers.map((server) => {
+						const health = getHealthStatus(server);
+						const Icon = health.icon;
 
-					return (
-						<Card key={server.server} className="p-4">
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-3 flex-1">
-									<Icon className={`w-5 h-5 ${health.color}`} />
-									<div className="flex-1">
-										<div className="font-mono font-semibold">
-											{server.server}
+						return (
+							<Card key={server.server} className="p-4">
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-3 flex-1">
+										<Icon className={`w-5 h-5 ${health.color}`} />
+										<div className="flex-1">
+											<div className="font-mono font-semibold">
+												{server.server}
+											</div>
+											<div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+												{server.ports.length > 0 && (
+													<span>
+														<span className="font-medium">Ports:</span>{" "}
+														{server.ports.join(", ")}
+													</span>
+												)}
+												{!server.isOffline && (
+													<>
+														<span>
+															<span className="font-medium">Requests:</span>{" "}
+															{server.totalRequests}
+														</span>
+														<span>
+															<span className="font-medium">Failures:</span>{" "}
+															{server.totalFails}
+														</span>
+													</>
+												)}
+												{server.isOffline && (
+													<span className="text-gray-500">
+														No stats available
+													</span>
+												)}
+											</div>
 										</div>
-										<div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-											{server.ports.length > 0 && (
-												<span>
-													<span className="font-medium">Ports:</span>{" "}
-													{server.ports.join(", ")}
-												</span>
-											)}
-											{!server.isOffline && (
-												<>
-													<span>
-														<span className="font-medium">Requests:</span>{" "}
-														{server.totalRequests}
-													</span>
-													<span>
-														<span className="font-medium">Failures:</span>{" "}
-														{server.totalFails}
-													</span>
-												</>
-											)}
-											{server.isOffline && (
-												<span className="text-gray-500">
-													No stats available
-												</span>
-											)}
+									</div>
+									<div className="text-right">
+										<div
+											className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${health.color} bg-opacity-10`}
+										>
+											{health.label}
 										</div>
 									</div>
 								</div>
-								<div className="text-right">
-									<div
-										className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${health.color} bg-opacity-10`}
-									>
-										{health.label}
-									</div>
-								</div>
-							</div>
-						</Card>
-					);
-				})}
+							</Card>
+						);
+					})
+				)}
 			</div>
 
 			<div className="text-xs text-muted-foreground text-center pt-2">

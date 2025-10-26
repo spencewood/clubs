@@ -3,11 +3,13 @@
 import {
 	Activity,
 	BarChart3,
+	Check,
 	ChevronLeft,
 	ChevronRight,
 	Circle,
 	Code,
 	Container,
+	Copy,
 	Eye,
 	FileJson,
 	Globe,
@@ -155,7 +157,17 @@ function FullConfigView() {
 					onClick={copyToClipboard}
 					className="text-xs opacity-70 hover:opacity-100"
 				>
-					{copied ? "Copied!" : "Copy JSON"}
+					{copied ? (
+						<>
+							<Check className="h-3.5 w-3.5" />
+							<span className="ml-1.5">Copied!</span>
+						</>
+					) : (
+						<>
+							<Copy className="h-3.5 w-3.5" />
+							<span className="ml-1.5">Copy JSON</span>
+						</>
+					)}
 				</Button>
 			</div>
 
@@ -600,11 +612,14 @@ export function CaddyDashboard({
 												? "var(--color-accent-foreground)"
 												: "var(--color-muted-foreground)",
 										}}
+										title={caddyStatus.available ? "Live Mode" : "File Mode"}
 									>
 										<Circle
 											className={`h-2 w-2 fill-current ${caddyStatus.available ? "animate-pulse" : ""}`}
 										/>
-										{caddyStatus.available ? "Live Mode" : "File Mode"}
+										<span className="hidden sm:inline">
+											{caddyStatus.available ? "Live Mode" : "File Mode"}
+										</span>
 									</div>
 								)}
 								<ThemeToggle />
@@ -620,16 +635,16 @@ export function CaddyDashboard({
 							<div
 								className={`space-y-4 bg-card border rounded-lg shadow-lg p-6 relative transition-all duration-300 ease-in-out ${
 									leftPanelExpanded
-										? "-translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto xl:w-full z-20 xl:z-10"
-										: "translate-x-0 opacity-100 z-20 xl:z-10 xl:w-1/2"
+										? "-translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:flex-[999] xl:basis-0"
+										: "translate-x-0 opacity-100 z-20 xl:z-10 xl:flex-1 xl:basis-0"
 								}`}
 							>
 								{/* Tab Navigation with Expand/Collapse */}
-								<div className="flex items-center justify-between gap-2 border-b pb-2">
-									<div className="flex gap-2">
+								<div className="flex items-center justify-between gap-2 pb-2">
+									<div className="flex gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
 										<Link
 											href="/"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "sites"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
@@ -640,7 +655,7 @@ export function CaddyDashboard({
 										</Link>
 										<Link
 											href="/upstreams"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "upstreams"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
@@ -650,19 +665,8 @@ export function CaddyDashboard({
 											Upstreams
 										</Link>
 										<Link
-											href="/certificates"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-												leftPanelView === "certificates"
-													? "border-primary text-foreground"
-													: "border-transparent text-muted-foreground hover:text-foreground"
-											}`}
-										>
-											<ShieldCheck className="w-4 h-4" />
-											Certificates
-										</Link>
-										<Link
 											href="/metrics"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "metrics"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
@@ -671,12 +675,23 @@ export function CaddyDashboard({
 											<BarChart3 className="w-4 h-4" />
 											Metrics
 										</Link>
+										<Link
+											href="/certificates"
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+												leftPanelView === "certificates"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<ShieldCheck className="w-4 h-4" />
+											Certificates
+										</Link>
 									</div>
 									<Button
 										variant="ghost"
 										size="sm"
 										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-										className="h-8 px-2 xl:block hidden"
+										className="h-8 px-2 xl:block hidden bg-muted/50 hover:bg-muted"
 										title={
 											leftPanelExpanded ? "Collapse panel" : "Expand panel"
 										}
@@ -693,7 +708,7 @@ export function CaddyDashboard({
 										variant="ghost"
 										size="sm"
 										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-										className="h-8 px-2 xl:hidden"
+										className="h-8 px-2 xl:hidden bg-muted/50 hover:bg-muted"
 										title="Hide panel / Show editor"
 									>
 										<ChevronLeft className="w-4 h-4" />
@@ -705,54 +720,56 @@ export function CaddyDashboard({
 										initialUpstreams={initialUpstreams}
 										initialConfig={config}
 									/>
-								) : leftPanelView === "certificates" ? (
-									<CertificatesView initialCertificates={initialCertificates} />
 								) : leftPanelView === "metrics" ? (
 									<MetricsView />
+								) : leftPanelView === "certificates" ? (
+									<CertificatesView initialCertificates={initialCertificates} />
 								) : config.siteBlocks.length === 0 ? (
 									// Empty state - Show two add options
-									<div className="space-y-6">
-										<div className="text-center space-y-2 pt-8">
-											<h2 className="text-lg font-semibold">Get Started</h2>
-											<p className="text-sm text-muted-foreground">
-												Create your first site or container
-											</p>
-										</div>
-										<div className="grid gap-3 max-w-md mx-auto">
-											<button
-												type="button"
-												onClick={() => {
-													setNewSiteBlockType("physical");
-													setShowNewSiteDialog(true);
-												}}
-												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-left"
-											>
-												<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-												<Globe className="h-6 w-6 text-green-600 flex-shrink-0" />
-												<div className="flex-1">
-													<h4 className="font-semibold">Site</h4>
-													<p className="text-xs text-muted-foreground mt-0.5">
-														Single domain with its own configuration
-													</p>
-												</div>
-											</button>
-											<button
-												type="button"
-												onClick={() => {
-													setNewSiteBlockType("virtual-container");
-													setShowNewSiteDialog(true);
-												}}
-												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-left"
-											>
-												<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-												<Container className="h-6 w-6 text-blue-600 flex-shrink-0" />
-												<div className="flex-1">
-													<h4 className="font-semibold">Container</h4>
-													<p className="text-xs text-muted-foreground mt-0.5">
-														Wildcard domain hosting multiple services
-													</p>
-												</div>
-											</button>
+									<div className="py-12">
+										<div className="space-y-6 max-w-md mx-auto px-4">
+											<div className="text-center space-y-2">
+												<h2 className="text-lg font-semibold">Get Started</h2>
+												<p className="text-sm text-muted-foreground">
+													Create your first site or container
+												</p>
+											</div>
+											<div className="grid gap-3">
+												<button
+													type="button"
+													onClick={() => {
+														setNewSiteBlockType("physical");
+														setShowNewSiteDialog(true);
+													}}
+													className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-success)] hover:bg-[var(--color-success)]/5 transition-colors text-left"
+												>
+													<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+													<Globe className="h-6 w-6 text-[var(--color-success)] flex-shrink-0" />
+													<div className="flex-1">
+														<h4 className="font-semibold">Site</h4>
+														<p className="text-xs text-muted-foreground mt-0.5">
+															Single domain with its own configuration
+														</p>
+													</div>
+												</button>
+												<button
+													type="button"
+													onClick={() => {
+														setNewSiteBlockType("virtual-container");
+														setShowNewSiteDialog(true);
+													}}
+													className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-info)] hover:bg-[var(--color-info)]/5 transition-colors text-left"
+												>
+													<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+													<Container className="h-6 w-6 text-[var(--color-info)] flex-shrink-0" />
+													<div className="flex-1">
+														<h4 className="font-semibold">Container</h4>
+														<p className="text-xs text-muted-foreground mt-0.5">
+															Wildcard domain hosting multiple services
+														</p>
+													</div>
+												</button>
+											</div>
 										</div>
 									</div>
 								) : (
@@ -808,7 +825,7 @@ export function CaddyDashboard({
 													setNewSiteBlockType("physical");
 													setShowNewSiteDialog(true);
 												}}
-												className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-muted-foreground hover:text-foreground"
+												className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-success)] hover:bg-[var(--color-success)]/5 transition-colors text-muted-foreground hover:text-foreground"
 											>
 												<Plus className="h-4 w-4" />
 												<Globe className="h-4 w-4" />
@@ -820,7 +837,7 @@ export function CaddyDashboard({
 													setNewSiteBlockType("virtual-container");
 													setShowNewSiteDialog(true);
 												}}
-												className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-muted-foreground hover:text-foreground"
+												className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-info)] hover:bg-[var(--color-info)]/5 transition-colors text-muted-foreground hover:text-foreground"
 											>
 												<Plus className="h-4 w-4" />
 												<Container className="h-4 w-4" />
@@ -833,10 +850,10 @@ export function CaddyDashboard({
 
 							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (visible when left panel collapsed on mobile, hidden when expanded on desktop) */}
 							<div
-								className={`flex-col space-y-4 min-h-[calc(100vh-12rem)] transition-all duration-300 ease-in-out overflow-hidden ${
+								className={`flex-col space-y-4 min-h-[calc(100vh-12rem)] transition-all duration-300 ease-in-out overflow-hidden xl:relative xl:z-auto xl:flex ${
 									leftPanelExpanded
-										? "absolute inset-0 z-10 flex opacity-100 xl:w-0 xl:hidden xl:opacity-0"
-										: "absolute inset-0 z-10 opacity-60 hover:opacity-100 xl:relative xl:z-auto xl:flex xl:w-1/2 xl:opacity-60 xl:hover:opacity-100"
+										? "absolute inset-0 z-10 flex opacity-100 xl:opacity-0 xl:pointer-events-none xl:flex-[0.001] xl:basis-0"
+										: "absolute inset-0 z-10 opacity-60 hover:opacity-100 xl:opacity-60 xl:hover:opacity-100 xl:flex-1 xl:basis-0"
 								}`}
 							>
 								{/* Tab Navigation */}
@@ -847,53 +864,56 @@ export function CaddyDashboard({
 											variant="ghost"
 											size="sm"
 											onClick={() => setLeftPanelExpanded(false)}
-											className="xl:hidden h-7 px-2"
+											className="xl:hidden h-7 px-2 bg-muted/50 hover:bg-muted"
 											title="Show panel"
 										>
 											<ChevronRight className="w-4 h-4" />
 										</Button>
-										<div className="flex gap-2 border-b border-muted-foreground/20">
+										<div className="flex gap-2 border-b border-muted-foreground/20 overflow-x-auto scrollbar-hide">
 											<button
 												type="button"
 												onClick={() => setRightPanelView("raw")}
-												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
 													rightPanelView === "raw"
 														? "border-primary text-foreground"
 														: "border-transparent text-muted-foreground/70 hover:text-foreground"
 												}`}
 											>
 												<Code className="w-3.5 h-3.5" />
-												Raw Caddyfile
+												<span className="hidden sm:inline">Raw Caddyfile</span>
+												<span className="sm:hidden">Raw</span>
 											</button>
 											{(caddyStatus?.available ||
 												process.env.NODE_ENV === "development") && (
 												<button
 													type="button"
 													onClick={() => setRightPanelView("config")}
-													className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+													className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
 														rightPanelView === "config"
 															? "border-primary text-foreground"
 															: "border-transparent text-muted-foreground/70 hover:text-foreground"
 													}`}
 												>
 													<FileJson className="w-3.5 h-3.5" />
-													Full Config
+													<span className="hidden sm:inline">Full Config</span>
+													<span className="sm:hidden">Config</span>
 												</button>
 											)}
 										</div>
 									</div>
-									{rightPanelView === "raw" && (
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={handleFormat}
-											disabled={!rawContent.trim()}
-											className="text-xs opacity-70 hover:opacity-100"
-										>
-											<Wand2 className="h-3.5 w-3.5 mr-1" />
-											Format
-										</Button>
-									)}
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={handleFormat}
+										disabled={!rawContent.trim()}
+										className={`text-xs opacity-70 hover:opacity-100 ${
+											rightPanelView === "raw" ? "visible" : "invisible"
+										}`}
+										title="Format Caddyfile"
+									>
+										<Wand2 className="h-3.5 w-3.5" />
+										<span className="hidden sm:inline ml-2">Format</span>
+									</Button>
 								</div>
 
 								{/* Tab Content */}
@@ -997,7 +1017,7 @@ export function CaddyDashboard({
 											b.directives.some((d) => d.name === "tls"),
 										).length > 0 && (
 											<div className="flex items-center gap-2">
-												<Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
+												<Shield className="h-4 w-4 text-[var(--color-success)]" />
 												<span className="font-medium">
 													{
 														config.siteBlocks.filter((b) =>
@@ -1065,6 +1085,7 @@ export function CaddyDashboard({
 									title={isLiveMode ? "Reload from Caddy" : "Reload from file"}
 								>
 									<RefreshCw className="h-4 w-4" />
+									<span className="hidden sm:inline ml-2">Reload</span>
 								</Button>
 								<Button
 									onClick={handleSave}
@@ -1072,7 +1093,11 @@ export function CaddyDashboard({
 									variant="default"
 									size="sm"
 								>
-									<Save className="h-4 w-4 mr-2" />
+									{saving ? (
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									) : (
+										<Save className="h-4 w-4 mr-2" />
+									)}
 									{saving ? "Saving..." : isLiveMode ? "Save & Apply" : "Save"}
 								</Button>
 								{!isLiveMode && caddyStatus?.available && (
@@ -1082,7 +1107,11 @@ export function CaddyDashboard({
 										size="sm"
 										variant="outline"
 									>
-										<Zap className="h-4 w-4 mr-2" />
+										{applying ? (
+											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										) : (
+											<Zap className="h-4 w-4 mr-2" />
+										)}
 										{applying ? "Applying..." : "Apply to Caddy"}
 									</Button>
 								)}

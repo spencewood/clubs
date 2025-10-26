@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, FileKey, RefreshCw, Shield } from "lucide-react";
+import { Check, Copy, FileKey, RefreshCw, ShieldCheck } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { getCaddyPKICA } from "@/lib/api";
@@ -17,6 +17,8 @@ export function CertificatesView({
 }: CertificatesViewProps) {
 	const [ca, setCA] = useState<CaddyPKICA | null>(initialCertificates);
 	const [refreshing, setRefreshing] = useState(false);
+	const [copiedRoot, setCopiedRoot] = useState(false);
+	const [copiedIntermediate, setCopiedIntermediate] = useState(false);
 
 	const fetchCA = useCallback(async () => {
 		setRefreshing(true);
@@ -74,11 +76,12 @@ export function CertificatesView({
 					size="sm"
 					onClick={() => fetchCA()}
 					disabled={refreshing}
+					title="Refresh certificates"
 				>
 					<RefreshCw
-						className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+						className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
 					/>
-					Refresh
+					<span className="hidden sm:inline ml-2">Refresh</span>
 				</Button>
 			</div>
 
@@ -86,7 +89,7 @@ export function CertificatesView({
 			<Card className="p-6">
 				<div className="flex items-start gap-4">
 					<div className="p-3 bg-primary/10 rounded-lg">
-						<Shield className="w-6 h-6 text-primary" />
+						<ShieldCheck className="w-6 h-6 text-primary" />
 					</div>
 					<div className="flex-1 space-y-4">
 						<div>
@@ -97,7 +100,7 @@ export function CertificatesView({
 						<div className="grid gap-4 md:grid-cols-2">
 							<div className="space-y-1">
 								<div className="flex items-center gap-2 text-sm font-medium">
-									<Award className="w-4 h-4 text-muted-foreground" />
+									<ShieldCheck className="w-4 h-4 text-muted-foreground" />
 									Root Certificate
 								</div>
 								<p className="text-sm text-muted-foreground font-mono">
@@ -124,7 +127,7 @@ export function CertificatesView({
 				<div className="space-y-3">
 					<div className="flex items-center justify-between">
 						<h4 className="font-semibold flex items-center gap-2">
-							<Award className="w-4 h-4" />
+							<ShieldCheck className="w-4 h-4" />
 							Root Certificate (PEM)
 						</h4>
 						<Button
@@ -133,9 +136,21 @@ export function CertificatesView({
 							onClick={() => {
 								navigator.clipboard.writeText(ca.root_certificate);
 								toast.success("Copied to clipboard");
+								setCopiedRoot(true);
+								setTimeout(() => setCopiedRoot(false), 2000);
 							}}
 						>
-							Copy
+							{copiedRoot ? (
+								<>
+									<Check className="h-4 w-4" />
+									<span className="ml-2">Copied!</span>
+								</>
+							) : (
+								<>
+									<Copy className="h-4 w-4" />
+									<span className="ml-2">Copy</span>
+								</>
+							)}
 						</Button>
 					</div>
 					<pre className="text-xs bg-muted p-4 rounded-lg overflow-x-auto font-mono">
@@ -158,9 +173,21 @@ export function CertificatesView({
 							onClick={() => {
 								navigator.clipboard.writeText(ca.intermediate_certificate);
 								toast.success("Copied to clipboard");
+								setCopiedIntermediate(true);
+								setTimeout(() => setCopiedIntermediate(false), 2000);
 							}}
 						>
-							Copy
+							{copiedIntermediate ? (
+								<>
+									<Check className="h-4 w-4" />
+									<span className="ml-2">Copied!</span>
+								</>
+							) : (
+								<>
+									<Copy className="h-4 w-4" />
+									<span className="ml-2">Copy</span>
+								</>
+							)}
 						</Button>
 					</div>
 					<pre className="text-xs bg-muted p-4 rounded-lg overflow-x-auto font-mono">

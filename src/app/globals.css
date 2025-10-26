@@ -24,11 +24,21 @@
 	--radius: 0.5rem;
 
 	/* Chart colors */
-	--color-chart-1: #2563eb;
+	--color-chart-1: #0ea5e9;
 	--color-chart-2: #dc2626;
 	--color-chart-3: #f59e0b;
 	--color-chart-4: #8b5cf6;
 	--color-chart-5: #10b981;
+
+	/* Status colors - semantic naming for consistency */
+	--color-success: #22c55e;
+	--color-success-dark: #15803d;
+	--color-warning: #f59e0b;
+	--color-warning-dark: #b45309;
+	--color-error: #ef4444;
+	--color-error-dark: #b91c1c;
+	--color-info: #0ea5e9;
+	--color-info-dark: #0369a1;
 }
 
 /* Dark mode colors */
@@ -54,11 +64,21 @@
 	--color-ring: #22c55e;
 
 	/* Chart colors for dark mode */
-	--color-chart-1: #60a5fa;
+	--color-chart-1: #38bdf8;
 	--color-chart-2: #f87171;
 	--color-chart-3: #fbbf24;
 	--color-chart-4: #a78bfa;
 	--color-chart-5: #34d399;
+
+	/* Status colors for dark mode */
+	--color-success: #22c55e;
+	--color-success-dark: #4ade80;
+	--color-warning: #fbbf24;
+	--color-warning-dark: #fcd34d;
+	--color-error: #f87171;
+	--color-error-dark: #fca5a5;
+	--color-info: #38bdf8;
+	--color-info-dark: #7dd3fc;
 }
 
 * {
@@ -81,4 +101,14 @@ a,
 [type="button"],
 [type="submit"] {
 	cursor: pointer;
+}
+
+/* Hide scrollbar while maintaining scroll functionality */
+.scrollbar-hide {
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none; /* Chrome, Safari, Opera */
 }

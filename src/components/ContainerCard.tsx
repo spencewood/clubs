@@ -242,7 +242,7 @@ export function ContainerCard({
 						<button
 							type="button"
 							onClick={() => onAddSite(id)}
-							className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-muted-foreground hover:text-foreground"
+							className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-success)] hover:bg-[var(--color-success)]/5 transition-colors text-muted-foreground hover:text-foreground"
 						>
 							<Plus className="h-4 w-4" />
 							<Globe className="h-4 w-4" />
