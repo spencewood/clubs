@@ -122,7 +122,7 @@ export function NewSiteBlockDialog({
 					<>
 						<DialogHeader>
 							<DialogTitle className="flex items-center gap-2">
-								<Container className="h-5 w-5 text-blue-600" />
+								<Container className="h-5 w-5 text-[var(--color-info)]" />
 								Create Container
 							</DialogTitle>
 							<DialogDescription>

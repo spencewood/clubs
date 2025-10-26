@@ -78,22 +78,22 @@ const chartConfig = {
 	requests: {
 		label: "Requests",
 		theme: {
-			light: "#2563eb",
-			dark: "#60a5fa",
+			light: "#0ea5e9", // --color-info (sky-500)
+			dark: "#38bdf8", // --color-info (sky-400 for dark mode)
 		},
 	},
 	fails: {
 		label: "Failures",
 		theme: {
-			light: "#dc2626",
-			dark: "#f87171",
+			light: "#ef4444", // --color-error
+			dark: "#f87171", // --color-error (dark)
 		},
 	},
 	rate: {
 		label: "Error Rate",
 		theme: {
-			light: "#f59e0b",
-			dark: "#fbbf24",
+			light: "#f59e0b", // --color-warning
+			dark: "#fbbf24", // --color-warning (dark)
 		},
 	},
 } satisfies ChartConfig;
@@ -104,6 +104,9 @@ export function MetricsView() {
 		Array<{ time: string; requests: number; fails: number }>
 	>([]);
 	const [refreshing, setRefreshing] = useState(false);
+	const [metricFilter, setMetricFilter] = useState<
+		"all" | "requests" | "failures" | "errors"
+	>("all");
 
 	const fetchMetrics = useCallback(async () => {
 		setRefreshing(true);
@@ -215,40 +218,70 @@ export function MetricsView() {
 					size="sm"
 					onClick={fetchMetrics}
 					disabled={refreshing}
+					title="Refresh metrics"
 				>
 					<RefreshCw
-						className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+						className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
 					/>
-					Refresh
 				</Button>
 			</div>
 
 			<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-				<Card className="p-4">
-					<div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-						<TrendingUp className="w-3 h-3" />
-						Total Requests
-					</div>
-					<div className="text-2xl font-bold">
-						{totalRequests.toLocaleString()}
+				<Card
+					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+						metricFilter === "requests"
+							? "border-[3px] border-[var(--color-info-dark)] shadow-lg"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
+					}`}
+					onClick={() =>
+						setMetricFilter(metricFilter === "requests" ? "all" : "requests")
+					}
+				>
+					<TrendingUp
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-info)] opacity-10"
+						strokeWidth={1.5}
+					/>
+					<div className="relative">
+						<p className="text-2xl font-bold">{totalRequests.toLocaleString()}</p>
+						<p className="text-xs text-muted-foreground">Total Requests</p>
 					</div>
 				</Card>
-				<Card className="p-4">
-					<div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-						<XCircle className="w-3 h-3" />
-						Total Failures
-					</div>
-					<div className="text-2xl font-bold text-destructive">
-						{totalFails.toLocaleString()}
+				<Card
+					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+						metricFilter === "failures"
+							? "border-[3px] border-[var(--color-error-dark)] shadow-lg"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
+					}`}
+					onClick={() =>
+						setMetricFilter(metricFilter === "failures" ? "all" : "failures")
+					}
+				>
+					<XCircle
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-error)] opacity-10"
+						strokeWidth={1.5}
+					/>
+					<div className="relative">
+						<p className="text-2xl font-bold">{totalFails.toLocaleString()}</p>
+						<p className="text-xs text-muted-foreground">Total Failures</p>
 					</div>
 				</Card>
-				<Card className="p-4">
-					<div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-						<AlertTriangle className="w-3 h-3" />
-						Overall Error Rate
-					</div>
-					<div className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">
-						{overallFailureRate}%
+				<Card
+					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+						metricFilter === "errors"
+							? "border-[3px] border-[var(--color-warning-dark)] shadow-lg"
+							: "border-2 border-transparent hover:border-muted-foreground/40"
+					}`}
+					onClick={() =>
+						setMetricFilter(metricFilter === "errors" ? "all" : "errors")
+					}
+				>
+					<AlertTriangle
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-warning)] opacity-10"
+						strokeWidth={1.5}
+					/>
+					<div className="relative">
+						<p className="text-2xl font-bold">{overallFailureRate}%</p>
+						<p className="text-xs text-muted-foreground">Overall Error Rate</p>
 					</div>
 				</Card>
 			</div>
@@ -299,15 +332,35 @@ export function MetricsView() {
 									dataKey="requests"
 									type="monotone"
 									fill="url(#fillRequests)"
-									fillOpacity={0.4}
+									fillOpacity={
+										metricFilter === "all" || metricFilter === "requests"
+											? 0.4
+											: 0.1
+									}
 									stroke="var(--color-requests)"
+									strokeWidth={
+										metricFilter === "requests" ? 3 : metricFilter === "all" ? 2 : 1
+									}
 								/>
 								<Area
 									dataKey="fails"
 									type="monotone"
 									fill="url(#fillFails)"
-									fillOpacity={0.4}
+									fillOpacity={
+										metricFilter === "all" ||
+										metricFilter === "failures" ||
+										metricFilter === "errors"
+											? 0.4
+											: 0.1
+									}
 									stroke="var(--color-fails)"
+									strokeWidth={
+										metricFilter === "failures" || metricFilter === "errors"
+											? 3
+											: metricFilter === "all"
+												? 2
+												: 1
+									}
 								/>
 							</AreaChart>
 						</ChartContainer>

@@ -142,7 +142,7 @@ export function ContainerEditDialog({
 			<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
-						<Container className="h-5 w-5 text-blue-600" />
+						<Container className="h-5 w-5 text-[var(--color-info)]" />
 						Edit container
 					</DialogTitle>
 					<DialogDescription>
@@ -180,7 +180,7 @@ export function ContainerEditDialog({
 								container.sharedConfig.map((directive) => (
 									<div
 										key={directive.id}
-										className="border rounded-lg bg-blue-50/30 border-blue-200"
+										className="border rounded-lg bg-[var(--color-info)]/5 border-[var(--color-info)]/30"
 									>
 										{editingDirectiveId === directive.id ? (
 											// Edit mode
@@ -225,7 +225,7 @@ export function ContainerEditDialog({
 											// View mode
 											<>
 												<div className="flex items-center gap-2 p-3">
-													<div className="flex-1 font-mono text-sm font-semibold text-blue-900">
+													<div className="flex-1 font-mono text-sm font-semibold text-[var(--color-info-dark)]">
 														{directive.name}{" "}
 														{directive.args.length > 0 &&
 															directive.args.join(" ")}
@@ -254,11 +254,11 @@ export function ContainerEditDialog({
 													</Button>
 												</div>
 												{directive.block && directive.block.length > 0 && (
-													<div className="px-3 pb-3 space-y-1 border-t border-blue-200 pt-2">
+													<div className="px-3 pb-3 space-y-1 border-t border-[var(--color-info)]/30 pt-2">
 														{directive.block.map((subDirective) => (
 															<div
 																key={subDirective.id}
-																className="font-mono text-xs text-blue-800 pl-4"
+																className="font-mono text-xs text-[var(--color-info-dark)] pl-4"
 															>
 																{subDirective.raw ||
 																	`${subDirective.name} ${subDirective.args.join(" ")}`}

@@ -650,17 +650,6 @@ export function CaddyDashboard({
 											Upstreams
 										</Link>
 										<Link
-											href="/certificates"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-												leftPanelView === "certificates"
-													? "border-primary text-foreground"
-													: "border-transparent text-muted-foreground hover:text-foreground"
-											}`}
-										>
-											<ShieldCheck className="w-4 h-4" />
-											Certificates
-										</Link>
-										<Link
 											href="/metrics"
 											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
 												leftPanelView === "metrics"
@@ -670,6 +659,17 @@ export function CaddyDashboard({
 										>
 											<BarChart3 className="w-4 h-4" />
 											Metrics
+										</Link>
+										<Link
+											href="/certificates"
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+												leftPanelView === "certificates"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<ShieldCheck className="w-4 h-4" />
+											Certificates
 										</Link>
 									</div>
 									<Button
@@ -705,10 +705,10 @@ export function CaddyDashboard({
 										initialUpstreams={initialUpstreams}
 										initialConfig={config}
 									/>
-								) : leftPanelView === "certificates" ? (
-									<CertificatesView initialCertificates={initialCertificates} />
 								) : leftPanelView === "metrics" ? (
 									<MetricsView />
+								) : leftPanelView === "certificates" ? (
+									<CertificatesView initialCertificates={initialCertificates} />
 								) : config.siteBlocks.length === 0 ? (
 									// Empty state - Show two add options
 									<div className="space-y-6">
@@ -725,10 +725,10 @@ export function CaddyDashboard({
 													setNewSiteBlockType("physical");
 													setShowNewSiteDialog(true);
 												}}
-												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-left"
+												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-success)] hover:bg-[var(--color-success)]/5 transition-colors text-left"
 											>
 												<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-												<Globe className="h-6 w-6 text-green-600 flex-shrink-0" />
+												<Globe className="h-6 w-6 text-[var(--color-success)] flex-shrink-0" />
 												<div className="flex-1">
 													<h4 className="font-semibold">Site</h4>
 													<p className="text-xs text-muted-foreground mt-0.5">
@@ -742,10 +742,10 @@ export function CaddyDashboard({
 													setNewSiteBlockType("virtual-container");
 													setShowNewSiteDialog(true);
 												}}
-												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-left"
+												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-info)] hover:bg-[var(--color-info)]/5 transition-colors text-left"
 											>
 												<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-												<Container className="h-6 w-6 text-blue-600 flex-shrink-0" />
+												<Container className="h-6 w-6 text-[var(--color-info)] flex-shrink-0" />
 												<div className="flex-1">
 													<h4 className="font-semibold">Container</h4>
 													<p className="text-xs text-muted-foreground mt-0.5">
@@ -808,7 +808,7 @@ export function CaddyDashboard({
 													setNewSiteBlockType("physical");
 													setShowNewSiteDialog(true);
 												}}
-												className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-green-500 hover:bg-green-50/50 transition-colors text-muted-foreground hover:text-foreground"
+												className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-success)] hover:bg-[var(--color-success)]/5 transition-colors text-muted-foreground hover:text-foreground"
 											>
 												<Plus className="h-4 w-4" />
 												<Globe className="h-4 w-4" />
@@ -820,7 +820,7 @@ export function CaddyDashboard({
 													setNewSiteBlockType("virtual-container");
 													setShowNewSiteDialog(true);
 												}}
-												className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-muted-foreground hover:text-foreground"
+												className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-info)] hover:bg-[var(--color-info)]/5 transition-colors text-muted-foreground hover:text-foreground"
 											>
 												<Plus className="h-4 w-4" />
 												<Container className="h-4 w-4" />
@@ -997,7 +997,7 @@ export function CaddyDashboard({
 											b.directives.some((d) => d.name === "tls"),
 										).length > 0 && (
 											<div className="flex items-center gap-2">
-												<Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
+												<Shield className="h-4 w-4 text-[var(--color-success)]" />
 												<span className="font-medium">
 													{
 														config.siteBlocks.filter((b) =>

@@ -74,11 +74,11 @@ export function CertificatesView({
 					size="sm"
 					onClick={() => fetchCA()}
 					disabled={refreshing}
+					title="Refresh certificates"
 				>
 					<RefreshCw
-						className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+						className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
 					/>
-					Refresh
 				</Button>
 			</div>
 
