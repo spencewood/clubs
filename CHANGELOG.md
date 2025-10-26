@@ -1,5 +1,11 @@
 # clubs
 
+## 0.8.0
+
+### Minor Changes
+
+- 614b8d4: Add caddy back to docker image for formatting
+
 ## 0.7.0
 
 ### Minor Changes
