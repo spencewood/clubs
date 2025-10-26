@@ -230,8 +230,8 @@ export function MetricsView() {
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						metricFilter === "requests"
-							? "border-[3px] border-[var(--color-info-dark)] shadow-lg"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[3px] border-[var(--color-info-dark)] shadow-md"
+							: "border-[3px] border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() =>
 						setMetricFilter(metricFilter === "requests" ? "all" : "requests")
@@ -249,8 +249,8 @@ export function MetricsView() {
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						metricFilter === "failures"
-							? "border-[3px] border-[var(--color-error-dark)] shadow-lg"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[3px] border-[var(--color-error-dark)] shadow-md"
+							: "border-[3px] border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() =>
 						setMetricFilter(metricFilter === "failures" ? "all" : "failures")
@@ -268,8 +268,8 @@ export function MetricsView() {
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						metricFilter === "errors"
-							? "border-[3px] border-[var(--color-warning-dark)] shadow-lg"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[3px] border-[var(--color-warning-dark)] shadow-md"
+							: "border-[3px] border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() =>
 						setMetricFilter(metricFilter === "errors" ? "all" : "errors")

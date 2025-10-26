@@ -600,11 +600,14 @@ export function CaddyDashboard({
 												? "var(--color-accent-foreground)"
 												: "var(--color-muted-foreground)",
 										}}
+										title={caddyStatus.available ? "Live Mode" : "File Mode"}
 									>
 										<Circle
 											className={`h-2 w-2 fill-current ${caddyStatus.available ? "animate-pulse" : ""}`}
 										/>
-										{caddyStatus.available ? "Live Mode" : "File Mode"}
+										<span className="hidden sm:inline">
+											{caddyStatus.available ? "Live Mode" : "File Mode"}
+										</span>
 									</div>
 								)}
 								<ThemeToggle />
@@ -625,11 +628,11 @@ export function CaddyDashboard({
 								}`}
 							>
 								{/* Tab Navigation with Expand/Collapse */}
-								<div className="flex items-center justify-between gap-2 border-b pb-2">
-									<div className="flex gap-2">
+								<div className="flex items-center justify-between gap-2 pb-2">
+									<div className="flex gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
 										<Link
 											href="/"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "sites"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
@@ -640,7 +643,7 @@ export function CaddyDashboard({
 										</Link>
 										<Link
 											href="/upstreams"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "upstreams"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
@@ -651,7 +654,7 @@ export function CaddyDashboard({
 										</Link>
 										<Link
 											href="/metrics"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "metrics"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
@@ -662,7 +665,7 @@ export function CaddyDashboard({
 										</Link>
 										<Link
 											href="/certificates"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "certificates"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
@@ -676,7 +679,7 @@ export function CaddyDashboard({
 										variant="ghost"
 										size="sm"
 										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-										className="h-8 px-2 xl:block hidden"
+										className="h-8 px-2 xl:block hidden bg-muted/50 hover:bg-muted"
 										title={
 											leftPanelExpanded ? "Collapse panel" : "Expand panel"
 										}
@@ -693,7 +696,7 @@ export function CaddyDashboard({
 										variant="ghost"
 										size="sm"
 										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-										className="h-8 px-2 xl:hidden"
+										className="h-8 px-2 xl:hidden bg-muted/50 hover:bg-muted"
 										title="Hide panel / Show editor"
 									>
 										<ChevronLeft className="w-4 h-4" />
@@ -847,53 +850,56 @@ export function CaddyDashboard({
 											variant="ghost"
 											size="sm"
 											onClick={() => setLeftPanelExpanded(false)}
-											className="xl:hidden h-7 px-2"
+											className="xl:hidden h-7 px-2 bg-muted/50 hover:bg-muted"
 											title="Show panel"
 										>
 											<ChevronRight className="w-4 h-4" />
 										</Button>
-										<div className="flex gap-2 border-b border-muted-foreground/20">
+										<div className="flex gap-2 border-b border-muted-foreground/20 overflow-x-auto scrollbar-hide">
 											<button
 												type="button"
 												onClick={() => setRightPanelView("raw")}
-												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
 													rightPanelView === "raw"
 														? "border-primary text-foreground"
 														: "border-transparent text-muted-foreground/70 hover:text-foreground"
 												}`}
 											>
 												<Code className="w-3.5 h-3.5" />
-												Raw Caddyfile
+												<span className="hidden sm:inline">Raw Caddyfile</span>
+												<span className="sm:hidden">Raw</span>
 											</button>
 											{(caddyStatus?.available ||
 												process.env.NODE_ENV === "development") && (
 												<button
 													type="button"
 													onClick={() => setRightPanelView("config")}
-													className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+													className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
 														rightPanelView === "config"
 															? "border-primary text-foreground"
 															: "border-transparent text-muted-foreground/70 hover:text-foreground"
 													}`}
 												>
 													<FileJson className="w-3.5 h-3.5" />
-													Full Config
+													<span className="hidden sm:inline">Full Config</span>
+													<span className="sm:hidden">Config</span>
 												</button>
 											)}
 										</div>
 									</div>
-									{rightPanelView === "raw" && (
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={handleFormat}
-											disabled={!rawContent.trim()}
-											className="text-xs opacity-70 hover:opacity-100"
-										>
-											<Wand2 className="h-3.5 w-3.5 mr-1" />
-											Format
-										</Button>
-									)}
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={handleFormat}
+										disabled={!rawContent.trim()}
+										className={`text-xs opacity-70 hover:opacity-100 ${
+											rightPanelView === "raw" ? "visible" : "invisible"
+										}`}
+										title="Format Caddyfile"
+									>
+										<Wand2 className="h-3.5 w-3.5 sm:mr-1" />
+										<span className="hidden sm:inline">Format</span>
+									</Button>
 								</div>
 
 								{/* Tab Content */}

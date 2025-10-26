@@ -226,8 +226,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "all"
-							? "border-[3px] border-[var(--color-info-dark)] shadow-lg"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[3px] border-[var(--color-info-dark)] shadow-md"
+							: "border-[3px] border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("all")}
 				>
@@ -241,8 +241,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "healthy"
-							? "border-[3px] border-[var(--color-success-dark)] shadow-lg"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[3px] border-[var(--color-success-dark)] shadow-md"
+							: "border-[3px] border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("healthy")}
 				>
@@ -256,8 +256,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "degraded"
-							? "border-[3px] border-[var(--color-warning-dark)] shadow-lg"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[3px] border-[var(--color-warning-dark)] shadow-md"
+							: "border-[3px] border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("degraded")}
 				>
@@ -271,8 +271,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "unhealthy"
-							? "border-[3px] border-[var(--color-error-dark)] shadow-lg"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[3px] border-[var(--color-error-dark)] shadow-md"
+							: "border-[3px] border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("unhealthy")}
 				>
@@ -286,8 +286,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "offline"
-							? "border-[3px] border-[var(--color-muted-foreground)] shadow-lg"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[3px] border-[var(--color-muted-foreground)] shadow-md"
+							: "border-[3px] border-transparent hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("offline")}
 				>
