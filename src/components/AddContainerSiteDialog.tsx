@@ -1,4 +1,3 @@
-import { LinkIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,10 +75,7 @@ export function AddContainerSiteDialog({
 		<Dialog open={open} onOpenChange={handleClose}>
 			<DialogContent className="max-w-lg">
 				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2">
-						<LinkIcon className="h-5 w-5 text-purple-600" />
-						Add Site to Container
-					</DialogTitle>
+					<DialogTitle>Add Site to Container</DialogTitle>
 					<DialogDescription>
 						Add a new site to{" "}
 						<span className="font-mono font-semibold">{containerDomain}</span>
@@ -107,7 +103,7 @@ export function AddContainerSiteDialog({
 							/>
 							<p className="text-sm text-muted-foreground">
 								Full hostname will be:{" "}
-								<span className="font-mono font-semibold text-purple-700">
+								<span className="font-mono font-semibold text-foreground">
 									{fullHostname}
 								</span>
 							</p>
@@ -153,11 +149,11 @@ export function AddContainerSiteDialog({
 							<pre className="text-xs font-mono">
 								{matcherName && subdomain ? (
 									<>
-										<span className="text-purple-600">@{matcherName}</span> host{" "}
+										<span className="text-primary">@{matcherName}</span> host{" "}
 										{fullHostname}
 										{"\n"}
 										handle{" "}
-										<span className="text-purple-600">@{matcherName}</span>{" "}
+										<span className="text-primary">@{matcherName}</span>{" "}
 										{"{\n"}
 										{backend && `    reverse_proxy ${backend}\n`}
 										{!backend && "    # Add directives here\n"}

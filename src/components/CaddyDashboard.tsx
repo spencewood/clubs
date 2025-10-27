@@ -18,7 +18,6 @@ import {
 	RefreshCw,
 	Save,
 	Server,
-	Shield,
 	ShieldCheck,
 	Sparkles,
 	Wand2,
@@ -556,17 +555,17 @@ export function CaddyDashboard({
 
 		if (!container) return;
 
-		// Remove the handle block with this ID
-		container.directives = container.directives.filter((d) => d.id !== siteId);
-
-		// Also remove the associated matcher
-		// Find the handle block to get the matcher name
+		// Find the handle block FIRST to get the matcher name before removing it
 		const handleBlock = container.directives.find((d) => d.id === siteId);
 		if (handleBlock && handleBlock.args.length > 0) {
 			const matcherRef = handleBlock.args[0];
+			// Remove both the matcher and the handle block
 			container.directives = container.directives.filter(
-				(d) => d.name !== matcherRef,
+				(d) => d.name !== matcherRef && d.id !== siteId,
 			);
+		} else {
+			// No matcher found, just remove the handle block
+			container.directives = container.directives.filter((d) => d.id !== siteId);
 		}
 
 		setConfig(newConfig);
@@ -1001,23 +1000,43 @@ export function CaddyDashboard({
 					<div className="container mx-auto px-4 py-3">
 						<div className="flex items-center justify-between gap-4">
 							{/* Left: Stats */}
-							<div className="flex items-center gap-6 flex-wrap text-sm">
+							<div className="flex items-center gap-3 sm:gap-6 flex-wrap text-sm">
 								{config && config.siteBlocks.length > 0 && (
 									<>
+										{/* Always show total sites count */}
 										<div className="flex items-center gap-2">
+											<Globe className="h-4 w-4 text-muted-foreground" />
+											<span className="font-medium">
+												{config.siteBlocks.reduce((total, block) => {
+													if (isVirtualContainer(block)) {
+														const container = parseVirtualContainer(block);
+														return total + container.virtualBlocks.length;
+													}
+													return total + 1;
+												}, 0)}
+											</span>
+											<span className="text-muted-foreground hidden sm:inline">
+												total sites
+											</span>
+											<span className="text-muted-foreground sm:hidden">
+												sites
+											</span>
+										</div>
+										{/* Hide site blocks count on mobile */}
+										<div className="hidden md:flex items-center gap-2">
 											<Server className="h-4 w-4 text-muted-foreground" />
 											<span className="font-medium">
 												{config.siteBlocks.length}
 											</span>
 											<span className="text-muted-foreground">
-												{config.siteBlocks.length === 1 ? "site" : "sites"}
+												{config.siteBlocks.length === 1 ? "site block" : "site blocks"}
 											</span>
 										</div>
 										{config.siteBlocks.filter((b) =>
 											b.directives.some((d) => d.name === "tls"),
 										).length > 0 && (
 											<div className="flex items-center gap-2">
-												<Shield className="h-4 w-4 text-[var(--color-success)]" />
+												<ShieldCheck className="h-4 w-4 text-[var(--color-success)]" />
 												<span className="font-medium">
 													{
 														config.siteBlocks.filter((b) =>
@@ -1028,10 +1047,11 @@ export function CaddyDashboard({
 												<span className="text-muted-foreground">HTTPS</span>
 											</div>
 										)}
+										{/* Hide proxy/file server counts on small screens */}
 										{config.siteBlocks.filter((b) =>
 											b.directives.some((d) => d.name === "reverse_proxy"),
 										).length > 0 && (
-											<div className="flex items-center gap-2">
+											<div className="hidden lg:flex items-center gap-2">
 												<Zap className="h-4 w-4 text-primary" />
 												<span className="font-medium">
 													{
@@ -1056,7 +1076,7 @@ export function CaddyDashboard({
 										{config.siteBlocks.filter((b) =>
 											b.directives.some((d) => d.name === "file_server"),
 										).length > 0 && (
-											<div className="flex items-center gap-2">
+											<div className="hidden lg:flex items-center gap-2">
 												<Sparkles className="h-4 w-4 text-primary" />
 												<span className="font-medium">
 													{

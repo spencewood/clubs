@@ -1,4 +1,4 @@
-import { LinkIcon, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -125,10 +125,7 @@ export function EditContainerSiteDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2">
-						<LinkIcon className="h-5 w-5 text-purple-600" />
-						Edit Virtual Service
-					</DialogTitle>
+					<DialogTitle>Edit Virtual Service</DialogTitle>
 					<DialogDescription>
 						Configure this individual service within the container
 					</DialogDescription>

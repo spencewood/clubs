@@ -1,4 +1,4 @@
-import { Check, Container, Edit2, Plus, Trash2, X } from "lucide-react";
+import { Check, Edit2, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -141,10 +141,7 @@ export function ContainerEditDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2">
-						<Container className="h-5 w-5 text-[var(--color-info)]" />
-						Edit container
-					</DialogTitle>
+					<DialogTitle>Edit Container</DialogTitle>
 					<DialogDescription>
 						Configure shared settings that apply to all sites in this container
 					</DialogDescription>
