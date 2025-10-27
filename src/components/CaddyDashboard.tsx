@@ -76,6 +76,7 @@ import {
 	parseCaddyfile,
 	serializeCaddyfile,
 } from "@/lib/parser/caddyfile-parser";
+import type { AcmeCertificate } from "@/lib/server/cert-parser";
 import { validateCaddyfile } from "@/lib/validator/caddyfile-validator";
 import type {
 	CaddyConfig,
@@ -199,6 +200,7 @@ export interface CaddyDashboardProps {
 		root_certificate: string;
 		intermediate_certificate: string;
 	} | null;
+	initialAcmeCertificates?: AcmeCertificate[];
 }
 
 export function CaddyDashboard({
@@ -209,6 +211,7 @@ export function CaddyDashboard({
 	initialView,
 	initialUpstreams,
 	initialCertificates,
+	initialAcmeCertificates = [],
 }: CaddyDashboardProps) {
 	const [config, setConfig] = useState<CaddyConfig | null>(initialConfig);
 	const [rawContent, setRawContent] = useState<string>(initialRawContent);
@@ -723,7 +726,10 @@ export function CaddyDashboard({
 								) : leftPanelView === "metrics" ? (
 									<MetricsView />
 								) : leftPanelView === "certificates" ? (
-									<CertificatesView initialCertificates={initialCertificates} />
+									<CertificatesView
+										initialCertificates={initialCertificates}
+										initialAcmeCertificates={initialAcmeCertificates}
+									/>
 								) : config.siteBlocks.length === 0 ? (
 									// Empty state - Show two add options
 									<div className="py-12">

@@ -25,6 +25,7 @@ export default async function CertificatesPage() {
 			initialView="certificates"
 			initialUpstreams={initialData.upstreams}
 			initialCertificates={initialData.certificates}
+			initialAcmeCertificates={initialData.acmeCertificates}
 		/>
 	);
 }

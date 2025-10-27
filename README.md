@@ -15,6 +15,7 @@ Clubs is a web-based tool for editing and managing Caddy server configurations. 
 - **Visual Editor** - Parse and visualize Caddyfile configurations in a clean UI
 - **Domain Grouping** - Automatically groups subdomains (app.example.com, api.example.com → example.com)
 - **Feature-Based Editing** - Smart forms for common patterns (reverse proxy, static files, headers, etc.)
+- **Certificate Management** - View SSL/TLS certificates with expiration tracking (Let's Encrypt, custom certs, internal PKI)
 - **Safe Updates** - Caddy validates configurations before applying; invalid configs are rejected
 - **Direct File Management** - Works directly with mounted Caddyfile volumes
 - **Container-First** - Designed to run as a Docker container alongside your Caddy server
