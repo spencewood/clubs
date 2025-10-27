@@ -565,7 +565,9 @@ export function CaddyDashboard({
 			);
 		} else {
 			// No matcher found, just remove the handle block
-			container.directives = container.directives.filter((d) => d.id !== siteId);
+			container.directives = container.directives.filter(
+				(d) => d.id !== siteId,
+			);
 		}
 
 		setConfig(newConfig);
@@ -1029,7 +1031,9 @@ export function CaddyDashboard({
 												{config.siteBlocks.length}
 											</span>
 											<span className="text-muted-foreground">
-												{config.siteBlocks.length === 1 ? "site block" : "site blocks"}
+												{config.siteBlocks.length === 1
+													? "site block"
+													: "site blocks"}
 											</span>
 										</div>
 										{config.siteBlocks.filter((b) =>

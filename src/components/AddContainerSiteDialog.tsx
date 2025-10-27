@@ -152,8 +152,7 @@ export function AddContainerSiteDialog({
 										<span className="text-primary">@{matcherName}</span> host{" "}
 										{fullHostname}
 										{"\n"}
-										handle{" "}
-										<span className="text-primary">@{matcherName}</span>{" "}
+										handle <span className="text-primary">@{matcherName}</span>{" "}
 										{"{\n"}
 										{backend && `    reverse_proxy ${backend}\n`}
 										{!backend && "    # Add directives here\n"}
