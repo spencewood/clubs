@@ -328,6 +328,63 @@ export class CaddyAPIClient {
 			};
 		}
 	}
+
+	/**
+	 * Get active TLS certificates from Caddy's runtime configuration
+	 * This returns the actual certificates that Caddy is currently using
+	 */
+	async getTLSCertificates(): Promise<{
+		success: boolean;
+		certificates?: Array<{
+			subjects: string[];
+			issuer: { commonName: string; organization?: string };
+			notBefore: string;
+			notAfter: string;
+			serialNumber: string;
+		}>;
+		error?: string;
+	}> {
+		try {
+			const response = await this.fetchWithMetrics(
+				`${this.baseURL}/config/apps/tls/certificates`,
+				{
+					method: "GET",
+					endpoint: "/config/apps/tls/certificates",
+				},
+			);
+
+			if (!response.ok) {
+				// If the endpoint doesn't exist or returns error, return empty array
+				if (response.status === 404) {
+					return {
+						success: true,
+						certificates: [],
+					};
+				}
+				return {
+					success: false,
+					error: response.statusText,
+				};
+			}
+
+			const certificates = await response.json();
+			return {
+				success: true,
+				certificates: certificates as Array<{
+					subjects: string[];
+					issuer: { commonName: string; organization?: string };
+					notBefore: string;
+					notAfter: string;
+					serialNumber: string;
+				}>,
+			};
+		} catch (error) {
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	}
 }
 
 /**

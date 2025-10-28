@@ -300,17 +300,31 @@ export function CertificatesView({
 			</div>
 
 			{/* SSL Certificates Section */}
-			{allCerts.length > 0 && (
-				<>
-					<div className="border-b pb-3">
-						<h3 className="text-lg font-semibold">SSL Certificates</h3>
-						<p className="text-sm text-muted-foreground">
-							Production SSL/TLS certificates
-						</p>
-					</div>
+			<div className="border-b pb-3">
+				<h3 className="text-lg font-semibold">SSL Certificates</h3>
+				<p className="text-sm text-muted-foreground">
+					Production SSL/TLS certificates
+				</p>
+			</div>
 
-					<div className="space-y-4">{allCerts.map(renderCertificateCard)}</div>
-				</>
+			{allCerts.length > 0 ? (
+				<div className="space-y-4">{allCerts.map(renderCertificateCard)}</div>
+			) : (
+				<Card className="p-6">
+					<div className="flex items-center justify-center py-8">
+						<div className="text-center space-y-3">
+							<ShieldCheck className="w-12 h-12 mx-auto text-muted-foreground" />
+							<div>
+								<h4 className="font-semibold">No SSL Certificates Found</h4>
+								<p className="text-sm text-muted-foreground mt-1 max-w-md">
+									No production SSL/TLS certificates are currently available.
+									This may be because the certificate storage volume is not
+									mounted, or no certificates have been issued yet.
+								</p>
+							</div>
+						</div>
+					</div>
+				</Card>
 			)}
 
 			{/* Internal PKI Section */}

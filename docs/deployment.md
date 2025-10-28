@@ -517,7 +517,7 @@ Clubs includes a certificate viewer that displays SSL/TLS certificates managed b
 
 ### Viewing Certificates
 
-To enable certificate viewing, mount Caddy's certificate directory to Clubs (read-only):
+Clubs reads SSL/TLS certificates directly from **Caddy's Admin API**, so **no certificate volume mounts are needed**! Just ensure the `CADDY_API_URL` is set correctly:
 
 ```yaml
 services:
@@ -525,41 +525,30 @@ services:
     image: spencewood/clubs:latest
     volumes:
       - ./config:/config
-      # Mount Caddy's certificate directory (read-only)
-      - caddy_data:/data/caddy:ro
     environment:
       - CADDYFILE_PATH=/config/Caddyfile
-      - CADDY_API_URL=http://caddy:2019
-      - CADDY_CERTIFICATES_PATH=/data/caddy/certificates
+      - CADDY_API_URL=http://caddy:2019  # Must be accessible
 ```
 
-The `:ro` flag ensures read-only access for security.
+**Why API-only?** Caddy's certificate files on disk may be stale/expired even after renewal. The API always returns the actual active certificates being served, ensuring accuracy.
 
 ### What You'll See
 
 The Certificates tab displays:
-- **SSL Certificates** - Let's Encrypt and custom certificates with:
+- **SSL Certificates** - Active certificates Caddy is currently using:
   - Domain name and Subject Alternative Names (SANs)
   - Issuer (e.g., "Let's Encrypt Authority X3")
   - Expiration date and days until renewal
-  - Certificate fingerprint and serial number
+  - Serial number
   - Expiration warnings (red for expired, yellow for expiring soon)
 - **Internal PKI** - Caddy's built-in certificate authority for development
 
-### Certificate Storage
+### How Certificate Reading Works
 
-Caddy stores certificates in `/data/caddy/certificates/` with this structure:
+1. **Production: Caddy API** - Queries `/config/apps/tls/certificates` to get actual active certificates
+2. **Development: Mock Data** - Shows example certificates when Caddy API is unavailable
 
-```
-/data/caddy/certificates/
-  acme-v02.api.letsencrypt.org-directory/
-    example.com/
-      example.com.crt      # Certificate
-      example.com.key      # Private key
-      example.com.json     # Metadata
-```
-
-Clubs reads these files to display certificate information without accessing private keys.
+This ensures you always see the **correct, active certificates** that match what your browser sees - never stale filesystem data.
 
 ---
 

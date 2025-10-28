@@ -7,10 +7,7 @@ import fs from "node:fs/promises";
 import { parseCaddyfile } from "@/lib/parser/caddyfile-parser";
 import { createCaddyAPIClient } from "@/lib/server/caddy-api-client";
 import type { AcmeCertificate } from "@/lib/server/cert-parser";
-import {
-	mockAcmeCertificates,
-	scanAcmeCertificates,
-} from "@/lib/server/cert-parser";
+import { mockAcmeCertificates } from "@/lib/server/cert-parser";
 import { validateCaddyfile } from "@/lib/validator/caddyfile-validator";
 import type { CaddyConfig, CaddyPKICA, CaddyUpstream } from "@/types/caddyfile";
 
@@ -170,30 +167,110 @@ async function fetchCertificates(): Promise<CaddyPKICA | null> {
 }
 
 /**
- * Fetch ACME certificates from filesystem
+ * Fetch ACME certificates from Caddy's API (returns active certificates)
+ * This is the ONLY reliable way to get current certificate information.
+ * Filesystem certificates are stale and may show expired certs even when Caddy has renewed them.
  */
 async function fetchAcmeCertificates(): Promise<AcmeCertificate[]> {
 	try {
-		const certificatesPath =
-			process.env.CADDY_CERTIFICATES_PATH || "/data/caddy/certificates";
-		const certificates = await scanAcmeCertificates(certificatesPath);
+		const CADDY_API_URL = process.env.CADDY_API_URL || "http://localhost:2019";
+		const caddyAPI = createCaddyAPIClient(CADDY_API_URL);
 
-		// If no certificates found and we're in development, return mock data
-		const isDevelopment = process.env.NODE_ENV === "development";
-		const finalCertificates =
-			certificates.length === 0 && isDevelopment
-				? mockAcmeCertificates
-				: certificates;
+		// Check if API is available
+		const isAvailable = await caddyAPI.isAvailable();
+		if (!isAvailable) {
+			console.log(
+				"[fetchAcmeCertificates] Caddy API not available - cannot fetch certificates",
+			);
+			// In development, return mock data
+			const isDevelopment = process.env.NODE_ENV === "development";
+			if (isDevelopment) {
+				console.log(
+					"[fetchAcmeCertificates] Using mock certificates for development",
+				);
+				return mockAcmeCertificates;
+			}
+			return [];
+		}
+
+		const result = await caddyAPI.getTLSCertificates();
+		if (!result.success || !result.certificates) {
+			console.log(
+				"[fetchAcmeCertificates] Failed to fetch certificates from API:",
+				result.error,
+			);
+			// In development, return mock data
+			const isDevelopment = process.env.NODE_ENV === "development";
+			if (isDevelopment) {
+				console.log(
+					"[fetchAcmeCertificates] Using mock certificates for development",
+				);
+				return mockAcmeCertificates;
+			}
+			return [];
+		}
+
+		// Convert Caddy API format to our AcmeCertificate format
+		const certificates: AcmeCertificate[] = result.certificates.map((cert) => {
+			const domain = cert.subjects[0] || "unknown";
+			const validTo = new Date(cert.notAfter);
+			const now = new Date();
+			const daysUntilExpiry = Math.ceil(
+				(validTo.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+			);
+
+			// Detect provider from issuer
+			let provider = "Custom";
+			let type: "letsencrypt" | "zerossl" | "custom" | "local" = "custom";
+
+			if (cert.issuer.commonName?.includes("Let's Encrypt")) {
+				provider = "Let's Encrypt";
+				type = "letsencrypt";
+			} else if (cert.issuer.commonName?.includes("ZeroSSL")) {
+				provider = "ZeroSSL";
+				type = "zerossl";
+			}
+
+			return {
+				domain,
+				certificate: {
+					subject: `CN=${domain}`,
+					issuer: cert.issuer.organization
+						? `O=${cert.issuer.organization}, CN=${cert.issuer.commonName}`
+						: `CN=${cert.issuer.commonName}`,
+					validFrom: cert.notBefore,
+					validTo: cert.notAfter,
+					daysUntilExpiry,
+					serialNumber: cert.serialNumber || "unknown",
+					fingerprint: "N/A", // API doesn't provide fingerprint
+					subjectAltNames: cert.subjects,
+					keyAlgorithm: "N/A", // API doesn't provide key algorithm
+					signatureAlgorithm: "RSA-SHA256",
+				},
+				certPath: "N/A (from Caddy API)",
+				hasPrivateKey: true, // If Caddy is using it, it has the key
+				type,
+				provider,
+			};
+		});
 
 		console.log(
-			`[fetchAcmeCertificates] Successfully scanned ${finalCertificates.length} ACME certificates${isDevelopment && finalCertificates.length > 0 && certificates.length === 0 ? " (mock data)" : ""}`,
+			`[fetchAcmeCertificates] Successfully fetched ${certificates.length} certificates from Caddy API`,
 		);
-		return finalCertificates;
+		return certificates;
 	} catch (error) {
 		console.error(
-			"[fetchAcmeCertificates] Error scanning certificates:",
+			"[fetchAcmeCertificates] Error fetching certificates from API:",
 			error,
 		);
+		// In development, return mock data
+		const isDevelopment = process.env.NODE_ENV === "development";
+		if (isDevelopment) {
+			console.log(
+				"[fetchAcmeCertificates] Using mock certificates for development",
+			);
+			return mockAcmeCertificates;
+		}
 		return [];
 	}
 }
@@ -219,7 +296,7 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 
 	// Fetch upstreams, certificates, and ACME certificates in parallel
 	// PKI certificates only available if Caddy is available or in dev mode
-	// ACME certificates are always fetched from filesystem (or empty in dev without volume mount)
+	// ACME certificates fetched from Caddy API (or mock data in dev mode)
 	const [upstreams, certificates, acmeCertificates] = await Promise.all([
 		isLiveMode ? fetchUpstreams() : Promise.resolve([]),
 		isLiveMode ? fetchCertificates() : Promise.resolve(null),
