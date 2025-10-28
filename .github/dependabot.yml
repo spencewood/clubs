@@ -72,3 +72,7 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    # Block major version updates - manual upgrade only
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
