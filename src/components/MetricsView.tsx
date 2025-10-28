@@ -79,22 +79,29 @@ interface MetricsViewProps {
 }
 
 const chartConfig = {
-	requests: {
-		label: "Requests",
+	requestsPerMin: {
+		label: "Requests/min",
 		theme: {
 			light: "#0ea5e9", // --color-info (sky-500)
 			dark: "#38bdf8", // --color-info (sky-400 for dark mode)
 		},
 	},
-	fails: {
-		label: "Failures",
+	failsPerMin: {
+		label: "Failures/min",
 		theme: {
 			light: "#ef4444", // --color-error
 			dark: "#f87171", // --color-error (dark)
 		},
 	},
+	requests: {
+		label: "Requests (Session)",
+		theme: {
+			light: "#0ea5e9", // --color-info (sky-500)
+			dark: "#38bdf8", // --color-info (sky-400 for dark mode)
+		},
+	},
 	rate: {
-		label: "Error Rate",
+		label: "Error Rate %",
 		theme: {
 			light: "#f59e0b", // --color-warning
 			dark: "#fbbf24", // --color-warning (dark)
@@ -117,18 +124,85 @@ function ChartSkeleton({
 	);
 }
 
+// Helper to merge per-upstream historical data for charting
+function mergePerUpstreamData(
+	upstreams: UpstreamMetric[],
+	perUpstreamHistory: Map<
+		string,
+		Array<{ time: string; requestsPerMin: number; failsPerMin: number }>
+	>,
+	mode: "requests" | "failures" | "errorRate" = "requests",
+): Array<Record<string, string | number>> {
+	// Get all unique timestamps across all upstreams
+	const allTimes = new Set<string>();
+	for (const upstream of upstreams) {
+		const history = perUpstreamHistory.get(upstream.address);
+		if (history) {
+			for (const point of history) {
+				allTimes.add(point.time);
+			}
+		}
+	}
+
+	const sortedTimes = Array.from(allTimes).sort();
+
+	// Build chart data with each upstream as a separate series
+	return sortedTimes.map((time) => {
+		const dataPoint: Record<string, string | number> = { time };
+
+		for (const upstream of upstreams) {
+			const history = perUpstreamHistory.get(upstream.address);
+			const point = history?.find((p) => p.time === time);
+			const shortName =
+				upstream.address.length > 15
+					? `${upstream.address.substring(0, 15)}...`
+					: upstream.address;
+
+			if (mode === "requests") {
+				dataPoint[shortName] = point?.requestsPerMin || 0;
+			} else if (mode === "failures") {
+				dataPoint[shortName] = point?.failsPerMin || 0;
+			} else {
+				// errorRate - calculate percentage
+				const reqsPerMin = point?.requestsPerMin || 0;
+				const failsPerMin = point?.failsPerMin || 0;
+				const errorRate = reqsPerMin > 0 ? (failsPerMin / reqsPerMin) * 100 : 0;
+				dataPoint[shortName] = Math.round(errorRate * 100) / 100; // Round to 2 decimals
+			}
+		}
+
+		return dataPoint;
+	});
+}
+
 export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 	const [metricsData, setMetricsData] =
 		useState<UpstreamMetric[]>(initialUpstreams);
-	const [historicalData, setHistoricalData] = useState<
-		Array<{ time: string; requests: number; fails: number }>
+
+	// Store previous cumulative totals per upstream AND overall
+	const [_prevUpstreamData, setPrevUpstreamData] = useState<
+		Map<string, { requests: number; fails: number; timestamp: number }>
 	>(() => {
-		// Initialize with the server-side data
+		const map = new Map();
 		if (initialUpstreams.length > 0) {
-			const now = new Date();
-			const hours = now.getHours();
-			const mins = now.getMinutes().toString().padStart(2, "0");
-			const timeLabel = `${hours}:${mins}`;
+			const now = Date.now();
+			for (const upstream of initialUpstreams) {
+				map.set(upstream.address, {
+					requests: upstream.num_requests,
+					fails: upstream.fails,
+					timestamp: now,
+				});
+			}
+		}
+		return map;
+	});
+
+	const [_prevTotals, setPrevTotals] = useState<{
+		requests: number;
+		fails: number;
+		timestamp: number;
+	} | null>(() => {
+		if (initialUpstreams.length > 0) {
 			const totalRequests = initialUpstreams.reduce(
 				(sum: number, u: UpstreamMetric) => sum + u.num_requests,
 				0,
@@ -137,10 +211,28 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 				(sum: number, u: UpstreamMetric) => sum + u.fails,
 				0,
 			);
-			return [{ time: timeLabel, requests: totalRequests, fails: totalFails }];
+			return {
+				requests: totalRequests,
+				fails: totalFails,
+				timestamp: Date.now(),
+			};
 		}
-		return [];
+		return null;
 	});
+
+	// Store aggregate historical data
+	const [historicalData, setHistoricalData] = useState<
+		Array<{ time: string; requestsPerMin: number; failsPerMin: number }>
+	>([]);
+
+	// Store per-upstream historical data
+	const [perUpstreamHistory, setPerUpstreamHistory] = useState<
+		Map<
+			string,
+			Array<{ time: string; requestsPerMin: number; failsPerMin: number }>
+		>
+	>(new Map());
+
 	const [refreshing, setRefreshing] = useState(false);
 	const [metricFilter, setMetricFilter] = useState<
 		"all" | "requests" | "failures" | "errors"
@@ -158,10 +250,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 			const upstreams = await response.json();
 			setMetricsData(upstreams);
 
-			const now = new Date();
-			const hours = now.getHours();
-			const mins = now.getMinutes().toString().padStart(2, "0");
-			const timeLabel = `${hours}:${mins}`;
+			const now = Date.now();
 			const totalRequests = upstreams.reduce(
 				(sum: number, u: UpstreamMetric) => sum + u.num_requests,
 				0,
@@ -171,12 +260,87 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 				0,
 			);
 
-			setHistoricalData((prev) => {
-				const newData = [
-					...prev,
-					{ time: timeLabel, requests: totalRequests, fails: totalFails },
-				];
-				return newData.slice(-20);
+			const date = new Date(now);
+			const hours = date.getHours();
+			const mins = date.getMinutes().toString().padStart(2, "0");
+			const secs = date.getSeconds().toString().padStart(2, "0");
+			const timeLabel = `${hours}:${mins}:${secs}`;
+
+			// Calculate per-upstream deltas
+			setPrevUpstreamData((prevMap) => {
+				const newMap = new Map(prevMap);
+
+				for (const upstream of upstreams) {
+					const prev = prevMap.get(upstream.address);
+					if (prev) {
+						const timeDiffSeconds = (now - prev.timestamp) / 1000;
+						if (timeDiffSeconds > 0) {
+							const requestsDelta = upstream.num_requests - prev.requests;
+							const failsDelta = upstream.fails - prev.fails;
+
+							const requestsPerMin = (requestsDelta / timeDiffSeconds) * 60;
+							const failsPerMin = (failsDelta / timeDiffSeconds) * 60;
+
+							setPerUpstreamHistory((prevHistory) => {
+								const newHistory = new Map(prevHistory);
+								const upstreamHistory = newHistory.get(upstream.address) || [];
+								const newPoint = {
+									time: timeLabel,
+									requestsPerMin: Math.max(0, requestsPerMin),
+									failsPerMin: Math.max(0, failsPerMin),
+								};
+								const updatedHistory = [...upstreamHistory, newPoint].slice(
+									-360,
+								);
+								newHistory.set(upstream.address, updatedHistory);
+								return newHistory;
+							});
+						}
+					}
+
+					newMap.set(upstream.address, {
+						requests: upstream.num_requests,
+						fails: upstream.fails,
+						timestamp: now,
+					});
+				}
+
+				return newMap;
+			});
+
+			// Calculate aggregate rate (requests per minute) based on delta
+			setPrevTotals((prev) => {
+				if (prev) {
+					const timeDiffSeconds = (now - prev.timestamp) / 1000;
+					const requestsDelta = totalRequests - prev.requests;
+					const failsDelta = totalFails - prev.fails;
+
+					// Convert to requests per minute
+					const requestsPerMin = (requestsDelta / timeDiffSeconds) * 60;
+					const failsPerMin = (failsDelta / timeDiffSeconds) * 60;
+
+					// Only add data point if we have a meaningful delta
+					if (timeDiffSeconds > 0) {
+						setHistoricalData((prevData) => {
+							const newData = [
+								...prevData,
+								{
+									time: timeLabel,
+									requestsPerMin: Math.max(0, requestsPerMin),
+									failsPerMin: Math.max(0, failsPerMin),
+								},
+							];
+							// Keep last 360 data points (30 minutes at 5-second intervals)
+							return newData.slice(-360);
+						});
+					}
+				}
+
+				return {
+					requests: totalRequests,
+					fails: totalFails,
+					timestamp: now,
+				};
 			});
 		} catch (err) {
 			toast.error("Failed to fetch metrics", {
@@ -248,6 +412,48 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 					: 0,
 		}));
 
+	// Determine which data to show in the trend chart based on filter
+	const chartDataToShow =
+		metricFilter === "all"
+			? historicalData
+			: metricFilter === "requests"
+				? // Show top 5 containers by request volume
+					(() => {
+						const top5 = filteredMetricsData
+							.sort((a, b) => b.num_requests - a.num_requests)
+							.slice(0, 5);
+						return mergePerUpstreamData(top5, perUpstreamHistory, "requests");
+					})()
+				: metricFilter === "failures"
+					? // Show top 5 containers by absolute failure count
+						(() => {
+							const withFailures = filteredMetricsData
+								.filter((u) => u.fails > 0)
+								.sort((a, b) => b.fails - a.fails)
+								.slice(0, 5);
+							return mergePerUpstreamData(
+								withFailures,
+								perUpstreamHistory,
+								"failures",
+							);
+						})()
+					: // errors - show top 5 containers by error rate percentage
+						(() => {
+							const withFailures = filteredMetricsData
+								.filter((u) => u.fails > 0 && u.num_requests > 0)
+								.sort((a, b) => {
+									const rateA = (a.fails / a.num_requests) * 100;
+									const rateB = (b.fails / b.num_requests) * 100;
+									return rateB - rateA;
+								})
+								.slice(0, 5);
+							return mergePerUpstreamData(
+								withFailures,
+								perUpstreamHistory,
+								"errorRate",
+							);
+						})();
+
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
@@ -271,66 +477,73 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 				</Button>
 			</div>
 
-			<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-				<Card
-					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
-						metricFilter === "requests"
-							? "border-[var(--color-info-dark)] shadow-md"
-							: "hover:border-muted-foreground/40"
-					}`}
-					onClick={() =>
-						setMetricFilter(metricFilter === "requests" ? "all" : "requests")
-					}
-				>
-					<TrendingUp
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-info)] opacity-20"
-						strokeWidth={1.5}
-					/>
-					<div className="relative">
-						<p className="text-2xl font-bold">
-							{totalRequests.toLocaleString()}
-						</p>
-						<p className="text-xs text-muted-foreground">Total Requests</p>
-					</div>
-				</Card>
-				<Card
-					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
-						metricFilter === "failures"
-							? "border-[var(--color-error-dark)] shadow-md"
-							: "hover:border-muted-foreground/40"
-					}`}
-					onClick={() =>
-						setMetricFilter(metricFilter === "failures" ? "all" : "failures")
-					}
-				>
-					<XCircle
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-error)] opacity-20"
-						strokeWidth={1.5}
-					/>
-					<div className="relative">
-						<p className="text-2xl font-bold">{totalFails.toLocaleString()}</p>
-						<p className="text-xs text-muted-foreground">Total Failures</p>
-					</div>
-				</Card>
-				<Card
-					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
-						metricFilter === "errors"
-							? "border-[var(--color-warning-dark)] shadow-md"
-							: "hover:border-muted-foreground/40"
-					}`}
-					onClick={() =>
-						setMetricFilter(metricFilter === "errors" ? "all" : "errors")
-					}
-				>
-					<AlertTriangle
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-warning)] opacity-20"
-						strokeWidth={1.5}
-					/>
-					<div className="relative">
-						<p className="text-2xl font-bold">{overallFailureRate}%</p>
-						<p className="text-xs text-muted-foreground">Overall Error Rate</p>
-					</div>
-				</Card>
+			<div className="space-y-2">
+				<div className="text-xs text-muted-foreground">
+					Session Stats (since Caddy restart)
+				</div>
+				<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+					<Card
+						className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+							metricFilter === "requests"
+								? "border-[var(--color-info-dark)] shadow-md"
+								: "hover:border-muted-foreground/40"
+						}`}
+						onClick={() =>
+							setMetricFilter(metricFilter === "requests" ? "all" : "requests")
+						}
+					>
+						<TrendingUp
+							className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-info)] opacity-20"
+							strokeWidth={1.5}
+						/>
+						<div className="relative">
+							<p className="text-2xl font-bold">
+								{totalRequests.toLocaleString()}
+							</p>
+							<p className="text-xs text-muted-foreground">Total Requests</p>
+						</div>
+					</Card>
+					<Card
+						className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+							metricFilter === "failures"
+								? "border-[var(--color-error-dark)] shadow-md"
+								: "hover:border-muted-foreground/40"
+						}`}
+						onClick={() =>
+							setMetricFilter(metricFilter === "failures" ? "all" : "failures")
+						}
+					>
+						<XCircle
+							className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-error)] opacity-20"
+							strokeWidth={1.5}
+						/>
+						<div className="relative">
+							<p className="text-2xl font-bold">
+								{totalFails.toLocaleString()}
+							</p>
+							<p className="text-xs text-muted-foreground">Total Failures</p>
+						</div>
+					</Card>
+					<Card
+						className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
+							metricFilter === "errors"
+								? "border-[var(--color-warning-dark)] shadow-md"
+								: "hover:border-muted-foreground/40"
+						}`}
+						onClick={() =>
+							setMetricFilter(metricFilter === "errors" ? "all" : "errors")
+						}
+					>
+						<AlertTriangle
+							className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-warning)] opacity-20"
+							strokeWidth={1.5}
+						/>
+						<div className="relative">
+							<p className="text-2xl font-bold">{overallFailureRate}%</p>
+							<p className="text-xs text-muted-foreground">Error Rate</p>
+						</div>
+					</Card>
+				</div>
 			</div>
 
 			{metricFilter !== "all" && (
@@ -340,10 +553,10 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						Filtering:{" "}
 						<span className="font-medium text-foreground">
 							{metricFilter === "requests"
-								? "Showing all upstreams by request volume"
+								? "Showing top 5 upstreams by request volume (per-upstream trends)"
 								: metricFilter === "failures"
-									? "Showing only upstreams with failures"
-									: "Showing only upstreams with errors"}
+									? "Showing top 5 upstreams by total failure count (per-upstream trends)"
+									: "Showing top 5 upstreams by error rate % (per-upstream trends)"}
 						</span>
 					</p>
 					<button
@@ -360,90 +573,150 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 				{historicalData.length > 0 ? (
 					<Card className="p-6 lg:col-span-2">
 						<h3 className="text-lg font-semibold mb-4">
-							Traffic Trend
+							{metricFilter === "all"
+								? "Traffic Trend"
+								: metricFilter === "requests"
+									? "Traffic Trend - Requests/min"
+									: metricFilter === "failures"
+										? "Traffic Trend - Failures/min"
+										: "Traffic Trend - Error Rate %"}
 							{metricFilter !== "all" && (
 								<span className="text-sm font-normal text-muted-foreground ml-2">
-									(filtered)
+									(per-upstream)
 								</span>
 							)}
 						</h3>
 						<ChartContainer config={chartConfig} className="aspect-[16/7]">
-							<AreaChart data={historicalData}>
-								<defs>
-									<linearGradient id="fillRequests" x1="0" y1="0" x2="0" y2="1">
-										<stop
-											offset="5%"
-											stopColor="var(--color-requests)"
-											stopOpacity={0.8}
-										/>
-										<stop
-											offset="95%"
-											stopColor="var(--color-requests)"
-											stopOpacity={0.1}
-										/>
-									</linearGradient>
-									<linearGradient id="fillFails" x1="0" y1="0" x2="0" y2="1">
-										<stop
-											offset="5%"
-											stopColor="var(--color-fails)"
-											stopOpacity={0.8}
-										/>
-										<stop
-											offset="95%"
-											stopColor="var(--color-fails)"
-											stopOpacity={0.1}
-										/>
-									</linearGradient>
-								</defs>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="time"
-									tickLine={false}
-									axisLine={false}
-									tickMargin={8}
-								/>
-								<YAxis tickLine={false} axisLine={false} tickMargin={8} />
-								<ChartTooltip content={<ChartTooltipContent />} />
-								<ChartLegend content={<ChartLegendContent />} />
-								<Area
-									dataKey="requests"
-									type="monotone"
-									fill="url(#fillRequests)"
-									fillOpacity={
-										metricFilter === "all" || metricFilter === "requests"
-											? 0.4
-											: 0.1
-									}
-									stroke="var(--color-requests)"
-									strokeWidth={
-										metricFilter === "requests"
-											? 3
-											: metricFilter === "all"
-												? 2
-												: 1
-									}
-								/>
-								<Area
-									dataKey="fails"
-									type="monotone"
-									fill="url(#fillFails)"
-									fillOpacity={
-										metricFilter === "all" ||
-										metricFilter === "failures" ||
-										metricFilter === "errors"
-											? 0.4
-											: 0.1
-									}
-									stroke="var(--color-fails)"
-									strokeWidth={
-										metricFilter === "failures" || metricFilter === "errors"
-											? 3
-											: metricFilter === "all"
-												? 2
-												: 1
-									}
-								/>
-							</AreaChart>
+							{metricFilter === "all" ? (
+								<AreaChart data={historicalData}>
+									<defs>
+										<linearGradient
+											id="fillRequestsPerMin"
+											x1="0"
+											y1="0"
+											x2="0"
+											y2="1"
+										>
+											<stop
+												offset="5%"
+												stopColor="var(--color-requestsPerMin)"
+												stopOpacity={0.8}
+											/>
+											<stop
+												offset="95%"
+												stopColor="var(--color-requestsPerMin)"
+												stopOpacity={0.1}
+											/>
+										</linearGradient>
+										<linearGradient
+											id="fillFailsPerMin"
+											x1="0"
+											y1="0"
+											x2="0"
+											y2="1"
+										>
+											<stop
+												offset="5%"
+												stopColor="var(--color-failsPerMin)"
+												stopOpacity={0.8}
+											/>
+											<stop
+												offset="95%"
+												stopColor="var(--color-failsPerMin)"
+												stopOpacity={0.1}
+											/>
+										</linearGradient>
+									</defs>
+									<CartesianGrid vertical={false} />
+									<XAxis
+										dataKey="time"
+										tickLine={false}
+										axisLine={false}
+										tickMargin={8}
+									/>
+									<YAxis
+										tickLine={false}
+										axisLine={false}
+										tickMargin={8}
+										label={{
+											value: "per minute",
+											angle: -90,
+											position: "insideLeft",
+											style: { textAnchor: "middle" },
+										}}
+									/>
+									<ChartTooltip content={<ChartTooltipContent />} />
+									<ChartLegend content={<ChartLegendContent />} />
+									<Area
+										dataKey="requestsPerMin"
+										type="monotone"
+										fill="url(#fillRequestsPerMin)"
+										fillOpacity={0.4}
+										stroke="var(--color-requestsPerMin)"
+										strokeWidth={2}
+									/>
+									<Area
+										dataKey="failsPerMin"
+										type="monotone"
+										fill="url(#fillFailsPerMin)"
+										fillOpacity={0.4}
+										stroke="var(--color-failsPerMin)"
+										strokeWidth={2}
+									/>
+								</AreaChart>
+							) : (
+								<AreaChart data={chartDataToShow}>
+									<CartesianGrid vertical={false} />
+									<XAxis
+										dataKey="time"
+										tickLine={false}
+										axisLine={false}
+										tickMargin={8}
+									/>
+									<YAxis
+										tickLine={false}
+										axisLine={false}
+										tickMargin={8}
+										label={{
+											value:
+												metricFilter === "requests"
+													? "requests/min"
+													: metricFilter === "failures"
+														? "failures/min"
+														: "error rate %",
+											angle: -90,
+											position: "insideLeft",
+											style: { textAnchor: "middle" },
+										}}
+									/>
+									<ChartTooltip content={<ChartTooltipContent />} />
+									<ChartLegend content={<ChartLegendContent />} />
+									{chartDataToShow.length > 0 &&
+										Object.keys(chartDataToShow[0])
+											.filter((key) => key !== "time")
+											.map((containerName, idx) => {
+												const colors = [
+													"#3b82f6", // blue
+													"#10b981", // green
+													"#f59e0b", // amber
+													"#8b5cf6", // violet
+													"#ec4899", // pink
+												];
+												const color = colors[idx % colors.length];
+												return (
+													<Area
+														key={containerName}
+														dataKey={containerName}
+														type="monotone"
+														stroke={color}
+														fill={color}
+														fillOpacity={0.2}
+														strokeWidth={2}
+													/>
+												);
+											})}
+								</AreaChart>
+							)}
 						</ChartContainer>
 					</Card>
 				) : (

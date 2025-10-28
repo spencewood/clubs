@@ -5,9 +5,9 @@ import { getInitialPageData } from "@/lib/server/data";
 export const dynamic = "force-dynamic";
 
 /**
- * Metrics page - Shows Prometheus metrics visualizations
+ * Analytics page - Shows traffic patterns and performance trends
  */
-export default async function MetricsPage() {
+export default async function AnalyticsPage() {
 	const initialData = await getInitialPageData();
 
 	return (
@@ -21,7 +21,7 @@ export default async function MetricsPage() {
 				running: initialData.caddyStatus.available,
 				url: process.env.CADDY_API_URL || "http://localhost:2019",
 			}}
-			initialView="metrics"
+			initialView="analytics"
 			initialUpstreams={initialData.upstreams}
 			initialCertificates={initialData.certificates}
 		/>
