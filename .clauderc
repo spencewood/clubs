@@ -1,0 +1,103 @@
+# Clubs Project Instructions
+
+## Project Overview
+Clubs is a modern Caddyfile management tool with zero-downtime updates. It provides a web-based interface for editing and managing Caddy server configurations with instant updates via the Caddy Admin API.
+
+## Technology Stack
+- **Framework**: Next.js 16 with React 19 + TypeScript
+- **Styling**: Tailwind CSS v4 + shadcn/ui components
+- **Testing**: Vitest + MSW (Mock Service Worker)
+- **Linting**: Biome (NOT ESLint/Prettier)
+- **Package Manager**: pnpm (NOT npm or yarn)
+- **Runtime**: Node.js 22+
+
+## Code Style & Standards
+
+### Formatting
+- Use **tabs for indentation** (configured in biome.json)
+- Use **double quotes** for strings
+- Run `pnpm lint:fix` and `pnpm format` before committing
+- Biome handles both linting and formatting - do NOT use ESLint or Prettier
+- Comments should be used sparingly, only to explain very important concepts. Never for explaining the rationale behind a decision.
+
+### TypeScript
+- Strict mode enabled - maintain type safety
+- Use TypeScript for all new files (.ts, .tsx)
+- Enable these strict checks: noUnusedLocals, noUnusedParameters, noFallthroughCasesInSwitch
+- Use path alias `@/*` for imports from src/ (e.g., `import { foo } from "@/lib/utils"`)
+
+### React
+- Use React 19 features (Server Components by default in Next.js 16)
+- Prefer functional components with hooks
+- Use Server Components by default, add "use client" only when needed
+- Follow Next.js 16 App Router conventions (app/ directory)
+
+### Styles and Component Library
+- Tailwind should be used for all styling across the app
+- Shadcn components should be used as base components for all primitive types
+- Colors should always be derived from the theme defined in the global css. NEVER invent new colors or deviate from this theme.
+
+### Import Organization
+- Biome automatically organizes imports - rely on this
+- External packages first, then internal imports
+- Use the `@/*` path alias for src/ imports
+
+## Project Structure
+- `src/app/` - Next.js App Router pages and API routes
+- `src/components/` - React components (UI components, feature components)
+- `src/lib/` - Utility functions, shared logic
+- `src/types/` - TypeScript type definitions
+- `src/mocks/` - MSW mock handlers for development/testing
+- `src/test/` - Test utilities and helpers
+- `config/` - Caddyfile and configuration files
+- `docs/` - Documentation (deployment, examples)
+
+## Development Workflow
+
+### Testing
+- Run `pnpm test` before committing
+- Use Vitest for unit/integration tests
+- Use MSW for mocking Caddy API in tests
+- Maintain test coverage (run `pnpm test:coverage`)
+- Docker integration tests available via `pnpm test:docker`
+- Test should always be colocated alongside the file that it tests
+
+### Before Committing
+- Run `pnpm prerelease` which executes: lint, typecheck, test, and docker tests
+- Fix any issues before creating commits
+
+### Release Process
+- Use Changesets for versioning (`pnpm changeset`)
+- Follow semantic versioning
+- Update CHANGELOG.md via changesets
+
+## Domain Knowledge
+
+### Caddy Integration
+- Live Mode: Uses Caddy Admin API (port 2019) for zero-downtime updates
+- File Mode: Direct file editing with manual reload required
+- Hybrid Mode: Auto-detects API availability and switches between modes
+- All configs validated by Caddy before applying
+
+### Key Features
+- Visual Caddyfile editor with domain grouping
+- Certificate management with expiration tracking
+- Safe updates with validation
+- Zero-downtime configuration changes
+
+## Common Commands
+- `pnpm dev` - Start development server (MSW enabled by default)
+- `pnpm build` - Build for production
+- `pnpm test` - Run tests
+- `pnpm lint:fix` - Fix linting issues
+- `pnpm format` - Format code with Biome
+- `pnpm typecheck` - Type check without emitting files
+- `pnpm prerelease` - Run all pre-release checks
+
+## Important Notes
+- MSW is enabled by default in development - you don't need Caddy running to develop
+- MSW mocks should be added and maintained for all APIs
+- Directory traversal protection is critical for file operations
+- Always validate paths in API routes
+- The project uses ES modules (type: "module" in package.json)
+- Docker deployment is the primary use case - keep containerization in mind
