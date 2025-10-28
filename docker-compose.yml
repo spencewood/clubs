@@ -7,9 +7,9 @@ services:
     image: caddy:latest
     container_name: caddy
     ports:
-      - "80:80"       # HTTP
-      - "443:443"     # HTTPS
-      - "2019:2019"   # Admin API (for Clubs live reload)
+      - "80:80" # HTTP
+      - "443:443" # HTTPS
+      - "2019:2019" # Admin API (for Clubs live reload)
     volumes:
       # Mount local config directory - contains your Caddyfile
       - ./config:/etc/caddy
@@ -30,7 +30,7 @@ services:
     # build: .
     container_name: clubs
     ports:
-      - "8080:3000"   # Next.js app on port 3000
+      - "8080:3000" # Next.js app on port 3000
     volumes:
       # Share same config directory as Caddy
       - ./config:/config
@@ -38,6 +38,12 @@ services:
       - NODE_ENV=production
       - CADDYFILE_PATH=/config/Caddyfile
       - CADDY_API_URL=http://caddy:2019
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
     restart: unless-stopped
     depends_on:
       - caddy
