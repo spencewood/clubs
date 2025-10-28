@@ -29,10 +29,10 @@ updates:
           - "minor"
           - "patch"
     # Keep major updates separate for careful review
-    ignore:
-      # Ignore specific packages if needed (example below)
-      # - dependency-name: "react"
-      #   versions: ["19.x"]
+    # Uncomment to ignore specific packages:
+    # ignore:
+    #   - dependency-name: "react"
+    #     versions: ["19.x"]
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
