@@ -1,5 +1,15 @@
 # clubs
 
+## 0.10.0
+
+### Minor Changes
+
+- 3304d7a: Add local ssl certs to certificates tab
+
+### Patch Changes
+
+- acfb6e2: Fix site delete issue. Clean up dialogs. Update footer stats.
+
 ## 0.9.2
 
 ### Patch Changes
