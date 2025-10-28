@@ -220,10 +220,21 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 		return null;
 	});
 
-	// Store aggregate historical data
+	// Store aggregate historical data - initialize with a starting point
 	const [historicalData, setHistoricalData] = useState<
 		Array<{ time: string; requestsPerMin: number; failsPerMin: number }>
-	>([]);
+	>(() => {
+		// Start with one data point at 0 so the chart renders immediately
+		if (initialUpstreams.length > 0) {
+			const now = new Date();
+			const hours = now.getHours();
+			const mins = now.getMinutes().toString().padStart(2, "0");
+			const secs = now.getSeconds().toString().padStart(2, "0");
+			const timeLabel = `${hours}:${mins}:${secs}`;
+			return [{ time: timeLabel, requestsPerMin: 0, failsPerMin: 0 }];
+		}
+		return [];
+	});
 
 	// Store per-upstream historical data
 	const [perUpstreamHistory, setPerUpstreamHistory] = useState<
@@ -654,6 +665,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 										fillOpacity={0.4}
 										stroke="var(--color-requestsPerMin)"
 										strokeWidth={2}
+										isAnimationActive={false}
 									/>
 									<Area
 										dataKey="failsPerMin"
@@ -662,6 +674,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 										fillOpacity={0.4}
 										stroke="var(--color-failsPerMin)"
 										strokeWidth={2}
+										isAnimationActive={false}
 									/>
 								</AreaChart>
 							) : (
@@ -712,6 +725,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 														fill={color}
 														fillOpacity={0.2}
 														strokeWidth={2}
+														isAnimationActive={false}
 													/>
 												);
 											})}
