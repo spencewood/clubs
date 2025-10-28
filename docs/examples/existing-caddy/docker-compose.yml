@@ -6,7 +6,7 @@ services:
     image: your-dockerhub-username/clubs:latest
     container_name: clubs
     ports:
-      - "8080:8080"
+      - "8080:3000"
     volumes:
       # IMPORTANT: Point this to your existing Caddy config directory
       # Update this path to match your setup:
@@ -16,6 +16,12 @@ services:
       - CADDYFILE_PATH=/config/Caddyfile
       # Update this to your Caddy container name or host
       - CADDY_API_URL=http://caddy:2019
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
     restart: unless-stopped
     networks:
       # IMPORTANT: Use the same network as your Caddy container
