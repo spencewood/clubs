@@ -725,7 +725,7 @@ export function CaddyDashboard({
 										initialConfig={config}
 									/>
 								) : leftPanelView === "metrics" ? (
-									<MetricsView />
+									<MetricsView initialUpstreams={initialUpstreams} />
 								) : leftPanelView === "certificates" ? (
 									<CertificatesView
 										initialCertificates={initialCertificates}
