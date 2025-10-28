@@ -178,6 +178,7 @@ function mergePerUpstreamData(
 export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 	const [metricsData, setMetricsData] =
 		useState<UpstreamMetric[]>(initialUpstreams);
+	const [isChartReady, setIsChartReady] = useState(false);
 
 	// Store previous cumulative totals per upstream AND overall
 	const [_prevUpstreamData, setPrevUpstreamData] = useState<
@@ -271,6 +272,18 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 				0,
 			);
 
+			// Debug logging to understand what's happening
+			console.log("[MetricsView] Fetched upstreams:", {
+				count: upstreams.length,
+				totalRequests,
+				totalFails,
+				upstreams: upstreams.map((u: UpstreamMetric) => ({
+					address: u.address,
+					requests: u.num_requests,
+					fails: u.fails,
+				})),
+			});
+
 			const date = new Date(now);
 			const hours = date.getHours();
 			const mins = date.getMinutes().toString().padStart(2, "0");
@@ -363,6 +376,12 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 	}, []);
 
 	useEffect(() => {
+		// Delay chart rendering to avoid ResponsiveContainer dimension errors
+		const timer = setTimeout(() => setIsChartReady(true), 100);
+		return () => clearTimeout(timer);
+	}, []);
+
+	useEffect(() => {
 		// Start auto-refresh interval (don't fetch immediately since we have server data)
 		const interval = setInterval(fetchMetrics, 5000);
 		return () => clearInterval(interval);
@@ -384,11 +403,13 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 		);
 	}
 
-	const totalRequests = metricsData.reduce((sum, u) => sum + u.num_requests, 0);
-	const totalFails = metricsData.reduce((sum, u) => sum + u.fails, 0);
-	const overallFailureRate =
-		totalRequests > 0
-			? ((totalFails / totalRequests) * 100).toFixed(2)
+	// Get the latest rate metrics from historical data
+	const latestData = historicalData[historicalData.length - 1];
+	const currentRequestsPerMin = latestData?.requestsPerMin ?? 0;
+	const currentFailsPerMin = latestData?.failsPerMin ?? 0;
+	const currentErrorRate =
+		currentRequestsPerMin > 0
+			? ((currentFailsPerMin / currentRequestsPerMin) * 100).toFixed(2)
 			: "0.00";
 
 	// Filter data based on selected metric
@@ -490,7 +511,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 
 			<div className="space-y-2">
 				<div className="text-xs text-muted-foreground">
-					Session Stats (since Caddy restart)
+					Current Traffic Rate
 				</div>
 				<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
 					<Card
@@ -509,9 +530,9 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						/>
 						<div className="relative">
 							<p className="text-2xl font-bold">
-								{totalRequests.toLocaleString()}
+								{currentRequestsPerMin.toFixed(1)}
 							</p>
-							<p className="text-xs text-muted-foreground">Total Requests</p>
+							<p className="text-xs text-muted-foreground">Requests/min</p>
 						</div>
 					</Card>
 					<Card
@@ -530,9 +551,9 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						/>
 						<div className="relative">
 							<p className="text-2xl font-bold">
-								{totalFails.toLocaleString()}
+								{currentFailsPerMin.toFixed(1)}
 							</p>
-							<p className="text-xs text-muted-foreground">Total Failures</p>
+							<p className="text-xs text-muted-foreground">Failures/min</p>
 						</div>
 					</Card>
 					<Card
@@ -550,7 +571,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 							strokeWidth={1.5}
 						/>
 						<div className="relative">
-							<p className="text-2xl font-bold">{overallFailureRate}%</p>
+							<p className="text-2xl font-bold">{currentErrorRate}%</p>
 							<p className="text-xs text-muted-foreground">Error Rate</p>
 						</div>
 					</Card>
@@ -597,141 +618,147 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 								</span>
 							)}
 						</h3>
-						<ChartContainer config={chartConfig} className="aspect-[16/7]">
-							{metricFilter === "all" ? (
-								<AreaChart data={historicalData}>
-									<defs>
-										<linearGradient
-											id="fillRequestsPerMin"
-											x1="0"
-											y1="0"
-											x2="0"
-											y2="1"
-										>
-											<stop
-												offset="5%"
-												stopColor="var(--color-requestsPerMin)"
-												stopOpacity={0.8}
-											/>
-											<stop
-												offset="95%"
-												stopColor="var(--color-requestsPerMin)"
-												stopOpacity={0.1}
-											/>
-										</linearGradient>
-										<linearGradient
-											id="fillFailsPerMin"
-											x1="0"
-											y1="0"
-											x2="0"
-											y2="1"
-										>
-											<stop
-												offset="5%"
-												stopColor="var(--color-failsPerMin)"
-												stopOpacity={0.8}
-											/>
-											<stop
-												offset="95%"
-												stopColor="var(--color-failsPerMin)"
-												stopOpacity={0.1}
-											/>
-										</linearGradient>
-									</defs>
-									<CartesianGrid vertical={false} />
-									<XAxis
-										dataKey="time"
-										tickLine={false}
-										axisLine={false}
-										tickMargin={8}
-									/>
-									<YAxis
-										tickLine={false}
-										axisLine={false}
-										tickMargin={8}
-										label={{
-											value: "per minute",
-											angle: -90,
-											position: "insideLeft",
-											style: { textAnchor: "middle" },
-										}}
-									/>
-									<ChartTooltip content={<ChartTooltipContent />} />
-									<ChartLegend content={<ChartLegendContent />} />
-									<Area
-										dataKey="requestsPerMin"
-										type="monotone"
-										fill="url(#fillRequestsPerMin)"
-										fillOpacity={0.4}
-										stroke="var(--color-requestsPerMin)"
-										strokeWidth={2}
-										isAnimationActive={false}
-									/>
-									<Area
-										dataKey="failsPerMin"
-										type="monotone"
-										fill="url(#fillFailsPerMin)"
-										fillOpacity={0.4}
-										stroke="var(--color-failsPerMin)"
-										strokeWidth={2}
-										isAnimationActive={false}
-									/>
-								</AreaChart>
-							) : (
-								<AreaChart data={chartDataToShow}>
-									<CartesianGrid vertical={false} />
-									<XAxis
-										dataKey="time"
-										tickLine={false}
-										axisLine={false}
-										tickMargin={8}
-									/>
-									<YAxis
-										tickLine={false}
-										axisLine={false}
-										tickMargin={8}
-										label={{
-											value:
-												metricFilter === "requests"
-													? "requests/min"
-													: metricFilter === "failures"
-														? "failures/min"
-														: "error rate %",
-											angle: -90,
-											position: "insideLeft",
-											style: { textAnchor: "middle" },
-										}}
-									/>
-									<ChartTooltip content={<ChartTooltipContent />} />
-									<ChartLegend content={<ChartLegendContent />} />
-									{chartDataToShow.length > 0 &&
-										Object.keys(chartDataToShow[0])
-											.filter((key) => key !== "time")
-											.map((containerName, idx) => {
-												const colors = [
-													"#3b82f6", // blue
-													"#10b981", // green
-													"#f59e0b", // amber
-													"#8b5cf6", // violet
-													"#ec4899", // pink
-												];
-												const color = colors[idx % colors.length];
-												return (
-													<Area
-														key={containerName}
-														dataKey={containerName}
-														type="monotone"
-														stroke={color}
-														fill={color}
-														fillOpacity={0.2}
-														strokeWidth={2}
-														isAnimationActive={false}
+						<div className="w-full h-[300px]">
+							{isChartReady ? (
+								<ChartContainer config={chartConfig} className="w-full h-full">
+									{metricFilter === "all" ? (
+										<AreaChart data={historicalData}>
+											<defs>
+												<linearGradient
+													id="fillRequestsPerMin"
+													x1="0"
+													y1="0"
+													x2="0"
+													y2="1"
+												>
+													<stop
+														offset="5%"
+														stopColor="var(--color-requestsPerMin)"
+														stopOpacity={0.8}
 													/>
-												);
-											})}
-								</AreaChart>
+													<stop
+														offset="95%"
+														stopColor="var(--color-requestsPerMin)"
+														stopOpacity={0.1}
+													/>
+												</linearGradient>
+												<linearGradient
+													id="fillFailsPerMin"
+													x1="0"
+													y1="0"
+													x2="0"
+													y2="1"
+												>
+													<stop
+														offset="5%"
+														stopColor="var(--color-failsPerMin)"
+														stopOpacity={0.8}
+													/>
+													<stop
+														offset="95%"
+														stopColor="var(--color-failsPerMin)"
+														stopOpacity={0.1}
+													/>
+												</linearGradient>
+											</defs>
+											<CartesianGrid vertical={false} />
+											<XAxis
+												dataKey="time"
+												tickLine={false}
+												axisLine={false}
+												tickMargin={8}
+											/>
+											<YAxis
+												tickLine={false}
+												axisLine={false}
+												tickMargin={8}
+												label={{
+													value: "per minute",
+													angle: -90,
+													position: "insideLeft",
+													style: { textAnchor: "middle" },
+												}}
+											/>
+											<ChartTooltip content={<ChartTooltipContent />} />
+											<ChartLegend content={<ChartLegendContent />} />
+											<Area
+												dataKey="requestsPerMin"
+												type="monotone"
+												fill="url(#fillRequestsPerMin)"
+												fillOpacity={0.4}
+												stroke="var(--color-requestsPerMin)"
+												strokeWidth={2}
+												isAnimationActive={false}
+											/>
+											<Area
+												dataKey="failsPerMin"
+												type="monotone"
+												fill="url(#fillFailsPerMin)"
+												fillOpacity={0.4}
+												stroke="var(--color-failsPerMin)"
+												strokeWidth={2}
+												isAnimationActive={false}
+											/>
+										</AreaChart>
+									) : (
+										<AreaChart data={chartDataToShow}>
+											<CartesianGrid vertical={false} />
+											<XAxis
+												dataKey="time"
+												tickLine={false}
+												axisLine={false}
+												tickMargin={8}
+											/>
+											<YAxis
+												tickLine={false}
+												axisLine={false}
+												tickMargin={8}
+												label={{
+													value:
+														metricFilter === "requests"
+															? "requests/min"
+															: metricFilter === "failures"
+																? "failures/min"
+																: "error rate %",
+													angle: -90,
+													position: "insideLeft",
+													style: { textAnchor: "middle" },
+												}}
+											/>
+											<ChartTooltip content={<ChartTooltipContent />} />
+											<ChartLegend content={<ChartLegendContent />} />
+											{chartDataToShow.length > 0 &&
+												Object.keys(chartDataToShow[0])
+													.filter((key) => key !== "time")
+													.map((containerName, idx) => {
+														const colors = [
+															"#3b82f6", // blue
+															"#10b981", // green
+															"#f59e0b", // amber
+															"#8b5cf6", // violet
+															"#ec4899", // pink
+														];
+														const color = colors[idx % colors.length];
+														return (
+															<Area
+																key={containerName}
+																dataKey={containerName}
+																type="monotone"
+																stroke={color}
+																fill={color}
+																fillOpacity={0.2}
+																strokeWidth={2}
+																isAnimationActive={false}
+															/>
+														);
+													})}
+										</AreaChart>
+									)}
+								</ChartContainer>
+							) : (
+								<ChartSkeleton aspectRatio="aspect-[16/7]" />
 							)}
-						</ChartContainer>
+						</div>
 					</Card>
 				) : (
 					<Card className="p-6 lg:col-span-2">
@@ -759,27 +786,35 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 							</div>
 						</div>
 					) : (
-						<ChartContainer config={chartConfig} className="aspect-[4/3]">
-							<BarChart data={trafficData} layout="vertical">
-								<CartesianGrid horizontal={false} />
-								<XAxis type="number" hide />
-								<YAxis
-									dataKey="name"
-									type="category"
-									tickLine={false}
-									tickMargin={10}
-									axisLine={false}
-									width={140}
-									tick={<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />}
-								/>
-								<ChartTooltip content={<ChartTooltipContent />} />
-								<Bar
-									dataKey="requests"
-									fill="var(--color-requests)"
-									radius={4}
-								/>
-							</BarChart>
-						</ChartContainer>
+						<div className="w-full h-[350px]">
+							{isChartReady ? (
+								<ChartContainer config={chartConfig} className="w-full h-full">
+									<BarChart data={trafficData} layout="vertical">
+										<CartesianGrid horizontal={false} />
+										<XAxis type="number" hide />
+										<YAxis
+											dataKey="name"
+											type="category"
+											tickLine={false}
+											tickMargin={10}
+											axisLine={false}
+											width={140}
+											tick={
+												<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />
+											}
+										/>
+										<ChartTooltip content={<ChartTooltipContent />} />
+										<Bar
+											dataKey="requests"
+											fill="var(--color-requests)"
+											radius={4}
+										/>
+									</BarChart>
+								</ChartContainer>
+							) : (
+								<ChartSkeleton aspectRatio="aspect-[4/3]" />
+							)}
+						</div>
 					)}
 				</Card>
 
@@ -793,23 +828,31 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 								</span>
 							)}
 						</h3>
-						<ChartContainer config={chartConfig} className="aspect-[4/3]">
-							<BarChart data={errorData} layout="vertical">
-								<CartesianGrid horizontal={false} />
-								<XAxis type="number" hide />
-								<YAxis
-									dataKey="name"
-									type="category"
-									tickLine={false}
-									tickMargin={10}
-									axisLine={false}
-									width={140}
-									tick={<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />}
-								/>
-								<ChartTooltip content={<ChartTooltipContent />} />
-								<Bar dataKey="rate" fill="var(--color-rate)" radius={4} />
-							</BarChart>
-						</ChartContainer>
+						<div className="w-full h-[350px]">
+							{isChartReady ? (
+								<ChartContainer config={chartConfig} className="w-full h-full">
+									<BarChart data={errorData} layout="vertical">
+										<CartesianGrid horizontal={false} />
+										<XAxis type="number" hide />
+										<YAxis
+											dataKey="name"
+											type="category"
+											tickLine={false}
+											tickMargin={10}
+											axisLine={false}
+											width={140}
+											tick={
+												<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />
+											}
+										/>
+										<ChartTooltip content={<ChartTooltipContent />} />
+										<Bar dataKey="rate" fill="var(--color-rate)" radius={4} />
+									</BarChart>
+								</ChartContainer>
+							) : (
+								<ChartSkeleton aspectRatio="aspect-[4/3]" />
+							)}
+						</div>
 					</Card>
 				) : (
 					<Card className="p-6">

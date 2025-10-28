@@ -1,0 +1,2 @@
+# Normalize EOL for Next-generated TypeScript env file to reduce diffs
+next-env.d.ts text eol=lf
