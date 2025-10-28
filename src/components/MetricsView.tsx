@@ -103,16 +103,23 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 // Skeleton loader component
-function ChartSkeleton({ aspectRatio = "aspect-[4/3]" }: { aspectRatio?: string }) {
+function ChartSkeleton({
+	aspectRatio = "aspect-[4/3]",
+}: {
+	aspectRatio?: string;
+}) {
 	return (
-		<div className={`w-full ${aspectRatio} animate-pulse bg-muted/30 rounded-md flex items-center justify-center`}>
+		<div
+			className={`w-full ${aspectRatio} animate-pulse bg-muted/30 rounded-md flex items-center justify-center`}
+		>
 			<BarChart3 className="w-12 h-12 text-muted-foreground/30" />
 		</div>
 	);
 }
 
 export function MetricsView({ initialUpstreams }: MetricsViewProps) {
-	const [metricsData, setMetricsData] = useState<UpstreamMetric[]>(initialUpstreams);
+	const [metricsData, setMetricsData] =
+		useState<UpstreamMetric[]>(initialUpstreams);
 	const [historicalData, setHistoricalData] = useState<
 		Array<{ time: string; requests: number; fails: number }>
 	>(() => {
