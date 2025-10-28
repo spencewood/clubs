@@ -1,5 +1,11 @@
 # clubs
 
+## 0.12.2
+
+### Patch Changes
+
+- eb41216: Update chart colors and labels
+
 ## 0.12.1
 
 ### Patch Changes
