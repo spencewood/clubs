@@ -508,6 +508,61 @@ chmod 644 ./config/Caddyfile
 
 ---
 
+## Certificate Management
+
+Clubs includes a certificate viewer that displays SSL/TLS certificates managed by Caddy, including:
+- Let's Encrypt ACME certificates
+- Custom SSL certificates
+- Internal PKI certificates
+
+### Viewing Certificates
+
+To enable certificate viewing, mount Caddy's certificate directory to Clubs (read-only):
+
+```yaml
+services:
+  clubs:
+    image: spencewood/clubs:latest
+    volumes:
+      - ./config:/config
+      # Mount Caddy's certificate directory (read-only)
+      - caddy_data:/data/caddy:ro
+    environment:
+      - CADDYFILE_PATH=/config/Caddyfile
+      - CADDY_API_URL=http://caddy:2019
+      - CADDY_CERTIFICATES_PATH=/data/caddy/certificates
+```
+
+The `:ro` flag ensures read-only access for security.
+
+### What You'll See
+
+The Certificates tab displays:
+- **SSL Certificates** - Let's Encrypt and custom certificates with:
+  - Domain name and Subject Alternative Names (SANs)
+  - Issuer (e.g., "Let's Encrypt Authority X3")
+  - Expiration date and days until renewal
+  - Certificate fingerprint and serial number
+  - Expiration warnings (red for expired, yellow for expiring soon)
+- **Internal PKI** - Caddy's built-in certificate authority for development
+
+### Certificate Storage
+
+Caddy stores certificates in `/data/caddy/certificates/` with this structure:
+
+```
+/data/caddy/certificates/
+  acme-v02.api.letsencrypt.org-directory/
+    example.com/
+      example.com.crt      # Certificate
+      example.com.key      # Private key
+      example.com.json     # Metadata
+```
+
+Clubs reads these files to display certificate information without accessing private keys.
+
+---
+
 ## Examples
 
 See the `examples/` directory for complete docker-compose setups:

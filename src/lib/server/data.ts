@@ -6,6 +6,11 @@
 import fs from "node:fs/promises";
 import { parseCaddyfile } from "@/lib/parser/caddyfile-parser";
 import { createCaddyAPIClient } from "@/lib/server/caddy-api-client";
+import type { AcmeCertificate } from "@/lib/server/cert-parser";
+import {
+	mockAcmeCertificates,
+	scanAcmeCertificates,
+} from "@/lib/server/cert-parser";
 import { validateCaddyfile } from "@/lib/validator/caddyfile-validator";
 import type { CaddyConfig, CaddyPKICA, CaddyUpstream } from "@/types/caddyfile";
 
@@ -22,6 +27,7 @@ export interface InitialPageData {
 	};
 	upstreams: CaddyUpstream[];
 	certificates: CaddyPKICA | null;
+	acmeCertificates: AcmeCertificate[];
 	validationErrors?: string[];
 }
 
@@ -164,6 +170,35 @@ async function fetchCertificates(): Promise<CaddyPKICA | null> {
 }
 
 /**
+ * Fetch ACME certificates from filesystem
+ */
+async function fetchAcmeCertificates(): Promise<AcmeCertificate[]> {
+	try {
+		const certificatesPath =
+			process.env.CADDY_CERTIFICATES_PATH || "/data/caddy/certificates";
+		const certificates = await scanAcmeCertificates(certificatesPath);
+
+		// If no certificates found and we're in development, return mock data
+		const isDevelopment = process.env.NODE_ENV === "development";
+		const finalCertificates =
+			certificates.length === 0 && isDevelopment
+				? mockAcmeCertificates
+				: certificates;
+
+		console.log(
+			`[fetchAcmeCertificates] Successfully scanned ${finalCertificates.length} ACME certificates${isDevelopment && finalCertificates.length > 0 && certificates.length === 0 ? " (mock data)" : ""}`,
+		);
+		return finalCertificates;
+	} catch (error) {
+		console.error(
+			"[fetchAcmeCertificates] Error scanning certificates:",
+			error,
+		);
+		return [];
+	}
+}
+
+/**
  * Get initial page data for Server Component rendering
  * This eliminates the loading screen by fetching all data on the server
  */
@@ -182,10 +217,14 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 			? { ...caddyStatus, available: isLiveMode }
 			: caddyStatus;
 
-	// Fetch upstreams and certificates in parallel (only if Caddy is available or in dev mode)
-	const [upstreams, certificates] = isLiveMode
-		? await Promise.all([fetchUpstreams(), fetchCertificates()])
-		: [[], null];
+	// Fetch upstreams, certificates, and ACME certificates in parallel
+	// PKI certificates only available if Caddy is available or in dev mode
+	// ACME certificates are always fetched from filesystem (or empty in dev without volume mount)
+	const [upstreams, certificates, acmeCertificates] = await Promise.all([
+		isLiveMode ? fetchUpstreams() : Promise.resolve([]),
+		isLiveMode ? fetchCertificates() : Promise.resolve(null),
+		fetchAcmeCertificates(),
+	]);
 
 	// Try to load from appropriate source
 	let rawContent: string | null = null;
@@ -208,6 +247,7 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 			caddyStatus: effectiveCaddyStatus,
 			upstreams,
 			certificates,
+			acmeCertificates,
 		};
 	}
 
@@ -222,6 +262,7 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 		caddyStatus: effectiveCaddyStatus,
 		upstreams,
 		certificates,
+		acmeCertificates,
 		validationErrors: validation.valid ? undefined : validation.errors,
 	};
 }

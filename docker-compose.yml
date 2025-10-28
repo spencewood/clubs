@@ -34,10 +34,13 @@ services:
     volumes:
       # Share same config directory as Caddy
       - ./config:/config
+      # Mount Caddy's certificate directory (read-only) to display SSL certificates
+      - caddy_data:/data/caddy:ro
     environment:
       - NODE_ENV=production
       - CADDYFILE_PATH=/config/Caddyfile
       - CADDY_API_URL=http://caddy:2019
+      - CADDY_CERTIFICATES_PATH=/data/caddy/certificates
     restart: unless-stopped
     depends_on:
       - caddy
