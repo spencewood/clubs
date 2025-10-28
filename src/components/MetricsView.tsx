@@ -74,6 +74,10 @@ interface UpstreamMetric {
 	fails: number;
 }
 
+interface MetricsViewProps {
+	initialUpstreams: UpstreamMetric[];
+}
+
 const chartConfig = {
 	requests: {
 		label: "Requests",
@@ -98,11 +102,38 @@ const chartConfig = {
 	},
 } satisfies ChartConfig;
 
-export function MetricsView() {
-	const [metricsData, setMetricsData] = useState<UpstreamMetric[]>([]);
+// Skeleton loader component
+function ChartSkeleton({ aspectRatio = "aspect-[4/3]" }: { aspectRatio?: string }) {
+	return (
+		<div className={`w-full ${aspectRatio} animate-pulse bg-muted/30 rounded-md flex items-center justify-center`}>
+			<BarChart3 className="w-12 h-12 text-muted-foreground/30" />
+		</div>
+	);
+}
+
+export function MetricsView({ initialUpstreams }: MetricsViewProps) {
+	const [metricsData, setMetricsData] = useState<UpstreamMetric[]>(initialUpstreams);
 	const [historicalData, setHistoricalData] = useState<
 		Array<{ time: string; requests: number; fails: number }>
-	>([]);
+	>(() => {
+		// Initialize with the server-side data
+		if (initialUpstreams.length > 0) {
+			const now = new Date();
+			const hours = now.getHours();
+			const mins = now.getMinutes().toString().padStart(2, "0");
+			const timeLabel = `${hours}:${mins}`;
+			const totalRequests = initialUpstreams.reduce(
+				(sum: number, u: UpstreamMetric) => sum + u.num_requests,
+				0,
+			);
+			const totalFails = initialUpstreams.reduce(
+				(sum: number, u: UpstreamMetric) => sum + u.fails,
+				0,
+			);
+			return [{ time: timeLabel, requests: totalRequests, fails: totalFails }];
+		}
+		return [];
+	});
 	const [refreshing, setRefreshing] = useState(false);
 	const [metricFilter, setMetricFilter] = useState<
 		"all" | "requests" | "failures" | "errors"
@@ -150,7 +181,7 @@ export function MetricsView() {
 	}, []);
 
 	useEffect(() => {
-		fetchMetrics();
+		// Start auto-refresh interval (don't fetch immediately since we have server data)
 		const interval = setInterval(fetchMetrics, 5000);
 		return () => clearInterval(interval);
 	}, [fetchMetrics]);
@@ -237,8 +268,8 @@ export function MetricsView() {
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						metricFilter === "requests"
-							? "border-2 border-[var(--color-info-dark)] shadow-md"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[var(--color-info-dark)] shadow-md"
+							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() =>
 						setMetricFilter(metricFilter === "requests" ? "all" : "requests")
@@ -258,8 +289,8 @@ export function MetricsView() {
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						metricFilter === "failures"
-							? "border-2 border-[var(--color-error-dark)] shadow-md"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[var(--color-error-dark)] shadow-md"
+							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() =>
 						setMetricFilter(metricFilter === "failures" ? "all" : "failures")
@@ -277,8 +308,8 @@ export function MetricsView() {
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						metricFilter === "errors"
-							? "border-2 border-[var(--color-warning-dark)] shadow-md"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[var(--color-warning-dark)] shadow-md"
+							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() =>
 						setMetricFilter(metricFilter === "errors" ? "all" : "errors")
@@ -319,7 +350,7 @@ export function MetricsView() {
 			)}
 
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-				{historicalData.length > 0 && (
+				{historicalData.length > 0 ? (
 					<Card className="p-6 lg:col-span-2">
 						<h3 className="text-lg font-semibold mb-4">
 							Traffic Trend
@@ -329,7 +360,7 @@ export function MetricsView() {
 								</span>
 							)}
 						</h3>
-						<ChartContainer config={chartConfig}>
+						<ChartContainer config={chartConfig} className="aspect-[16/7]">
 							<AreaChart data={historicalData}>
 								<defs>
 									<linearGradient id="fillRequests" x1="0" y1="0" x2="0" y2="1">
@@ -408,6 +439,11 @@ export function MetricsView() {
 							</AreaChart>
 						</ChartContainer>
 					</Card>
+				) : (
+					<Card className="p-6 lg:col-span-2">
+						<h3 className="text-lg font-semibold mb-4">Traffic Trend</h3>
+						<ChartSkeleton aspectRatio="aspect-[16/7]" />
+					</Card>
 				)}
 
 				<Card className="p-6">
@@ -429,7 +465,7 @@ export function MetricsView() {
 							</div>
 						</div>
 					) : (
-						<ChartContainer config={chartConfig}>
+						<ChartContainer config={chartConfig} className="aspect-[4/3]">
 							<BarChart data={trafficData} layout="vertical">
 								<CartesianGrid horizontal={false} />
 								<XAxis type="number" hide />
@@ -453,7 +489,7 @@ export function MetricsView() {
 					)}
 				</Card>
 
-				{errorData.length > 0 && (
+				{errorData.length > 0 ? (
 					<Card className="p-6">
 						<h3 className="text-lg font-semibold mb-4">
 							Error Rates
@@ -463,7 +499,7 @@ export function MetricsView() {
 								</span>
 							)}
 						</h3>
-						<ChartContainer config={chartConfig}>
+						<ChartContainer config={chartConfig} className="aspect-[4/3]">
 							<BarChart data={errorData} layout="vertical">
 								<CartesianGrid horizontal={false} />
 								<XAxis type="number" hide />
@@ -480,6 +516,11 @@ export function MetricsView() {
 								<Bar dataKey="rate" fill="var(--color-rate)" radius={4} />
 							</BarChart>
 						</ChartContainer>
+					</Card>
+				) : (
+					<Card className="p-6">
+						<h3 className="text-lg font-semibold mb-4">Error Rates</h3>
+						<ChartSkeleton aspectRatio="aspect-[4/3]" />
 					</Card>
 				)}
 			</div>

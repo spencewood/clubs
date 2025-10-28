@@ -227,8 +227,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "all"
-							? "border-2 border-[var(--color-info-dark)] shadow-md"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[var(--color-info-dark)] shadow-md"
+							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("all")}
 				>
@@ -245,8 +245,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "healthy"
-							? "border-2 border-[var(--color-success-dark)] shadow-md"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[var(--color-success-dark)] shadow-md"
+							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("healthy")}
 				>
@@ -263,8 +263,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "degraded"
-							? "border-2 border-[var(--color-warning-dark)] shadow-md"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[var(--color-warning-dark)] shadow-md"
+							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("degraded")}
 				>
@@ -281,8 +281,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "unhealthy"
-							? "border-2 border-[var(--color-error-dark)] shadow-md"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[var(--color-error-dark)] shadow-md"
+							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("unhealthy")}
 				>
@@ -299,8 +299,8 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "offline"
-							? "border-2 border-[var(--color-muted-foreground)] shadow-md"
-							: "border-2 border-transparent hover:border-muted-foreground/40"
+							? "border-[var(--color-muted-foreground)] shadow-md"
+							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("offline")}
 				>
