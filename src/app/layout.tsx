@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { LeftPanelProvider } from "@/contexts/LeftPanelContext";
 
 export const metadata: Metadata = {
 	title: "Clubs - Caddy Configuration Manager",
@@ -13,7 +14,9 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning>
-			<body className="antialiased">{children}</body>
+			<body className="antialiased">
+				<LeftPanelProvider>{children}</LeftPanelProvider>
+			</body>
 		</html>
 	);
 }

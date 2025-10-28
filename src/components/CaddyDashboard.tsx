@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { AddContainerSiteDialog } from "@/components/AddContainerSiteDialog";
+import { useLeftPanel } from "@/contexts/LeftPanelContext";
 
 // Import CaddyfileEditor dynamically to avoid SSR issues with CodeMirror
 const CaddyfileEditor = dynamic(
@@ -236,7 +237,7 @@ export function CaddyDashboard({
 	const isLiveMode = initialIsLiveMode;
 	const leftPanelView = initialView;
 	const [rightPanelView, setRightPanelView] = useState<"raw" | "config">("raw");
-	const [leftPanelExpanded, setLeftPanelExpanded] = useState(false);
+	const { leftPanelExpanded, setLeftPanelExpanded } = useLeftPanel();
 	const loadConfig = useCallback(async () => {
 		try {
 			// Try to load from live Caddy if available, otherwise from file
@@ -634,60 +635,63 @@ export function CaddyDashboard({
 
 				<main className="container mx-auto px-4 py-6">
 					{config && (
-						<div className="relative xl:flex xl:flex-row gap-8 items-start">
+						<div className="relative xl:flex xl:flex-row gap-8 items-start min-h-[calc(100vh-12rem)]">
 							{/* Left: Sites/Upstreams Panel - Elevated "table" (content height) */}
 							<div
-								className={`space-y-4 bg-card border rounded-lg shadow-lg p-6 relative transition-all duration-300 ease-in-out ${
+								className={`space-y-4 bg-card border rounded-lg shadow-lg p-3 sm:p-6 min-h-[calc(100vh-12rem)] will-change-transform relative transition-all duration-500 overflow-visible ${
 									leftPanelExpanded
-										? "-translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:flex-[999] xl:basis-0"
-										: "translate-x-0 opacity-100 z-20 xl:z-10 xl:flex-1 xl:basis-0"
+										? "xl:static -translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:w-full xl:flex-shrink-0"
+										: "xl:static translate-x-0 opacity-100 pointer-events-auto z-20 xl:z-10 xl:w-1/2 xl:flex-shrink-0"
 								}`}
+								style={{
+									transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+								}}
 							>
 								{/* Tab Navigation with Expand/Collapse */}
-								<div className="flex items-center justify-between gap-2 pb-2">
-									<div className="flex gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
+								<div className="flex items-center justify-between gap-1 sm:gap-2 pb-2">
+									<div className="flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
 										<Link
 											href="/"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+											className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "sites"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
 											}`}
 										>
-											<Server className="w-4 h-4" />
+											<Server className="w-4 h-4 shrink-0" />
 											Sites
 										</Link>
 										<Link
 											href="/upstreams"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+											className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "upstreams"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
 											}`}
 										>
-											<Activity className="w-4 h-4" />
+											<Activity className="w-4 h-4 shrink-0" />
 											Upstreams
 										</Link>
 										<Link
 											href="/analytics"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+											className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "analytics"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
 											}`}
 										>
-											<BarChart3 className="w-4 h-4" />
+											<BarChart3 className="w-4 h-4 shrink-0" />
 											Analytics
 										</Link>
 										<Link
 											href="/certificates"
-											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+											className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
 												leftPanelView === "certificates"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
 											}`}
 										>
-											<ShieldCheck className="w-4 h-4" />
+											<ShieldCheck className="w-4 h-4 shrink-0" />
 											Certificates
 										</Link>
 									</div>
@@ -695,7 +699,7 @@ export function CaddyDashboard({
 										variant="ghost"
 										size="sm"
 										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-										className="h-8 px-2 xl:block hidden bg-muted/50 hover:bg-muted"
+										className="h-8 px-2 xl:block hidden bg-muted/50 hover:bg-muted shrink-0"
 										title={
 											leftPanelExpanded ? "Collapse panel" : "Expand panel"
 										}
@@ -712,7 +716,7 @@ export function CaddyDashboard({
 										variant="ghost"
 										size="sm"
 										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-										className="h-8 px-2 xl:hidden bg-muted/50 hover:bg-muted"
+										className="h-8 px-2 xl:hidden bg-muted/50 hover:bg-muted shrink-0"
 										title="Hide panel / Show editor"
 									>
 										<ChevronLeft className="w-4 h-4" />
@@ -857,11 +861,15 @@ export function CaddyDashboard({
 
 							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (visible when left panel collapsed on mobile, hidden when expanded on desktop) */}
 							<div
-								className={`flex-col space-y-4 min-h-[calc(100vh-12rem)] transition-all duration-300 ease-in-out overflow-hidden xl:relative xl:z-auto xl:flex ${
+								className={`flex flex-col space-y-4 xl:z-auto min-h-[calc(100vh-12rem)] ${
 									leftPanelExpanded
-										? "absolute inset-0 z-10 flex opacity-100 xl:opacity-0 xl:pointer-events-none xl:flex-[0.001] xl:basis-0"
-										: "absolute inset-0 z-10 opacity-60 hover:opacity-100 xl:opacity-60 xl:hover:opacity-100 xl:flex-1 xl:basis-0"
+										? "absolute inset-0 z-10 opacity-100 xl:opacity-0 xl:pointer-events-none xl:flex xl:w-0 xl:overflow-hidden"
+										: "hidden xl:flex xl:relative xl:z-10 xl:opacity-60 xl:hover:opacity-100 xl:w-1/2 xl:flex-shrink-0"
 								}`}
+								style={{
+									transition:
+										"width 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+								}}
 							>
 								{/* Tab Navigation */}
 								<div className="flex items-center justify-between mb-2">
@@ -925,7 +933,7 @@ export function CaddyDashboard({
 
 								{/* Tab Content */}
 								{rightPanelView === "raw" ? (
-									<div className="flex-1 border border-dashed border-muted-foreground/20 rounded-md overflow-hidden bg-muted/10">
+									<div className="flex-1 min-h-0 border border-dashed border-muted-foreground/20 rounded-md overflow-auto bg-muted/10">
 										<CaddyfileEditor
 											value={rawContent}
 											onChange={handleRawContentChange}
@@ -933,7 +941,7 @@ export function CaddyDashboard({
 										/>
 									</div>
 								) : (
-									<div className="flex-1 border border-dashed border-muted-foreground/20 rounded-md overflow-hidden bg-muted/10">
+									<div className="flex-1 min-h-0 border border-dashed border-muted-foreground/20 rounded-md overflow-auto bg-muted/10">
 										<FullConfigView />
 									</div>
 								)}

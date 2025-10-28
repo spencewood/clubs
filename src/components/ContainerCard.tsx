@@ -5,11 +5,12 @@ import {
 	ExternalLink,
 	FileJson,
 	Globe,
+	MoreVertical,
 	Plus,
 	Settings,
 	Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { InspectConfigModal } from "@/components/InspectConfigModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { serializeCaddyfile } from "@/lib/parser/caddyfile-parser";
 
 interface VirtualBlock {
@@ -62,6 +69,11 @@ export function ContainerCard({
 	const [showDeleteContainerConfirm, setShowDeleteContainerConfirm] =
 		useState(false);
 	const [deletingSiteId, setDeletingSiteId] = useState<string | null>(null);
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
 	// Helper to get the Caddyfile content for a specific handle block
 	const getHandleBlockCaddyfile = (handleId: string) => {
@@ -103,12 +115,12 @@ export function ContainerCard({
 	return (
 		<Card className="border-l-4 border-l-primary bg-muted/30">
 			<CardHeader className="pb-3">
-				<div className="flex items-center justify-between gap-4">
-					<div className="flex items-center gap-3 flex-1 min-w-0">
+				<div className="flex items-center justify-between gap-2 sm:gap-4">
+					<div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
 						<button
 							type="button"
 							onClick={() => setIsExpanded(!isExpanded)}
-							className="p-1 hover:bg-accent rounded transition-colors"
+							className="p-1 hover:bg-accent rounded transition-colors flex-shrink-0"
 							aria-label={isExpanded ? "Collapse" : "Expand"}
 						>
 							{isExpanded ? (
@@ -117,19 +129,56 @@ export function ContainerCard({
 								<ChevronRight className="h-4 w-4 text-muted-foreground" />
 							)}
 						</button>
-						<Container className="h-5 w-5 text-primary flex-shrink-0" />
+						<Container className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
 						<div className="flex-1 min-w-0">
-							<CardTitle className="font-mono text-lg truncate">
+							<CardTitle className="font-mono text-sm sm:text-lg truncate">
 								{wildcardDomain}
 							</CardTitle>
-							<div className="text-sm text-muted-foreground mt-1">
+							<div className="text-xs sm:text-sm text-muted-foreground mt-1">
 								{virtualBlocks.length} site
 								{virtualBlocks.length !== 1 ? "s" : ""}
 							</div>
 						</div>
 					</div>
-					<div className="flex gap-2 flex-shrink-0">
-						<Button variant="outline" size="sm" onClick={() => onEdit(id)}>
+					{/* Mobile: Single menu button */}
+					{mounted && (
+						<div className="flex gap-1 flex-shrink-0 sm:hidden">
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="outline"
+										size="sm"
+										className="h-8 w-8 p-0"
+										title="Actions"
+									>
+										<MoreVertical className="h-4 w-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem onClick={() => onEdit(id)}>
+										<Settings className="h-4 w-4 mr-2" />
+										Edit
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => setShowDeleteContainerConfirm(true)}
+										className="text-destructive focus:text-destructive"
+									>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Delete
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
+					)}
+
+					{/* Desktop: All buttons visible */}
+					<div className="hidden sm:flex gap-2 flex-shrink-0">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => onEdit(id)}
+							className="h-9 w-auto px-3"
+						>
 							<Settings className="h-4 w-4" />
 						</Button>
 						<Button
@@ -137,6 +186,7 @@ export function ContainerCard({
 							size="sm"
 							onClick={() => setShowDeleteContainerConfirm(true)}
 							title="Delete container"
+							className="h-9 w-auto px-3"
 						>
 							<Trash2 className="h-4 w-4" />
 						</Button>
@@ -148,13 +198,16 @@ export function ContainerCard({
 				<CardContent className="pt-0 space-y-3">
 					{/* Shared Configuration Section */}
 					{sharedConfig.length > 0 && (
-						<div className="p-3 bg-muted rounded-lg border">
+						<div className="p-2 sm:p-3 bg-muted rounded-lg border">
 							<h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
 								Shared Configuration
 							</h4>
-							<div className="space-y-1">
+							<div className="space-y-1 overflow-x-auto">
 								{sharedConfig.map((config) => (
-									<div key={config} className="text-sm font-mono">
+									<div
+										key={config}
+										className="text-xs sm:text-sm font-mono break-all sm:break-normal"
+									>
 										{config}
 									</div>
 								))}
@@ -178,40 +231,79 @@ export function ContainerCard({
 							return (
 								<Card
 									key={block.id}
-									className="border-l-2 border-l-primary/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+									className="border-l-2 border-l-primary/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
 								>
-									<CardContent className="p-4">
-										<div className="flex items-center justify-between gap-4">
-											<div className="flex items-center gap-3 flex-1 min-w-0">
-												<Globe className="h-5 w-5 text-primary flex-shrink-0" />
-												<div className="flex-1 min-w-0">
-													<div className="flex items-center gap-2">
-														<div className="font-mono font-medium truncate">
-															{block.hostname}
-														</div>
-														{block.hostname && (
-															<button
-																type="button"
-																onClick={handleOpenInBrowser}
-																className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
-																title={`Open ${block.hostname} in browser`}
-															>
-																<ExternalLink className="h-4 w-4" />
-															</button>
-														)}
+									<CardContent className="p-2 sm:p-4">
+										<div className="flex items-center justify-between gap-1 sm:gap-4">
+											<div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 overflow-hidden">
+												<Globe className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+												<div className="flex-1 min-w-0 overflow-hidden">
+													<div className="font-mono text-sm sm:text-base font-medium truncate break-all">
+														{block.hostname}
 													</div>
-													<div className="text-sm text-muted-foreground truncate">
+													<div className="hidden sm:block text-sm text-muted-foreground truncate">
 														@{block.matcherName} • {block.directives.length}{" "}
 														directive{block.directives.length !== 1 ? "s" : ""}
 													</div>
 												</div>
 											</div>
-											<div className="flex gap-2 flex-shrink-0">
+											{block.hostname && (
+												<button
+													type="button"
+													onClick={handleOpenInBrowser}
+													className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
+													title={`Open ${block.hostname} in browser`}
+												>
+													<ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+												</button>
+											)}
+											{/* Mobile: Single menu button */}
+											{mounted && (
+												<div className="flex gap-1 flex-shrink-0 sm:hidden">
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																variant="outline"
+																size="sm"
+																className="h-8 w-8 p-0"
+																title="Actions"
+															>
+																<MoreVertical className="h-4 w-4" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																onClick={() => setInspectSiteId(block.id)}
+															>
+																<FileJson className="h-4 w-4 mr-2" />
+																Inspect
+															</DropdownMenuItem>
+															<DropdownMenuItem
+																onClick={() => onEditSite(id, block.id)}
+															>
+																<Settings className="h-4 w-4 mr-2" />
+																Edit
+															</DropdownMenuItem>
+															<DropdownMenuItem
+																onClick={() => setDeletingSiteId(block.id)}
+																className="text-destructive focus:text-destructive"
+															>
+																<Trash2 className="h-4 w-4 mr-2" />
+																Delete
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</div>
+											)}
+
+											{/* Desktop: All buttons visible */}
+											<div className="hidden sm:flex gap-2 flex-shrink-0">
 												<Button
 													variant="outline"
 													size="sm"
 													onClick={() => setInspectSiteId(block.id)}
 													title="Inspect JSON configuration"
+													className="h-9 w-auto px-3"
 												>
 													<FileJson className="h-4 w-4" />
 												</Button>
@@ -220,6 +312,7 @@ export function ContainerCard({
 													size="sm"
 													onClick={() => onEditSite(id, block.id)}
 													title="Edit site"
+													className="h-9 w-auto px-3"
 												>
 													<Settings className="h-4 w-4" />
 												</Button>
@@ -228,6 +321,7 @@ export function ContainerCard({
 													size="sm"
 													onClick={() => setDeletingSiteId(block.id)}
 													title="Delete site"
+													className="h-9 w-auto px-3"
 												>
 													<Trash2 className="h-4 w-4" />
 												</Button>
