@@ -1,5 +1,16 @@
 # clubs
 
+## 0.11.0
+
+### Minor Changes
+
+- 91ed3db: Remove filesystem certs. Use caddy to get current SSL certs.
+
+### Patch Changes
+
+- a3b5be6: Load metrics tab on server
+- 26e0aab: Add health endpoint for container health
+
 ## 0.10.0
 
 ### Minor Changes
