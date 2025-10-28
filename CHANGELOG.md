@@ -1,5 +1,12 @@
 # clubs
 
+## 0.12.1
+
+### Patch Changes
+
+- b901363: Small tweaks to analytics
+- 014f70d: Fix traffic rate numbers and chart
+
 ## 0.12.0
 
 ### Minor Changes
