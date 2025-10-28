@@ -419,6 +419,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 			: metricsData;
 
 	const trafficData = filteredMetricsData
+		.filter((u) => u.num_requests > 0)
 		.sort((a, b) => b.num_requests - a.num_requests)
 		.slice(0, 10)
 		.map((u) => ({
@@ -485,6 +486,22 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 								"errorRate",
 							);
 						})();
+
+	// Build dynamic chart config for per-upstream legend labels
+	const perUpstreamChartConfig: ChartConfig =
+		metricFilter !== "all" && chartDataToShow.length > 0
+			? Object.keys(chartDataToShow[0])
+					.filter((key) => key !== "time")
+					.reduce(
+						(config, upstreamName) => {
+							config[upstreamName] = {
+								label: upstreamName,
+							};
+							return config;
+						},
+						{} as Record<string, { label: string }>,
+					)
+			: {};
 
 	return (
 		<div className="space-y-6">
@@ -620,7 +637,14 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						</h3>
 						<div className="w-full h-[300px]">
 							{isChartReady ? (
-								<ChartContainer config={chartConfig} className="w-full h-full">
+								<ChartContainer
+									config={
+										metricFilter === "all"
+											? chartConfig
+											: perUpstreamChartConfig
+									}
+									className="w-full h-full"
+								>
 									{metricFilter === "all" ? (
 										<AreaChart data={historicalData}>
 											<defs>
@@ -730,19 +754,35 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 											{chartDataToShow.length > 0 &&
 												Object.keys(chartDataToShow[0])
 													.filter((key) => key !== "time")
-													.map((containerName, idx) => {
-														const colors = [
-															"#3b82f6", // blue
-															"#10b981", // green
-															"#f59e0b", // amber
-															"#8b5cf6", // violet
-															"#ec4899", // pink
+													.sort() // Sort to ensure stable order
+													.map((upstreamName, idx) => {
+														// Blue = good (requests), Orange = bad (failures/errors)
+														const blueColors = [
+															"hsl(210, 100%, 56%)", // bright blue
+															"hsl(210, 100%, 66%)", // lighter blue
+															"hsl(210, 100%, 46%)", // darker blue
+															"hsl(210, 90%, 76%)", // very light blue
+															"hsl(210, 85%, 40%)", // deep blue
+															"hsl(210, 95%, 80%)", // pale blue
 														];
+														const orangeColors = [
+															"hsl(25, 95%, 53%)", // orange
+															"hsl(25, 95%, 63%)", // lighter orange
+															"hsl(25, 95%, 43%)", // darker orange
+															"hsl(25, 90%, 73%)", // very light orange
+															"hsl(25, 90%, 38%)", // deep orange
+															"hsl(25, 85%, 78%)", // pale orange
+														];
+														const colors =
+															metricFilter === "requests"
+																? blueColors
+																: orangeColors;
 														const color = colors[idx % colors.length];
 														return (
 															<Area
-																key={containerName}
-																dataKey={containerName}
+																key={upstreamName}
+																dataKey={upstreamName}
+																name={upstreamName}
 																type="monotone"
 																stroke={color}
 																fill={color}
