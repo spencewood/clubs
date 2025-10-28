@@ -2,11 +2,12 @@ import {
 	ExternalLink,
 	FileJson,
 	Globe,
+	MoreVertical,
 	Server,
 	Settings,
 	Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { InspectConfigModal } from "@/components/InspectConfigModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +19,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { parseDirectiveWithFeatures } from "@/lib/caddy-features";
 import { serializeCaddyfile } from "@/lib/parser/caddyfile-parser";
 import type { CaddySiteBlock } from "@/types/caddyfile";
@@ -35,6 +42,11 @@ export function SiteBlockCard({
 }: SiteBlockCardProps) {
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const [showInspect, setShowInspect] = useState(false);
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
 	// Generate a summary of what this site block does
 	const getSummary = () => {
@@ -90,42 +102,77 @@ export function SiteBlockCard({
 	};
 
 	return (
-		<Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-			<CardContent className="p-4">
-				<div className="flex items-center justify-between gap-4">
-					<div className="flex items-center gap-3 flex-1 min-w-0">
+		<Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
+			<CardContent className="p-2 sm:p-4">
+				<div className="flex items-center justify-between gap-1 sm:gap-4">
+					<div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 overflow-hidden">
 						{isDomain ? (
-							<Globe className="h-5 w-5 text-primary flex-shrink-0" />
+							<Globe className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
 						) : (
-							<Server className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+							<Server className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
 						)}
-						<div className="flex-1 min-w-0">
-							<div className="flex items-center gap-2">
-								<div className="font-mono font-medium truncate">
-									{siteBlock.addresses.join(", ")}
-								</div>
-								{isDomain && getFirstDomain() && (
-									<button
-										type="button"
-										onClick={handleOpenInBrowser}
-										className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
-										title={`Open https://${getFirstDomain()} in browser`}
-									>
-										<ExternalLink className="h-4 w-4" />
-									</button>
-								)}
+						<div className="flex-1 min-w-0 overflow-hidden">
+							<div className="font-mono text-sm sm:text-base font-medium truncate break-all">
+								{siteBlock.addresses.join(", ")}
 							</div>
-							<div className="text-sm text-muted-foreground truncate">
+							<div className="hidden sm:block text-sm text-muted-foreground truncate">
 								{getSummary()}
 							</div>
 						</div>
 					</div>
-					<div className="flex gap-2 flex-shrink-0">
+					{isDomain && getFirstDomain() && (
+						<button
+							type="button"
+							onClick={handleOpenInBrowser}
+							className="text-muted-foreground hover:text-primary transition-colors shrink-0"
+							title={`Open https://${getFirstDomain()} in browser`}
+						>
+							<ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+						</button>
+					)}
+					{/* Mobile: Single menu button */}
+					{mounted && (
+						<div className="flex gap-1 shrink-0 sm:hidden">
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="outline"
+										size="sm"
+										className="h-8 w-8 p-0"
+										title="Actions"
+									>
+										<MoreVertical className="h-4 w-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem onClick={() => setShowInspect(true)}>
+										<FileJson className="h-4 w-4 mr-2" />
+										Inspect
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={() => onEdit(siteBlock.id)}>
+										<Settings className="h-4 w-4 mr-2" />
+										Edit
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => setShowDeleteConfirm(true)}
+										className="text-destructive focus:text-destructive"
+									>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Delete
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
+					)}
+
+					{/* Desktop: All buttons visible */}
+					<div className="hidden sm:flex gap-2 shrink-0">
 						<Button
 							variant="outline"
 							size="sm"
 							onClick={() => setShowInspect(true)}
 							title="Inspect JSON configuration"
+							className="h-9 w-auto px-3"
 						>
 							<FileJson className="h-4 w-4" />
 						</Button>
@@ -134,6 +181,7 @@ export function SiteBlockCard({
 							size="sm"
 							onClick={() => onEdit(siteBlock.id)}
 							title="Edit site"
+							className="h-9 w-auto px-3"
 						>
 							<Settings className="h-4 w-4" />
 						</Button>
@@ -142,6 +190,7 @@ export function SiteBlockCard({
 							size="sm"
 							onClick={() => setShowDeleteConfirm(true)}
 							title="Delete site"
+							className="h-9 w-auto px-3"
 						>
 							<Trash2 className="h-4 w-4" />
 						</Button>
