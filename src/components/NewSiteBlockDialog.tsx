@@ -2,7 +2,6 @@ import {
 	ArrowRight,
 	ArrowRightLeft,
 	Boxes,
-	Container,
 	FileText,
 	Plus,
 	Server,
@@ -121,10 +120,7 @@ export function NewSiteBlockDialog({
 				{blockType === "virtual-container" ? (
 					<>
 						<DialogHeader>
-							<DialogTitle className="flex items-center gap-2">
-								<Container className="h-5 w-5 text-[var(--color-info)]" />
-								Create Container
-							</DialogTitle>
+							<DialogTitle>Create Container</DialogTitle>
 							<DialogDescription>
 								Create a wildcard domain to host multiple services with shared
 								configuration
@@ -240,13 +236,7 @@ export function NewSiteBlockDialog({
 				) : (
 					<>
 						<DialogHeader>
-							<DialogTitle className="flex items-center gap-2">
-								{(() => {
-									const Icon = iconMap[selectedRecipe.icon] || Server;
-									return <Icon className="h-5 w-5 text-primary" />;
-								})()}
-								{selectedRecipe.name}
-							</DialogTitle>
+							<DialogTitle>{selectedRecipe.name}</DialogTitle>
 							<DialogDescription>
 								{selectedRecipe.description}
 							</DialogDescription>
