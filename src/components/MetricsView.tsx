@@ -431,7 +431,11 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 								.filter((u) => u.fails > 0)
 								.sort((a, b) => b.fails - a.fails)
 								.slice(0, 5);
-							return mergePerUpstreamData(withFailures, perUpstreamHistory, "failures");
+							return mergePerUpstreamData(
+								withFailures,
+								perUpstreamHistory,
+								"failures",
+							);
 						})()
 					: // errors - show top 5 containers by error rate percentage
 						(() => {
@@ -443,7 +447,11 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 									return rateB - rateA;
 								})
 								.slice(0, 5);
-							return mergePerUpstreamData(withFailures, perUpstreamHistory, "errorRate");
+							return mergePerUpstreamData(
+								withFailures,
+								perUpstreamHistory,
+								"errorRate",
+							);
 						})();
 
 	return (
@@ -631,10 +639,10 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 										axisLine={false}
 										tickMargin={8}
 										label={{
-											value: 'per minute',
+											value: "per minute",
 											angle: -90,
-											position: 'insideLeft',
-											style: { textAnchor: 'middle' }
+											position: "insideLeft",
+											style: { textAnchor: "middle" },
 										}}
 									/>
 									<ChartTooltip content={<ChartTooltipContent />} />
@@ -670,14 +678,15 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 										axisLine={false}
 										tickMargin={8}
 										label={{
-											value: metricFilter === "requests"
-												? 'requests/min'
-												: metricFilter === "failures"
-													? 'failures/min'
-													: 'error rate %',
+											value:
+												metricFilter === "requests"
+													? "requests/min"
+													: metricFilter === "failures"
+														? "failures/min"
+														: "error rate %",
 											angle: -90,
-											position: 'insideLeft',
-											style: { textAnchor: 'middle' }
+											position: "insideLeft",
+											style: { textAnchor: "middle" },
 										}}
 									/>
 									<ChartTooltip content={<ChartTooltipContent />} />
