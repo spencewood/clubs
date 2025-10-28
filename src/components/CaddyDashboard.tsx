@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { AddContainerSiteDialog } from "@/components/AddContainerSiteDialog";
+import { useLeftPanel } from "@/contexts/LeftPanelContext";
 
 // Import CaddyfileEditor dynamically to avoid SSR issues with CodeMirror
 const CaddyfileEditor = dynamic(
@@ -236,7 +237,7 @@ export function CaddyDashboard({
 	const isLiveMode = initialIsLiveMode;
 	const leftPanelView = initialView;
 	const [rightPanelView, setRightPanelView] = useState<"raw" | "config">("raw");
-	const [leftPanelExpanded, setLeftPanelExpanded] = useState(false);
+	const { leftPanelExpanded, setLeftPanelExpanded } = useLeftPanel();
 	const loadConfig = useCallback(async () => {
 		try {
 			// Try to load from live Caddy if available, otherwise from file
