@@ -46,7 +46,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger Docker build on version bump
-        if: steps.changesets.outputs.publishedPackages != ''
+        if: steps.changesets.outputs.published == 'true'
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "Version bumped to $VERSION, triggering Docker build"
