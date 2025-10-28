@@ -239,6 +239,9 @@ export const handlers = [
 	// Root endpoint - Returns Caddy version info (used for health checks)
 	http.get("http://localhost:2019/", async () => {
 		await delay(50);
+		if (!mockCaddyAPIAvailable) {
+			return new HttpResponse(null, { status: 503 });
+		}
 		return HttpResponse.json({
 			version: "v2.7.6",
 		});
@@ -671,71 +674,147 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 		});
 	}),
 
-	// Get ACME certificates
+	// Get active TLS certificates from Caddy API
+	// This returns the actual certificates Caddy is currently using
+	http.get("http://localhost:2019/config/apps/tls/certificates", async () => {
+		await delay(100);
+
+		if (!mockCaddyAPIAvailable) {
+			return new HttpResponse(null, { status: 503 });
+		}
+
+		// Mock active TLS certificates (what Caddy is actually serving)
+		// These dates should be VALID (future expiry)
+		const now = new Date();
+		const futureDate60 = new Date(now);
+		futureDate60.setDate(futureDate60.getDate() + 60);
+
+		const futureDate90 = new Date(now);
+		futureDate90.setDate(futureDate90.getDate() + 90);
+
+		const futureDate120 = new Date(now);
+		futureDate120.setDate(futureDate120.getDate() + 120);
+
+		return HttpResponse.json([
+			{
+				subjects: ["*.spencewood.com", "spencewood.com"],
+				issuer: {
+					commonName: "R3",
+					organization: "Let's Encrypt",
+				},
+				notBefore: now.toISOString(),
+				notAfter: futureDate60.toISOString(),
+				serialNumber: "03:AB:CD:EF:12:34:56:78:90",
+			},
+			{
+				subjects: ["example.com", "www.example.com"],
+				issuer: {
+					commonName: "R3",
+					organization: "Let's Encrypt",
+				},
+				notBefore: now.toISOString(),
+				notAfter: futureDate90.toISOString(),
+				serialNumber: "04:12:34:56:78:90:AB:CD:EF",
+			},
+			{
+				subjects: ["secure.example.com"],
+				issuer: {
+					commonName: "ZeroSSL RSA Domain Secure Site CA",
+					organization: "ZeroSSL",
+				},
+				notBefore: now.toISOString(),
+				notAfter: futureDate120.toISOString(),
+				serialNumber: "06:11:22:33:44:55:66:77:88",
+			},
+		]);
+	}),
+
+	// Get ACME certificates - now proxies to Caddy API for active certificates
 	http.get("/api/certificates", async () => {
 		await delay(100);
 
+		if (!mockCaddyAPIAvailable) {
+			// Return empty when API unavailable
+			return HttpResponse.json({
+				success: true,
+				certificates: [],
+				certificatesByType: {
+					letsencrypt: [],
+					zerossl: [],
+					custom: [],
+					local: [],
+				},
+				source: "none",
+				error: "Caddy API not available",
+			});
+		}
+
+		// Calculate dynamic expiry days
+		const now = new Date();
+		const futureDate60 = new Date(now);
+		futureDate60.setDate(futureDate60.getDate() + 60);
+
+		const futureDate90 = new Date(now);
+		futureDate90.setDate(futureDate90.getDate() + 90);
+
+		const futureDate120 = new Date(now);
+		futureDate120.setDate(futureDate120.getDate() + 120);
+
 		const mockCerts = [
 			{
+				domain: "*.spencewood.com",
+				certPath: "N/A (from Caddy API)",
+				hasPrivateKey: true,
+				type: "letsencrypt" as const,
+				provider: "Let's Encrypt",
+				certificate: {
+					subject: "CN=*.spencewood.com",
+					issuer: "O=Let's Encrypt, CN=R3",
+					validFrom: now.toISOString(),
+					validTo: futureDate60.toISOString(),
+					daysUntilExpiry: 60,
+					serialNumber: "03:AB:CD:EF:12:34:56:78:90",
+					fingerprint: "N/A",
+					subjectAltNames: ["*.spencewood.com", "spencewood.com"],
+					keyAlgorithm: "N/A",
+					signatureAlgorithm: "RSA-SHA256",
+				},
+			},
+			{
 				domain: "example.com",
-				certPath:
-					"/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/example.com/example.com.crt",
+				certPath: "N/A (from Caddy API)",
 				hasPrivateKey: true,
 				type: "letsencrypt" as const,
 				provider: "Let's Encrypt",
 				certificate: {
 					subject: "CN=example.com",
-					issuer: "C=US, O=Let's Encrypt, CN=R3",
-					validFrom: "Jan 15 00:00:00 2025 GMT",
-					validTo: "Apr 15 23:59:59 2025 GMT",
-					daysUntilExpiry: 75,
-					serialNumber: "03:AB:CD:EF:12:34:56:78:90",
-					fingerprint:
-						"A1:B2:C3:D4:E5:F6:07:08:09:0A:1B:2C:3D:4E:5F:60:71:82:93:A4:B5:C6:D7:E8:F9:0A:1B:2C:3D:4E:5F:60",
-					subjectAltNames: ["example.com", "www.example.com"],
-					keyAlgorithm: "rsa",
-					signatureAlgorithm: "RSA-SHA256",
-				},
-			},
-			{
-				domain: "api.example.com",
-				certPath:
-					"/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/api.example.com/api.example.com.crt",
-				hasPrivateKey: true,
-				type: "letsencrypt" as const,
-				provider: "Let's Encrypt",
-				certificate: {
-					subject: "CN=api.example.com",
-					issuer: "C=US, O=Let's Encrypt, CN=R3",
-					validFrom: "Feb 1 00:00:00 2025 GMT",
-					validTo: "May 1 23:59:59 2025 GMT",
+					issuer: "O=Let's Encrypt, CN=R3",
+					validFrom: now.toISOString(),
+					validTo: futureDate90.toISOString(),
 					daysUntilExpiry: 90,
 					serialNumber: "04:12:34:56:78:90:AB:CD:EF",
-					fingerprint:
-						"B2:C3:D4:E5:F6:07:08:09:0A:1B:2C:3D:4E:5F:60:71:82:93:A4:B5:C6:D7:E8:F9:0A:1B:2C:3D:4E:5F:60:71",
-					subjectAltNames: ["api.example.com"],
-					keyAlgorithm: "rsa",
+					fingerprint: "N/A",
+					subjectAltNames: ["example.com", "www.example.com"],
+					keyAlgorithm: "N/A",
 					signatureAlgorithm: "RSA-SHA256",
 				},
 			},
 			{
 				domain: "secure.example.com",
-				certPath:
-					"/data/caddy/certificates/acme.zerossl.com-v2-DV90/secure.example.com/secure.example.com.crt",
+				certPath: "N/A (from Caddy API)",
 				hasPrivateKey: true,
 				type: "zerossl" as const,
 				provider: "ZeroSSL",
 				certificate: {
 					subject: "CN=secure.example.com",
-					issuer: "C=AT, O=ZeroSSL, CN=ZeroSSL RSA Domain Secure Site CA",
-					validFrom: "Mar 1 00:00:00 2025 GMT",
-					validTo: "Jun 1 23:59:59 2025 GMT",
+					issuer: "O=ZeroSSL, CN=ZeroSSL RSA Domain Secure Site CA",
+					validFrom: now.toISOString(),
+					validTo: futureDate120.toISOString(),
 					daysUntilExpiry: 120,
 					serialNumber: "06:11:22:33:44:55:66:77:88",
-					fingerprint:
-						"D4:E5:F6:07:08:09:0A:1B:2C:3D:4E:5F:60:71:82:93:A4:B5:C6:D7:E8:F9:0A:1B:2C:3D:4E:5F:60:71:82:93",
+					fingerprint: "N/A",
 					subjectAltNames: ["secure.example.com"],
-					keyAlgorithm: "rsa",
+					keyAlgorithm: "N/A",
 					signatureAlgorithm: "RSA-SHA256",
 				},
 			},
@@ -749,12 +828,13 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 			local: mockCerts.filter((c) => c.type === "local"),
 		};
 
-		// Return mock ACME certificates with grouped data
+		// Return mock ACME certificates from API with source indicator
 		return HttpResponse.json({
 			success: true,
 			certificates: mockCerts,
 			certificatesByType: grouped,
-			certificatesPath: "/data/caddy/certificates",
+			source: "api",
+			mock: false,
 		});
 	}),
 ];
