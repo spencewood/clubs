@@ -271,6 +271,18 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 				0,
 			);
 
+			// Debug logging to understand what's happening
+			console.log("[MetricsView] Fetched upstreams:", {
+				count: upstreams.length,
+				totalRequests,
+				totalFails,
+				upstreams: upstreams.map((u: UpstreamMetric) => ({
+					address: u.address,
+					requests: u.num_requests,
+					fails: u.fails,
+				})),
+			});
+
 			const date = new Date(now);
 			const hours = date.getHours();
 			const mins = date.getMinutes().toString().padStart(2, "0");
@@ -384,11 +396,13 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 		);
 	}
 
-	const totalRequests = metricsData.reduce((sum, u) => sum + u.num_requests, 0);
-	const totalFails = metricsData.reduce((sum, u) => sum + u.fails, 0);
-	const overallFailureRate =
-		totalRequests > 0
-			? ((totalFails / totalRequests) * 100).toFixed(2)
+	// Get the latest rate metrics from historical data
+	const latestData = historicalData[historicalData.length - 1];
+	const currentRequestsPerMin = latestData?.requestsPerMin ?? 0;
+	const currentFailsPerMin = latestData?.failsPerMin ?? 0;
+	const currentErrorRate =
+		currentRequestsPerMin > 0
+			? ((currentFailsPerMin / currentRequestsPerMin) * 100).toFixed(2)
 			: "0.00";
 
 	// Filter data based on selected metric
@@ -490,7 +504,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 
 			<div className="space-y-2">
 				<div className="text-xs text-muted-foreground">
-					Session Stats (since Caddy restart)
+					Current Traffic Rate
 				</div>
 				<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
 					<Card
@@ -509,9 +523,9 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						/>
 						<div className="relative">
 							<p className="text-2xl font-bold">
-								{totalRequests.toLocaleString()}
+								{currentRequestsPerMin.toFixed(1)}
 							</p>
-							<p className="text-xs text-muted-foreground">Total Requests</p>
+							<p className="text-xs text-muted-foreground">Requests/min</p>
 						</div>
 					</Card>
 					<Card
@@ -530,9 +544,9 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						/>
 						<div className="relative">
 							<p className="text-2xl font-bold">
-								{totalFails.toLocaleString()}
+								{currentFailsPerMin.toFixed(1)}
 							</p>
-							<p className="text-xs text-muted-foreground">Total Failures</p>
+							<p className="text-xs text-muted-foreground">Failures/min</p>
 						</div>
 					</Card>
 					<Card
@@ -550,7 +564,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 							strokeWidth={1.5}
 						/>
 						<div className="relative">
-							<p className="text-2xl font-bold">{overallFailureRate}%</p>
+							<p className="text-2xl font-bold">{currentErrorRate}%</p>
 							<p className="text-xs text-muted-foreground">Error Rate</p>
 						</div>
 					</Card>
