@@ -34,10 +34,15 @@ services:
     volumes:
       # Share same config directory as Caddy
       - ./config:/config
+      # Mount Caddy's data directory (read-only) to view certificates
+      # Note: Certificates on disk reflect what Caddy has obtained, but may be
+      # stale if auto-renewal fails. Check expiry dates in the UI.
+      - caddy_data:/data/caddy:ro
     environment:
       - NODE_ENV=production
       - CADDYFILE_PATH=/config/Caddyfile
       - CADDY_API_URL=http://caddy:2019
+      - CADDY_CERTIFICATES_PATH=/data/caddy/certificates
     healthcheck:
       test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
       interval: 30s

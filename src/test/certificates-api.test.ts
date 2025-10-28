@@ -67,7 +67,7 @@ describe("Certificates API", () => {
 
 			const domains = data.certificates.map((c: AcmeCertificate) => c.domain);
 			expect(domains).toContain("example.com");
-			expect(domains).toContain("*.spencewood.com");
+			expect(domains).toContain("api.example.com");
 		});
 
 		it("should include Subject Alternative Names", async () => {
@@ -88,23 +88,22 @@ describe("Certificates API", () => {
 			expect(cert.hasPrivateKey).toBe(true);
 		});
 
-		it("should include certificate path indicator", async () => {
+		it("should include certificate path", async () => {
 			const response = await fetch("/api/certificates");
 			const data = await response.json();
 
 			const cert = data.certificates[0];
 			expect(cert.certPath).toBeDefined();
-			// When fetched from Caddy API, certPath is "N/A (from Caddy API)"
-			expect(cert.certPath).toBe("N/A (from Caddy API)");
+			expect(cert.certPath).toContain("/data/caddy/certificates");
+			expect(cert.certPath).toContain(".crt");
 		});
 
-		it("should include source indicator in response", async () => {
+		it("should include certificatesPath in response", async () => {
 			const response = await fetch("/api/certificates");
 			const data = await response.json();
 
-			// API-only implementation includes a source field
-			expect(data.source).toBeDefined();
-			expect(data.source).toBe("api");
+			expect(data.certificatesPath).toBeDefined();
+			expect(data.certificatesPath).toContain("/data/caddy/certificates");
 		});
 
 		it("should have positive daysUntilExpiry for valid certs", async () => {

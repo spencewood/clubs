@@ -368,6 +368,14 @@ export class CaddyAPIClient {
 			}
 
 			const certificates = await response.json();
+			// Caddy returns null if certificates aren't exposed via this endpoint
+			// Treat null as an empty array
+			if (certificates === null) {
+				return {
+					success: true,
+					certificates: [],
+				};
+			}
 			return {
 				success: true,
 				certificates: certificates as Array<{
