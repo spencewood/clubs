@@ -185,7 +185,7 @@ export interface CaddyDashboardProps {
 	initialRawContent: string;
 	initialIsLiveMode: boolean;
 	initialCaddyStatus: CaddyAPIStatus;
-	initialView: "sites" | "upstreams" | "certificates" | "metrics";
+	initialView: "sites" | "upstreams" | "certificates" | "analytics";
 	initialUpstreams: Array<{
 		address: string;
 		num_requests: number;
@@ -669,15 +669,15 @@ export function CaddyDashboard({
 											Upstreams
 										</Link>
 										<Link
-											href="/metrics"
+											href="/analytics"
 											className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-												leftPanelView === "metrics"
+												leftPanelView === "analytics"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground hover:text-foreground"
 											}`}
 										>
 											<BarChart3 className="w-4 h-4" />
-											Metrics
+											Analytics
 										</Link>
 										<Link
 											href="/certificates"
@@ -724,7 +724,7 @@ export function CaddyDashboard({
 										initialUpstreams={initialUpstreams}
 										initialConfig={config}
 									/>
-								) : leftPanelView === "metrics" ? (
+								) : leftPanelView === "analytics" ? (
 									<MetricsView initialUpstreams={initialUpstreams} />
 								) : leftPanelView === "certificates" ? (
 									<CertificatesView
