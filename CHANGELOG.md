@@ -1,5 +1,11 @@
 # clubs
 
+## 0.12.3
+
+### Patch Changes
+
+- 1f117f5: Fix transitions and mobile interactions
+
 ## 0.12.2
 
 ### Patch Changes
