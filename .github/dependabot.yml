@@ -12,10 +12,12 @@ updates:
       - "spencewood"
     labels:
       - "dependencies"
-      - "npm"
+      - "pnpm"
     commit-message:
       prefix: "chore"
       include: "scope"
+    # Tell Dependabot to use pnpm
+    versioning-strategy: increase
     # Group minor and patch updates together to reduce PR noise
     groups:
       development-dependencies:
