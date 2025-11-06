@@ -226,8 +226,17 @@ export class CaddyAPIClient {
 				return { running: false };
 			}
 
-			// Caddy returns basic info at root endpoint
-			return { running: true };
+			// Try to parse the response body for version info
+			const text = await response.text();
+
+			// Caddy's root endpoint returns version in the response body
+			// The response typically looks like: "v2.8.4 h1:abcd123..."
+			const versionMatch = text.match(/^v?(\d+\.\d+\.\d+[^\s]*)/);
+
+			return {
+				running: true,
+				version: versionMatch ? versionMatch[1] : undefined,
+			};
 		} catch (_error) {
 			return { running: false };
 		}

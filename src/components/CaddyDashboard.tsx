@@ -6,7 +6,6 @@ import {
 	Check,
 	ChevronLeft,
 	ChevronRight,
-	Circle,
 	Code,
 	Container,
 	Copy,
@@ -52,6 +51,7 @@ import { ContainerEditDialog } from "@/components/ContainerEditDialog";
 import { EditContainerSiteDialog } from "@/components/EditContainerSiteDialog";
 import { MetricsView } from "@/components/MetricsView";
 import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
+import { ServerInfoCard } from "@/components/ServerInfoCard";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
 import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -601,32 +601,9 @@ export function CaddyDashboard({
 								</div>
 							</div>
 
-							{/* Right: Mode Indicator + Theme Toggle */}
+							{/* Right: Server Info + Theme Toggle */}
 							<div className="flex items-center gap-2">
-								{caddyStatus && (
-									<div
-										className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium border"
-										style={{
-											backgroundColor: caddyStatus.available
-												? "var(--color-accent)"
-												: "var(--color-muted)",
-											borderColor: caddyStatus.available
-												? "var(--color-primary)"
-												: "var(--color-border)",
-											color: caddyStatus.available
-												? "var(--color-accent-foreground)"
-												: "var(--color-muted-foreground)",
-										}}
-										title={caddyStatus.available ? "Live Mode" : "File Mode"}
-									>
-										<Circle
-											className={`h-2 w-2 fill-current ${caddyStatus.available ? "animate-pulse" : ""}`}
-										/>
-										<span className="hidden sm:inline">
-											{caddyStatus.available ? "Live Mode" : "File Mode"}
-										</span>
-									</div>
-								)}
+								{caddyStatus && <ServerInfoCard initialStatus={caddyStatus} />}
 								<ThemeToggle />
 							</div>
 						</div>
