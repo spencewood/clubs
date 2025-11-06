@@ -11,9 +11,10 @@ import { useCallback, useEffect, useState } from "react";
 import {
 	Area,
 	AreaChart,
-	Bar,
-	BarChart,
 	CartesianGrid,
+	Cell,
+	Pie,
+	PieChart,
 	XAxis,
 	YAxis,
 } from "recharts";
@@ -26,47 +27,7 @@ import {
 	ChartLegend,
 	ChartLegendContent,
 	ChartTooltip,
-	ChartTooltipContent,
 } from "./ui/chart";
-
-// Custom tick component that truncates long names intelligently
-const CustomYAxisTick = ({
-	x,
-	y,
-	payload,
-}: {
-	x: number;
-	y: number;
-	payload: { value: string };
-}) => {
-	const maxLength = 20;
-	const text = payload.value;
-
-	let displayText = text;
-	if (text.length > maxLength) {
-		// Try to show start and end with ellipsis in middle
-		const start = text.substring(0, 10);
-		const end = text.substring(text.length - 7);
-		displayText = `${start}...${end}`;
-	}
-
-	return (
-		<g transform={`translate(${x},${y})`}>
-			<title>{text}</title>
-			<text
-				x={0}
-				y={0}
-				dy={4}
-				textAnchor="end"
-				fill="currentColor"
-				fontSize={12}
-				className="fill-muted-foreground"
-			>
-				{displayText}
-			</text>
-		</g>
-	);
-};
 
 interface UpstreamMetric {
 	address: string;
@@ -120,6 +81,106 @@ function ChartSkeleton({
 			className={`w-full ${aspectRatio} animate-pulse bg-muted/30 rounded-md flex items-center justify-center`}
 		>
 			<BarChart3 className="w-12 h-12 text-muted-foreground/30" />
+		</div>
+	);
+}
+
+// Custom tooltip for pie charts
+interface PieChartTooltipProps {
+	active?: boolean;
+	payload?: Array<{
+		name: string;
+		value: number;
+		dataKey: string;
+		payload: { fill: string };
+	}>;
+	allData?: Array<Record<string, number | string>>;
+}
+
+function PieChartTooltip({ active, payload, allData }: PieChartTooltipProps) {
+	if (!active || !payload?.length) {
+		return null;
+	}
+
+	const data = payload[0];
+
+	// Calculate percentage by summing all values from the chart data
+	// The dataKey tells us which field to sum (e.g., 'requests' or 'rate')
+	const dataKey = data.dataKey;
+	const total =
+		allData?.reduce(
+			(sum: number, item: Record<string, number | string>) =>
+				sum +
+				(typeof item[dataKey] === "number" ? (item[dataKey] as number) : 0),
+			0,
+		) || 0;
+	const percentage =
+		total > 0 ? ((data.value / total) * 100).toFixed(1) : "0.0";
+
+	return (
+		<div
+			className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl"
+			style={{ transition: "none" }}
+		>
+			<div className="font-medium text-foreground mb-1">{data.name}</div>
+			<div className="flex items-center gap-2">
+				<div
+					className="w-3 h-3 rounded-sm"
+					style={{ backgroundColor: data.payload.fill }}
+				/>
+				<span className="text-muted-foreground">{data.dataKey}:</span>
+				<span className="font-mono font-medium text-foreground">
+					{data.value.toLocaleString()}
+				</span>
+			</div>
+			<div className="text-muted-foreground mt-1">{percentage}% of total</div>
+		</div>
+	);
+}
+
+// Custom tooltip for area/line charts
+interface AreaChartTooltipProps {
+	active?: boolean;
+	payload?: Array<{
+		name: string;
+		value: number | string;
+		color: string;
+	}>;
+	label?: string;
+}
+
+function AreaChartTooltip({ active, payload, label }: AreaChartTooltipProps) {
+	if (!active || !payload?.length) {
+		return null;
+	}
+
+	return (
+		<div
+			className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl min-w-[180px]"
+			style={{ transition: "none" }}
+		>
+			<div className="font-medium text-foreground mb-2">{label}</div>
+			<div className="space-y-1.5">
+				{payload.map((entry) => (
+					<div
+						key={entry.name}
+						className="flex items-center justify-between gap-4"
+					>
+						<div className="flex items-center gap-2">
+							<div
+								className="w-3 h-3 rounded-sm"
+								style={{ backgroundColor: entry.color }}
+							/>
+							<span className="text-muted-foreground">{entry.name}:</span>
+						</div>
+						<span className="font-mono font-medium text-foreground">
+							{typeof entry.value === "number"
+								? entry.value.toFixed(1)
+								: entry.value}
+						</span>
+					</div>
+				))}
+			</div>
 		</div>
 	);
 }
@@ -703,7 +764,11 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 													style: { textAnchor: "middle" },
 												}}
 											/>
-											<ChartTooltip content={<ChartTooltipContent />} />
+											<ChartTooltip
+												content={<AreaChartTooltip />}
+												animationDuration={0}
+												isAnimationActive={false}
+											/>
 											<ChartLegend content={<ChartLegendContent />} />
 											<Area
 												dataKey="requestsPerMin"
@@ -749,7 +814,11 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 													style: { textAnchor: "middle" },
 												}}
 											/>
-											<ChartTooltip content={<ChartTooltipContent />} />
+											<ChartTooltip
+												content={<AreaChartTooltip />}
+												animationDuration={0}
+												isAnimationActive={false}
+											/>
 											<ChartLegend content={<ChartLegendContent />} />
 											{chartDataToShow.length > 0 &&
 												Object.keys(chartDataToShow[0])
@@ -829,27 +898,43 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						<div className="w-full h-[350px]">
 							{isChartReady ? (
 								<ChartContainer config={chartConfig} className="w-full h-full">
-									<BarChart data={trafficData} layout="vertical">
-										<CartesianGrid horizontal={false} />
-										<XAxis type="number" hide />
-										<YAxis
-											dataKey="name"
-											type="category"
-											tickLine={false}
-											tickMargin={10}
-											axisLine={false}
-											width={140}
-											tick={
-												<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />
-											}
+									<PieChart>
+										<ChartTooltip
+											content={<PieChartTooltip allData={trafficData} />}
+											animationDuration={0}
+											isAnimationActive={false}
 										/>
-										<ChartTooltip content={<ChartTooltipContent />} />
-										<Bar
+										<Pie
+											data={trafficData}
 											dataKey="requests"
-											fill="var(--color-requests)"
-											radius={4}
-										/>
-									</BarChart>
+											nameKey="name"
+											cx="50%"
+											cy="50%"
+											outerRadius={120}
+										>
+											{trafficData.map((entry) => {
+												const colors = [
+													"hsl(210, 100%, 56%)",
+													"hsl(210, 100%, 66%)",
+													"hsl(210, 100%, 46%)",
+													"hsl(200, 100%, 56%)",
+													"hsl(200, 100%, 66%)",
+													"hsl(220, 100%, 56%)",
+													"hsl(220, 100%, 66%)",
+													"hsl(190, 100%, 56%)",
+													"hsl(230, 100%, 56%)",
+													"hsl(180, 100%, 56%)",
+												];
+												const index = trafficData.indexOf(entry);
+												return (
+													<Cell
+														key={`cell-${entry.name}`}
+														fill={colors[index % colors.length]}
+													/>
+												);
+											})}
+										</Pie>
+									</PieChart>
 								</ChartContainer>
 							) : (
 								<ChartSkeleton aspectRatio="aspect-[4/3]" />
@@ -871,23 +956,41 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						<div className="w-full h-[350px]">
 							{isChartReady ? (
 								<ChartContainer config={chartConfig} className="w-full h-full">
-									<BarChart data={errorData} layout="vertical">
-										<CartesianGrid horizontal={false} />
-										<XAxis type="number" hide />
-										<YAxis
-											dataKey="name"
-											type="category"
-											tickLine={false}
-											tickMargin={10}
-											axisLine={false}
-											width={140}
-											tick={
-												<CustomYAxisTick x={0} y={0} payload={{ value: "" }} />
-											}
+									<PieChart>
+										<ChartTooltip
+											content={<PieChartTooltip allData={errorData} />}
+											animationDuration={0}
+											isAnimationActive={false}
 										/>
-										<ChartTooltip content={<ChartTooltipContent />} />
-										<Bar dataKey="rate" fill="var(--color-rate)" radius={4} />
-									</BarChart>
+										<Pie
+											data={errorData}
+											dataKey="rate"
+											nameKey="name"
+											cx="50%"
+											cy="50%"
+											outerRadius={120}
+										>
+											{errorData.map((entry) => {
+												const colors = [
+													"hsl(25, 95%, 53%)",
+													"hsl(25, 95%, 63%)",
+													"hsl(25, 95%, 43%)",
+													"hsl(30, 95%, 53%)",
+													"hsl(30, 95%, 63%)",
+													"hsl(20, 95%, 53%)",
+													"hsl(35, 95%, 53%)",
+													"hsl(15, 95%, 53%)",
+												];
+												const index = errorData.indexOf(entry);
+												return (
+													<Cell
+														key={`cell-${entry.name}`}
+														fill={colors[index % colors.length]}
+													/>
+												);
+											})}
+										</Pie>
+									</PieChart>
 								</ChartContainer>
 							) : (
 								<ChartSkeleton aspectRatio="aspect-[4/3]" />
