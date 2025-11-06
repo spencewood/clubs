@@ -1,12 +1,6 @@
 "use client";
 
-import {
-	AlertTriangle,
-	BarChart3,
-	RefreshCw,
-	TrendingUp,
-	XCircle,
-} from "lucide-react";
+import { AlertTriangle, BarChart3, TrendingUp, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	Area,
@@ -18,7 +12,6 @@ import {
 	YAxis,
 } from "recharts";
 import { toast } from "sonner";
-import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import {
 	type ChartConfig,
@@ -28,6 +21,7 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "./ui/chart";
+import { ViewHeader } from "./ViewHeader";
 
 // Custom tick component that truncates long names intelligently
 const CustomYAxisTick = ({
@@ -505,26 +499,13 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h2 className="text-2xl font-bold">Analytics</h2>
-					<p className="text-sm text-muted-foreground">
-						Traffic patterns and performance trends
-					</p>
-				</div>
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={fetchMetrics}
-					disabled={refreshing}
-					title="Refresh metrics"
-				>
-					<RefreshCw
-						className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-					/>
-					<span className="hidden sm:inline ml-2">Refresh</span>
-				</Button>
-			</div>
+			<ViewHeader
+				title="Analytics"
+				subtitle="Traffic patterns and performance trends"
+				onRefresh={fetchMetrics}
+				refreshing={refreshing}
+				refreshTitle="Refresh metrics"
+			/>
 
 			<div className="space-y-2">
 				<div className="text-xs text-muted-foreground">
@@ -595,7 +576,13 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 				</div>
 			</div>
 
-			{metricFilter !== "all" && (
+			<div
+				className={`transition-all duration-200 ${
+					metricFilter !== "all"
+						? "opacity-100 max-h-20"
+						: "opacity-0 max-h-0 overflow-hidden"
+				}`}
+			>
 				<div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border">
 					<AlertTriangle className="w-4 h-4 text-muted-foreground" />
 					<p className="text-sm text-muted-foreground">
@@ -616,7 +603,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						Clear filter
 					</button>
 				</div>
-			)}
+			</div>
 
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				{historicalData.length > 0 ? (
