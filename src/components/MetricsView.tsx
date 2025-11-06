@@ -11,14 +11,12 @@ import { useCallback, useEffect, useState } from "react";
 import {
 	Area,
 	AreaChart,
-	Bar,
-	BarChart,
 	CartesianGrid,
+	Cell,
 	Pie,
 	PieChart,
 	XAxis,
 	YAxis,
-	Cell,
 } from "recharts";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
@@ -29,47 +27,7 @@ import {
 	ChartLegend,
 	ChartLegendContent,
 	ChartTooltip,
-	ChartTooltipContent,
 } from "./ui/chart";
-
-// Custom tick component that truncates long names intelligently
-const CustomYAxisTick = ({
-	x,
-	y,
-	payload,
-}: {
-	x: number;
-	y: number;
-	payload: { value: string };
-}) => {
-	const maxLength = 20;
-	const text = payload.value;
-
-	let displayText = text;
-	if (text.length > maxLength) {
-		// Try to show start and end with ellipsis in middle
-		const start = text.substring(0, 10);
-		const end = text.substring(text.length - 7);
-		displayText = `${start}...${end}`;
-	}
-
-	return (
-		<g transform={`translate(${x},${y})`}>
-			<title>{text}</title>
-			<text
-				x={0}
-				y={0}
-				dy={4}
-				textAnchor="end"
-				fill="currentColor"
-				fontSize={12}
-				className="fill-muted-foreground"
-			>
-				{displayText}
-			</text>
-		</g>
-	);
-};
 
 interface UpstreamMetric {
 	address: string;
@@ -128,7 +86,18 @@ function ChartSkeleton({
 }
 
 // Custom tooltip for pie charts
-function PieChartTooltip({ active, payload, allData }: any) {
+interface PieChartTooltipProps {
+	active?: boolean;
+	payload?: Array<{
+		name: string;
+		value: number;
+		dataKey: string;
+		payload: { fill: string };
+	}>;
+	allData?: Array<Record<string, number | string>>;
+}
+
+function PieChartTooltip({ active, payload, allData }: PieChartTooltipProps) {
 	if (!active || !payload?.length) {
 		return null;
 	}
@@ -138,8 +107,15 @@ function PieChartTooltip({ active, payload, allData }: any) {
 	// Calculate percentage by summing all values from the chart data
 	// The dataKey tells us which field to sum (e.g., 'requests' or 'rate')
 	const dataKey = data.dataKey;
-	const total = allData?.reduce((sum: number, item: any) => sum + (item[dataKey] || 0), 0) || 0;
-	const percentage = total > 0 ? ((data.value / total) * 100).toFixed(1) : "0.0";
+	const total =
+		allData?.reduce(
+			(sum: number, item: Record<string, number | string>) =>
+				sum +
+				(typeof item[dataKey] === "number" ? (item[dataKey] as number) : 0),
+			0,
+		) || 0;
+	const percentage =
+		total > 0 ? ((data.value / total) * 100).toFixed(1) : "0.0";
 
 	return (
 		<div
@@ -163,7 +139,17 @@ function PieChartTooltip({ active, payload, allData }: any) {
 }
 
 // Custom tooltip for area/line charts
-function AreaChartTooltip({ active, payload, label }: any) {
+interface AreaChartTooltipProps {
+	active?: boolean;
+	payload?: Array<{
+		name: string;
+		value: number | string;
+		color: string;
+	}>;
+	label?: string;
+}
+
+function AreaChartTooltip({ active, payload, label }: AreaChartTooltipProps) {
 	if (!active || !payload?.length) {
 		return null;
 	}
@@ -175,8 +161,11 @@ function AreaChartTooltip({ active, payload, label }: any) {
 		>
 			<div className="font-medium text-foreground mb-2">{label}</div>
 			<div className="space-y-1.5">
-				{payload.map((entry: any, index: number) => (
-					<div key={index} className="flex items-center justify-between gap-4">
+				{payload.map((entry) => (
+					<div
+						key={entry.name}
+						className="flex items-center justify-between gap-4"
+					>
 						<div className="flex items-center gap-2">
 							<div
 								className="w-3 h-3 rounded-sm"
@@ -923,7 +912,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 											cy="50%"
 											outerRadius={120}
 										>
-											{trafficData.map((entry, index) => {
+											{trafficData.map((entry) => {
 												const colors = [
 													"hsl(210, 100%, 56%)",
 													"hsl(210, 100%, 66%)",
@@ -936,7 +925,13 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 													"hsl(230, 100%, 56%)",
 													"hsl(180, 100%, 56%)",
 												];
-												return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+												const index = trafficData.indexOf(entry);
+												return (
+													<Cell
+														key={`cell-${entry.name}`}
+														fill={colors[index % colors.length]}
+													/>
+												);
 											})}
 										</Pie>
 									</PieChart>
@@ -975,7 +970,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 											cy="50%"
 											outerRadius={120}
 										>
-											{errorData.map((entry, index) => {
+											{errorData.map((entry) => {
 												const colors = [
 													"hsl(25, 95%, 53%)",
 													"hsl(25, 95%, 63%)",
@@ -986,7 +981,13 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 													"hsl(35, 95%, 53%)",
 													"hsl(15, 95%, 53%)",
 												];
-												return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+												const index = errorData.indexOf(entry);
+												return (
+													<Cell
+														key={`cell-${entry.name}`}
+														fill={colors[index % colors.length]}
+													/>
+												);
 											})}
 										</Pie>
 									</PieChart>
