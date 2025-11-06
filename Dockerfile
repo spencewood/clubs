@@ -45,9 +45,9 @@ RUN mkdir -p /config
 # Expose port 3000 for Next.js
 EXPOSE 3000
 
-# Health check for Docker/K8s orchestration
+# Health check for Docker/K8s orchestration using Node.js (no extra deps needed)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+  CMD node -e "fetch('http://localhost:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))" || exit 1
 
 # Start Next.js on all interfaces
 # Note: We only run Next.js, not Caddy as a server
