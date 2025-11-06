@@ -1,5 +1,11 @@
 # clubs
 
+## 0.12.4
+
+### Patch Changes
+
+- 54afb75: Add server info to mode indicator
+
 ## 0.12.3
 
 ### Patch Changes
