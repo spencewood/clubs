@@ -5,7 +5,6 @@ import {
 	AlertCircle,
 	AlertTriangle,
 	CheckCircle,
-	RefreshCw,
 	Server,
 	WifiOff,
 	XCircle,
@@ -19,8 +18,8 @@ import {
 	consolidateUpstreamsWithConfig,
 } from "@/lib/upstream-utils";
 import type { CaddyConfig, CaddyUpstream } from "@/types/caddyfile";
-import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { ViewHeader } from "./ViewHeader";
 
 function getHealthStatus(server: ConsolidatedServer): {
 	status: "healthy" | "degraded" | "unhealthy" | "offline";
@@ -200,27 +199,13 @@ export function UpstreamsView({
 
 	return (
 		<div className="space-y-6">
-			{/* Header with refresh */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h2 className="text-2xl font-bold">Upstream Health</h2>
-					<p className="text-sm text-muted-foreground mt-1">
-						Monitor the health and status of your reverse proxy backends
-					</p>
-				</div>
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={() => fetchUpstreams()}
-					disabled={refreshing}
-					title="Refresh upstreams"
-				>
-					<RefreshCw
-						className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-					/>
-					<span className="hidden sm:inline ml-2">Refresh</span>
-				</Button>
-			</div>
+			<ViewHeader
+				title="Upstream Health"
+				subtitle="Monitor the health and status of your reverse proxy backends"
+				onRefresh={() => fetchUpstreams()}
+				refreshing={refreshing}
+				refreshTitle="Refresh upstreams"
+			/>
 
 			{/* Summary stats - clickable filters */}
 			<div className="grid grid-cols-2 md:grid-cols-5 gap-4">

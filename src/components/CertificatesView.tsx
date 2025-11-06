@@ -6,7 +6,6 @@ import {
 	CheckCircle,
 	Copy,
 	FileKey,
-	RefreshCw,
 	ShieldCheck,
 	XCircle,
 } from "lucide-react";
@@ -16,6 +15,7 @@ import { getCaddyPKICA } from "@/lib/api";
 import type { CaddyPKICA } from "@/types/caddyfile";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { ViewHeader } from "./ViewHeader";
 
 interface CertificateInfo {
 	subject: string;
@@ -277,27 +277,13 @@ export function CertificatesView({
 
 	return (
 		<div className="space-y-6">
-			{/* Header with refresh */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h2 className="text-2xl font-bold">Certificates</h2>
-					<p className="text-sm text-muted-foreground mt-1">
-						SSL/TLS Certificates and Internal PKI
-					</p>
-				</div>
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={refresh}
-					disabled={refreshing}
-					title="Refresh certificates"
-				>
-					<RefreshCw
-						className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-					/>
-					<span className="hidden sm:inline ml-2">Refresh</span>
-				</Button>
-			</div>
+			<ViewHeader
+				title="Certificates"
+				subtitle="SSL/TLS Certificates and Internal PKI"
+				onRefresh={refresh}
+				refreshing={refreshing}
+				refreshTitle="Refresh certificates"
+			/>
 
 			{/* SSL Certificates Section */}
 			<div className="border-b pb-3">
