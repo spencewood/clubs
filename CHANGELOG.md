@@ -1,5 +1,12 @@
 # clubs
 
+## 0.12.5
+
+### Patch Changes
+
+- 568ebe1: Use pie charts for secondary metrics
+- e4e684f: Fix visual inconsistencies and component cleanup
+
 ## 0.12.4
 
 ### Patch Changes
