@@ -34,7 +34,7 @@ describe("UpstreamsContext", () => {
 			});
 			vi.mocked(parseCaddyfile).mockReturnValue({
 				siteBlocks: [],
-				globalDirectives: [],
+				globalOptions: [],
 			});
 			vi.mocked(getConfiguredUpstreams).mockReturnValue([]);
 
@@ -66,7 +66,7 @@ describe("UpstreamsContext", () => {
 			});
 			vi.mocked(parseCaddyfile).mockReturnValue({
 				siteBlocks: [],
-				globalDirectives: [],
+				globalOptions: [],
 			});
 			vi.mocked(getConfiguredUpstreams).mockReturnValue([]);
 
@@ -104,7 +104,7 @@ describe("UpstreamsContext", () => {
 			});
 			vi.mocked(parseCaddyfile).mockReturnValue({
 				siteBlocks: [],
-				globalDirectives: [],
+				globalOptions: [],
 			});
 			vi.mocked(getConfiguredUpstreams).mockReturnValue([]);
 
@@ -146,7 +146,7 @@ describe("UpstreamsContext", () => {
 			});
 			vi.mocked(parseCaddyfile).mockReturnValue({
 				siteBlocks: [],
-				globalDirectives: [],
+				globalOptions: [],
 			});
 			vi.mocked(getConfiguredUpstreams).mockReturnValue([]);
 
@@ -181,7 +181,7 @@ describe("UpstreamsContext", () => {
 			});
 			vi.mocked(parseCaddyfile).mockReturnValue({
 				siteBlocks: [],
-				globalDirectives: [],
+				globalOptions: [],
 			});
 			vi.mocked(getConfiguredUpstreams).mockReturnValue([]);
 
@@ -225,7 +225,7 @@ describe("UpstreamsContext", () => {
 			});
 			vi.mocked(parseCaddyfile).mockReturnValue({
 				siteBlocks: [],
-				globalDirectives: [],
+				globalOptions: [],
 			});
 			vi.mocked(getConfiguredUpstreams).mockReturnValue([]);
 
@@ -260,7 +260,7 @@ describe("UpstreamsContext", () => {
 			});
 			vi.mocked(parseCaddyfile).mockReturnValue({
 				siteBlocks: [],
-				globalDirectives: [],
+				globalOptions: [],
 			});
 			vi.mocked(getConfiguredUpstreams).mockReturnValue([]);
 
