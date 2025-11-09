@@ -13,15 +13,24 @@
 	--radius-xl: calc(var(--radius) + 4px);
 
 	/* Colors for Tailwind utilities */
+	--color-background: #ffffff;
+	--color-foreground: #09090b;
+	--color-card: #ffffff;
+	--color-card-foreground: #09090b;
+	--color-popover: #ffffff;
+	--color-popover-foreground: #09090b;
 	--color-primary: #22c55e;
 	--color-primary-foreground: #ffffff;
 	--color-secondary: #f4f4f5;
 	--color-secondary-foreground: #18181b;
 	--color-muted: #f4f4f5;
 	--color-muted-foreground: #71717a;
+	--color-accent: #f0fdf4;
+	--color-accent-foreground: #22c55e;
 	--color-destructive: #ef4444;
 	--color-destructive-foreground: #fafafa;
 	--color-border: #e4e4e7;
+	--color-input: #e4e4e7;
 	--color-ring: #22c55e;
 }
 

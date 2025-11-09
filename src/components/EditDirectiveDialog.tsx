@@ -1,3 +1,4 @@
+import { Save } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { Button } from "@/components/ui/button";
@@ -246,19 +247,12 @@ export function EditDirectiveDialog({
 							))}
 						</div>
 
-						<div className="flex gap-2 pt-4 border-t">
-							<Button
-								variant="outline"
-								onClick={handleSwitchToRaw}
-								className="flex-1"
-							>
+						<div className="flex gap-2 pt-4 border-t justify-end">
+							<Button variant="outline" onClick={handleSwitchToRaw}>
 								Switch to Raw Edit
 							</Button>
-							<Button
-								onClick={handleSaveFeature}
-								disabled={!isFormValid()}
-								className="flex-1"
-							>
+							<Button onClick={handleSaveFeature} disabled={!isFormValid()}>
+								<Save className="h-4 w-4 mr-2" />
 								Save Changes
 							</Button>
 						</div>
@@ -298,28 +292,20 @@ export function EditDirectiveDialog({
 							</div>
 						)}
 
-						<div className="flex gap-2 pt-4 border-t">
+						<div className="flex gap-2 pt-4 border-t justify-end">
 							{detectedFeature && (
 								<Button
 									variant="outline"
 									onClick={() => setEditMode("feature")}
-									className="flex-1"
 								>
 									Switch to Form
 								</Button>
 							)}
-							<Button
-								variant="outline"
-								onClick={() => onOpenChange(false)}
-								className={detectedFeature ? "" : "flex-1"}
-							>
+							<Button variant="outline" onClick={() => onOpenChange(false)}>
 								Cancel
 							</Button>
-							<Button
-								onClick={handleSaveRaw}
-								disabled={!isFormValid()}
-								className="flex-1"
-							>
+							<Button onClick={handleSaveRaw} disabled={!isFormValid()}>
+								<Save className="h-4 w-4 mr-2" />
 								Save Changes
 							</Button>
 						</div>
