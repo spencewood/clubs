@@ -1,42 +1,44 @@
+"use client";
+
 import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 export function ThemeToggle() {
-	const [theme, setTheme] = useState<"light" | "dark">("light");
+	const { theme, setTheme, resolvedTheme } = useTheme();
+	const [mounted, setMounted] = useState(false);
 
+	// Only render after mounting to avoid hydration mismatch
 	useEffect(() => {
-		// Check localStorage and system preference
-		const stored = localStorage.getItem("theme");
-		const prefersDark = window.matchMedia(
-			"(prefers-color-scheme: dark)",
-		).matches;
-
-		const initialTheme =
-			stored === "dark" || (!stored && prefersDark) ? "dark" : "light";
-		setTheme(initialTheme);
-		document.documentElement.classList.toggle("dark", initialTheme === "dark");
+		setMounted(true);
 	}, []);
 
+	if (!mounted) {
+		return (
+			<Button variant="ghost" size="icon" disabled>
+				<Sun className="h-5 w-5" />
+			</Button>
+		);
+	}
+
 	const toggleTheme = () => {
-		const newTheme = theme === "light" ? "dark" : "light";
+		const currentTheme = theme === "system" ? resolvedTheme : theme;
+		const newTheme = currentTheme === "light" ? "dark" : "light";
 		setTheme(newTheme);
-		localStorage.setItem("theme", newTheme);
-		document.documentElement.classList.toggle("dark", newTheme === "dark");
 	};
+
+	// Use resolvedTheme to show the correct icon
+	const isDark = (theme === "system" ? resolvedTheme : theme) === "dark";
 
 	return (
 		<Button
 			variant="ghost"
 			size="icon"
 			onClick={toggleTheme}
-			title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+			title={isDark ? "Switch to light mode" : "Switch to dark mode"}
 		>
-			{theme === "light" ? (
-				<Moon className="h-5 w-5" />
-			) : (
-				<Sun className="h-5 w-5" />
-			)}
+			{isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
 		</Button>
 	);
 }

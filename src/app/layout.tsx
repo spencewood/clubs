@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { LeftPanelProvider } from "@/contexts/LeftPanelContext";
 
 export const metadata: Metadata = {
@@ -15,7 +17,15 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className="antialiased">
-				<LeftPanelProvider>{children}</LeftPanelProvider>
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="system"
+					enableSystem
+					disableTransitionOnChange
+				>
+					<LeftPanelProvider>{children}</LeftPanelProvider>
+					<Toaster position="top-right" richColors closeButton />
+				</ThemeProvider>
 			</body>
 		</html>
 	);

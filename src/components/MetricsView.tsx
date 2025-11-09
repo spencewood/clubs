@@ -21,6 +21,7 @@ import {
 	ChartLegendContent,
 	ChartTooltip,
 } from "./ui/chart";
+import { Skeleton } from "./ui/skeleton";
 import { ViewHeader } from "./ViewHeader";
 
 interface UpstreamMetric {
@@ -71,10 +72,8 @@ function ChartSkeleton({
 	aspectRatio?: string;
 }) {
 	return (
-		<div
-			className={`w-full ${aspectRatio} animate-pulse bg-muted/30 rounded-md flex items-center justify-center`}
-		>
-			<BarChart3 className="w-12 h-12 text-muted-foreground/30" />
+		<div className={`w-full ${aspectRatio} flex items-center justify-center`}>
+			<Skeleton className="w-full h-full rounded-md" />
 		</div>
 	);
 }

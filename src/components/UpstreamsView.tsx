@@ -18,7 +18,15 @@ import {
 	consolidateUpstreamsWithConfig,
 } from "@/lib/upstream-utils";
 import type { CaddyConfig, CaddyUpstream } from "@/types/caddyfile";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "./ui/tooltip";
 import { ViewHeader } from "./ViewHeader";
 
 function getHealthStatus(server: ConsolidatedServer): {
@@ -315,13 +323,14 @@ export function UpstreamsView({
 									: `No ${statusFilter} upstreams found.`}
 							</p>
 							{statusFilter !== "all" && (
-								<button
-									type="button"
+								<Button
+									variant="link"
+									size="sm"
 									onClick={() => setStatusFilter("all")}
-									className="text-xs text-muted-foreground hover:text-foreground underline mt-2"
+									className="text-xs mt-2"
 								>
 									Clear filter
-								</button>
+								</Button>
 							)}
 						</div>
 					</Card>
@@ -367,11 +376,58 @@ export function UpstreamsView({
 										</div>
 									</div>
 									<div className="text-right">
-										<div
-											className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${health.color} bg-opacity-10`}
-										>
-											{health.label}
-										</div>
+										<TooltipProvider>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Badge
+														variant={
+															health.status === "healthy"
+																? "default"
+																: health.status === "degraded"
+																	? "outline"
+																	: health.status === "unhealthy"
+																		? "destructive"
+																		: "secondary"
+														}
+														className={
+															health.status === "degraded"
+																? "border-[var(--color-warning)] text-[var(--color-warning)] cursor-help"
+																: "cursor-help"
+														}
+													>
+														{health.label}
+													</Badge>
+												</TooltipTrigger>
+												<TooltipContent>
+													<div className="text-xs">
+														{!server.isOffline ? (
+															<>
+																<p>
+																	<strong>Requests:</strong>{" "}
+																	{server.totalRequests}
+																</p>
+																<p>
+																	<strong>Failures:</strong> {server.totalFails}
+																</p>
+																<p>
+																	<strong>Error Rate:</strong>{" "}
+																	{server.totalRequests > 0
+																		? (
+																				(server.totalFails /
+																					server.totalRequests) *
+																				100
+																			).toFixed(2)
+																		: 0}
+																	%
+																</p>
+															</>
+														) : (
+															<p>No traffic stats available</p>
+														)}
+													</div>
+												</TooltipContent>
+											</Tooltip>
+										</TooltipProvider>
 									</div>
 								</div>
 							</Card>

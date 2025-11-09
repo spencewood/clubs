@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { InspectConfigModal } from "@/components/InspectConfigModal";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -25,6 +26,12 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { parseDirectiveWithFeatures } from "@/lib/caddy-features";
 import { serializeCaddyfile } from "@/lib/parser/caddyfile-parser";
 import type { CaddySiteBlock } from "@/types/caddyfile";
@@ -112,8 +119,15 @@ export function SiteBlockCard({
 							<Server className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
 						)}
 						<div className="flex-1 min-w-0 overflow-hidden">
-							<div className="font-mono text-sm sm:text-base font-medium truncate break-all">
-								{siteBlock.addresses.join(", ")}
+							<div className="flex items-center gap-2">
+								<div className="font-mono text-sm sm:text-base font-medium truncate break-all">
+									{siteBlock.addresses.join(", ")}
+								</div>
+								{siteBlock.directives.length > 0 && (
+									<Badge variant="secondary" className="text-xs shrink-0">
+										{siteBlock.directives.length}
+									</Badge>
+								)}
 							</div>
 							<div className="hidden sm:block text-sm text-muted-foreground truncate">
 								{getSummary()}
@@ -121,14 +135,23 @@ export function SiteBlockCard({
 						</div>
 					</div>
 					{isDomain && getFirstDomain() && (
-						<button
-							type="button"
-							onClick={handleOpenInBrowser}
-							className="text-muted-foreground hover:text-primary transition-colors shrink-0"
-							title={`Open https://${getFirstDomain()} in browser`}
-						>
-							<ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
-						</button>
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="ghost"
+										size="icon"
+										onClick={handleOpenInBrowser}
+										className="h-8 w-8 shrink-0"
+									>
+										<ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>Open https://{getFirstDomain()}</p>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
 					)}
 					{/* Mobile: Single menu button */}
 					{mounted && (
