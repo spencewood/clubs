@@ -1,5 +1,12 @@
 # clubs
 
+## 0.13.0
+
+### Minor Changes
+
+- 2dd3bbb: Add the ability to add upstreams and autocomplete them
+- 5e28e5a: Use shadcn components instead of custom components
+
 ## 0.12.5
 
 ### Patch Changes
