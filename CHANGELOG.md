@@ -1,5 +1,11 @@
 # clubs
 
+## 0.13.1
+
+### Patch Changes
+
+- 4e203a9: Update charts in analytics for better visuals
+
 ## 0.13.0
 
 ### Minor Changes
