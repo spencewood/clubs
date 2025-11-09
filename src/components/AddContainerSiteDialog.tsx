@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useUpstreams } from "@/contexts/UpstreamsContext";
 
 interface AddContainerSiteDialogProps {
 	open: boolean;
@@ -28,6 +30,7 @@ export function AddContainerSiteDialog({
 	containerDomain,
 	onCreateSite,
 }: AddContainerSiteDialogProps) {
+	const { upstreams } = useUpstreams();
 	const [subdomain, setSubdomain] = useState("");
 	const [matcherName, setMatcherName] = useState("");
 	const [backend, setBackend] = useState("");
@@ -128,13 +131,14 @@ export function AddContainerSiteDialog({
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor={backendId}>Backend Server (Optional)</Label>
-							<Input
+							<Label htmlFor={backendId}>Upstream Server (Optional)</Label>
+							<AutocompleteInput
 								id={backendId}
 								type="text"
 								placeholder="localhost:8080"
 								value={backend}
 								onChange={(e) => setBackend(e.target.value)}
+								suggestions={upstreams.map((u) => u.address)}
 							/>
 							<p className="text-sm text-muted-foreground">
 								If provided, will add a reverse_proxy directive

@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -18,6 +19,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useUpstreams } from "@/contexts/UpstreamsContext";
 import {
 	type CaddyFeature,
 	parseDirectiveWithFeatures,
@@ -40,6 +42,7 @@ export function EditDirectiveDialog({
 	const nameId = useId();
 	const argsId = useId();
 	const blockId = useId();
+	const { upstreams } = useUpstreams();
 	const [editMode, setEditMode] = useState<"feature" | "raw">("raw");
 	const [detectedFeature, setDetectedFeature] = useState<CaddyFeature | null>(
 		null,
@@ -148,7 +151,23 @@ export function EditDirectiveDialog({
 										)}
 									</Label>
 
-									{field.type === "text" && (
+									{field.type === "text" &&
+										field.autocomplete === "upstreams" && (
+											<AutocompleteInput
+												id={field.name}
+												placeholder={field.placeholder}
+												value={(formValues[field.name] as string) || ""}
+												onChange={(e) =>
+													setFormValues({
+														...formValues,
+														[field.name]: e.target.value,
+													})
+												}
+												suggestions={upstreams.map((u) => u.address)}
+											/>
+										)}
+
+									{field.type === "text" && !field.autocomplete && (
 										<Input
 											id={field.name}
 											placeholder={field.placeholder}

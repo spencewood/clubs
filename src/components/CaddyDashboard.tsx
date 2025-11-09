@@ -13,7 +13,6 @@ import {
 	FileJson,
 	Globe,
 	Loader2,
-	Plus,
 	RefreshCw,
 	Save,
 	Server,
@@ -711,125 +710,102 @@ export function CaddyDashboard({
 									initialCertificates={initialCertificates}
 									initialAcmeCertificates={initialAcmeCertificates}
 								/>
-							) : config.siteBlocks.length === 0 ? (
-								// Empty state - Show two add options
-								<div className="py-12">
-									<div className="space-y-6 max-w-md mx-auto px-4">
-										<div className="text-center space-y-2">
-											<h2 className="text-lg font-semibold">Get Started</h2>
-											<p className="text-sm text-muted-foreground">
-												Create your first site or container
+							) : (
+								<>
+									{/* Sites Header with Action Buttons */}
+									<div className="flex items-center justify-between mb-4">
+										<div>
+											<h2 className="text-2xl font-bold">Sites</h2>
+											<p className="text-sm text-muted-foreground mt-1">
+												{config.siteBlocks.length === 0
+													? "Create your first site or container"
+													: `${config.siteBlocks.length} site${config.siteBlocks.length !== 1 ? "s" : ""} configured`}
 											</p>
 										</div>
-										<div className="grid gap-3">
-											<button
-												type="button"
+										<div className="flex items-center gap-2">
+											<Button
+												variant="outline"
+												size="sm"
 												onClick={() => {
 													setNewSiteBlockType("physical");
 													setShowNewSiteDialog(true);
 												}}
-												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-success)] hover:bg-[var(--color-success)]/5 transition-colors text-left"
 											>
-												<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-												<Globe className="h-6 w-6 text-[var(--color-success)] flex-shrink-0" />
-												<div className="flex-1">
-													<h4 className="font-semibold">Site</h4>
-													<p className="text-xs text-muted-foreground mt-0.5">
-														Single domain with its own configuration
-													</p>
-												</div>
-											</button>
-											<button
-												type="button"
+												<Globe className="w-4 h-4" />
+												<span className="hidden sm:inline ml-2">Add Site</span>
+											</Button>
+											<Button
+												variant="outline"
+												size="sm"
 												onClick={() => {
 													setNewSiteBlockType("virtual-container");
 													setShowNewSiteDialog(true);
 												}}
-												className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-info)] hover:bg-[var(--color-info)]/5 transition-colors text-left"
 											>
-												<Plus className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-												<Container className="h-6 w-6 text-[var(--color-info)] flex-shrink-0" />
-												<div className="flex-1">
-													<h4 className="font-semibold">Container</h4>
-													<p className="text-xs text-muted-foreground mt-0.5">
-														Wildcard domain hosting multiple services
-													</p>
-												</div>
-											</button>
+												<Container className="w-4 h-4" />
+												<span className="hidden sm:inline ml-2">
+													Add Container
+												</span>
+											</Button>
 										</div>
 									</div>
-								</div>
-							) : (
-								<div className="grid gap-3">
-									{config.siteBlocks.map((siteBlock) => {
-										// Check if this is a container
-										if (isVirtualContainer(siteBlock)) {
-											const container = parseVirtualContainer(siteBlock);
-											return (
-												<ContainerCard
-													key={siteBlock.id}
-													id={container.id}
-													wildcardDomain={container.wildcardDomain}
-													sharedConfig={container.sharedConfig.map((d) =>
-														getDirectiveSummary(d),
-													)}
-													virtualBlocks={container.virtualBlocks.map((vb) => ({
-														...vb,
-														directives: vb.directives.map((d) =>
-															formatDirectiveForDisplay(d),
-														),
-													}))}
-													originalSiteBlock={siteBlock}
-													onEdit={handleEditSiteBlock}
-													onDelete={handleDeleteSiteBlock}
-													onAddSite={handleAddSiteToContainer}
-													onEditSite={(containerId, siteId) =>
-														setEditingSite({ containerId, siteId })
-													}
-													onDeleteSite={handleDeleteSite}
-												/>
-											);
-										}
 
-										// Regular site block
-										return (
-											<SiteBlockCard
-												key={siteBlock.id}
-												siteBlock={siteBlock}
-												onEdit={handleEditSiteBlock}
-												onDelete={handleDeleteSiteBlock}
-											/>
-										);
-									})}
+									{config.siteBlocks.length === 0 ? (
+										// Empty state
+										<div className="py-12 text-center">
+											<Server className="w-12 h-12 mx-auto text-muted-foreground opacity-50 mb-4" />
+											<p className="text-sm text-muted-foreground">
+												No sites configured yet. Click the buttons above to get
+												started.
+											</p>
+										</div>
+									) : (
+										<div className="grid gap-3">
+											{config.siteBlocks.map((siteBlock) => {
+												// Check if this is a container
+												if (isVirtualContainer(siteBlock)) {
+													const container = parseVirtualContainer(siteBlock);
+													return (
+														<ContainerCard
+															key={siteBlock.id}
+															id={container.id}
+															wildcardDomain={container.wildcardDomain}
+															sharedConfig={container.sharedConfig.map((d) =>
+																getDirectiveSummary(d),
+															)}
+															virtualBlocks={container.virtualBlocks.map(
+																(vb) => ({
+																	...vb,
+																	directives: vb.directives.map((d) =>
+																		formatDirectiveForDisplay(d),
+																	),
+																}),
+															)}
+															originalSiteBlock={siteBlock}
+															onEdit={handleEditSiteBlock}
+															onDelete={handleDeleteSiteBlock}
+															onAddSite={handleAddSiteToContainer}
+															onEditSite={(containerId, siteId) =>
+																setEditingSite({ containerId, siteId })
+															}
+															onDeleteSite={handleDeleteSite}
+														/>
+													);
+												}
 
-									{/* Inline Add Buttons (Trello-style) */}
-									<div className="grid grid-cols-2 gap-3">
-										<button
-											type="button"
-											onClick={() => {
-												setNewSiteBlockType("physical");
-												setShowNewSiteDialog(true);
-											}}
-											className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-success)] hover:bg-[var(--color-success)]/5 transition-colors text-muted-foreground hover:text-foreground"
-										>
-											<Plus className="h-4 w-4" />
-											<Globe className="h-4 w-4" />
-											<span className="text-sm font-medium">Site</span>
-										</button>
-										<button
-											type="button"
-											onClick={() => {
-												setNewSiteBlockType("virtual-container");
-												setShowNewSiteDialog(true);
-											}}
-											className="flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-info)] hover:bg-[var(--color-info)]/5 transition-colors text-muted-foreground hover:text-foreground"
-										>
-											<Plus className="h-4 w-4" />
-											<Container className="h-4 w-4" />
-											<span className="text-sm font-medium">Container</span>
-										</button>
-									</div>
-								</div>
+												// Regular site block
+												return (
+													<SiteBlockCard
+														key={siteBlock.id}
+														siteBlock={siteBlock}
+														onEdit={handleEditSiteBlock}
+														onDelete={handleDeleteSiteBlock}
+													/>
+												);
+											})}
+										</div>
+									)}
+								</>
 							)}
 						</div>
 

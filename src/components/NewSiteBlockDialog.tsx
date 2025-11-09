@@ -7,6 +7,7 @@ import {
 	Server,
 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useUpstreams } from "@/contexts/UpstreamsContext";
 import { type Recipe, recipes } from "@/lib/recipes/caddyfile-recipes";
 import type { CaddySiteBlock } from "@/types/caddyfile";
 
@@ -48,6 +50,7 @@ export function NewSiteBlockDialog({
 	onCreateVirtualContainer,
 	initialBlockType = null,
 }: NewSiteBlockDialogProps) {
+	const { upstreams } = useUpstreams();
 	const [blockType, setBlockType] = useState<BlockType | null>(null);
 	const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 	const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -258,15 +261,29 @@ export function NewSiteBlockDialog({
 											)}
 										</Label>
 										{field.type === "text" || field.type === "number" ? (
-											<Input
-												id={field.name}
-												type={field.type}
-												placeholder={field.placeholder}
-												value={formValues[field.name] || ""}
-												onChange={(e) =>
-													handleFieldChange(field.name, e.target.value)
-												}
-											/>
+											field.type === "text" &&
+											(field.name === "backend" ||
+												field.name === "apiBackend") ? (
+												<AutocompleteInput
+													id={field.name}
+													placeholder={field.placeholder}
+													value={formValues[field.name] || ""}
+													onChange={(e) =>
+														handleFieldChange(field.name, e.target.value)
+													}
+													suggestions={upstreams.map((u) => u.address)}
+												/>
+											) : (
+												<Input
+													id={field.name}
+													type={field.type}
+													placeholder={field.placeholder}
+													value={formValues[field.name] || ""}
+													onChange={(e) =>
+														handleFieldChange(field.name, e.target.value)
+													}
+												/>
+											)
 										) : field.type === "select" ? (
 											<select
 												id={field.name}

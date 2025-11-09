@@ -5,7 +5,9 @@ import {
 	AlertCircle,
 	AlertTriangle,
 	CheckCircle,
+	RefreshCw,
 	Server,
+	Settings,
 	WifiOff,
 	XCircle,
 } from "lucide-react";
@@ -18,16 +20,10 @@ import {
 	consolidateUpstreamsWithConfig,
 } from "@/lib/upstream-utils";
 import type { CaddyConfig, CaddyUpstream } from "@/types/caddyfile";
-import { Badge } from "./ui/badge";
+import { AddUpstreamDialog } from "./AddUpstreamDialog";
+import { ManageUpstreamDialog } from "./ManageUpstreamDialog";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "./ui/tooltip";
-import { ViewHeader } from "./ViewHeader";
 
 function getHealthStatus(server: ConsolidatedServer): {
 	status: "healthy" | "degraded" | "unhealthy" | "offline";
@@ -96,6 +92,9 @@ export function UpstreamsView({
 	const [statusFilter, setStatusFilter] = useState<
 		"all" | "healthy" | "degraded" | "unhealthy" | "offline"
 	>("all");
+	const [managingUpstream, setManagingUpstream] =
+		useState<ConsolidatedServer | null>(null);
+	const [showAddUpstream, setShowAddUpstream] = useState(false);
 
 	const fetchUpstreams = useCallback(async () => {
 		setRefreshing(true);
@@ -207,13 +206,36 @@ export function UpstreamsView({
 
 	return (
 		<div className="space-y-6">
-			<ViewHeader
-				title="Upstream Health"
-				subtitle="Monitor the health and status of your reverse proxy backends"
-				onRefresh={() => fetchUpstreams()}
-				refreshing={refreshing}
-				refreshTitle="Refresh upstreams"
-			/>
+			<div className="flex items-center justify-between">
+				<div>
+					<h2 className="text-2xl font-bold">Upstream Health</h2>
+					<p className="text-sm text-muted-foreground mt-1">
+						Monitor the health and status of your reverse proxy upstreams
+					</p>
+				</div>
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setShowAddUpstream(true)}
+					>
+						<Server className="w-4 h-4" />
+						<span className="hidden sm:inline ml-2">Add Upstream</span>
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => fetchUpstreams()}
+						disabled={refreshing}
+						title="Refresh upstreams"
+					>
+						<RefreshCw
+							className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+						/>
+						<span className="hidden sm:inline ml-2">Refresh</span>
+					</Button>
+				</div>
+			</div>
 
 			{/* Summary stats - clickable filters */}
 			<div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -375,59 +397,22 @@ export function UpstreamsView({
 											</div>
 										</div>
 									</div>
-									<div className="text-right">
-										<TooltipProvider>
-											<Tooltip>
-												<TooltipTrigger asChild>
-													<Badge
-														variant={
-															health.status === "healthy"
-																? "default"
-																: health.status === "degraded"
-																	? "outline"
-																	: health.status === "unhealthy"
-																		? "destructive"
-																		: "secondary"
-														}
-														className={
-															health.status === "degraded"
-																? "border-[var(--color-warning)] text-[var(--color-warning)] cursor-help"
-																: "cursor-help"
-														}
-													>
-														{health.label}
-													</Badge>
-												</TooltipTrigger>
-												<TooltipContent>
-													<div className="text-xs">
-														{!server.isOffline ? (
-															<>
-																<p>
-																	<strong>Requests:</strong>{" "}
-																	{server.totalRequests}
-																</p>
-																<p>
-																	<strong>Failures:</strong> {server.totalFails}
-																</p>
-																<p>
-																	<strong>Error Rate:</strong>{" "}
-																	{server.totalRequests > 0
-																		? (
-																				(server.totalFails /
-																					server.totalRequests) *
-																				100
-																			).toFixed(2)
-																		: 0}
-																	%
-																</p>
-															</>
-														) : (
-															<p>No traffic stats available</p>
-														)}
-													</div>
-												</TooltipContent>
-											</Tooltip>
-										</TooltipProvider>
+									<div className="flex items-center gap-2">
+										<Button
+											variant="ghost"
+											size="icon"
+											onClick={() => setManagingUpstream(server)}
+											title="Manage upstream ports"
+										>
+											<Settings className="h-4 w-4" />
+										</Button>
+										<div className="text-right">
+											<div
+												className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${health.color} bg-opacity-10`}
+											>
+												{health.label}
+											</div>
+										</div>
 									</div>
 								</div>
 							</Card>
@@ -439,6 +424,18 @@ export function UpstreamsView({
 			<div className="text-xs text-muted-foreground text-center pt-2">
 				Auto-refreshing every 5 seconds
 			</div>
+
+			<AddUpstreamDialog
+				open={showAddUpstream}
+				onOpenChange={setShowAddUpstream}
+			/>
+
+			<ManageUpstreamDialog
+				upstream={managingUpstream}
+				open={!!managingUpstream}
+				onOpenChange={(open) => !open && setManagingUpstream(null)}
+				onSuccess={() => fetchUpstreams()}
+			/>
 		</div>
 	);
 }

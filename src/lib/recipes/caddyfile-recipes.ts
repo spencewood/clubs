@@ -29,7 +29,7 @@ export const recipes: Recipe[] = [
 	{
 		id: "reverse-proxy",
 		name: "Reverse Proxy",
-		description: "Proxy requests from a domain to a backend server",
+		description: "Proxy requests from a domain to an upstream server",
 		category: "proxy",
 		icon: "ArrowRightLeft",
 		fields: [
@@ -43,10 +43,10 @@ export const recipes: Recipe[] = [
 			},
 			{
 				name: "backend",
-				label: "Backend Server",
+				label: "Upstream Server",
 				type: "text",
 				placeholder: "localhost:8080",
-				description: "The server to proxy requests to",
+				description: "The upstream server to proxy requests to",
 				required: true,
 				defaultValue: "localhost:8080",
 			},
@@ -177,10 +177,10 @@ export const recipes: Recipe[] = [
 			},
 			{
 				name: "apiBackend",
-				label: "API Backend",
+				label: "API Upstream",
 				type: "text",
 				placeholder: "localhost:8080",
-				description: "Backend API server",
+				description: "Upstream API server",
 				required: true,
 				defaultValue: "localhost:8080",
 			},
@@ -298,7 +298,7 @@ export const recipes: Recipe[] = [
 				required: true,
 				options: [
 					{ value: "text", label: "Text Response" },
-					{ value: "proxy", label: "Proxy to Backend" },
+					{ value: "proxy", label: "Proxy to Upstream" },
 					{ value: "static", label: "Static Files" },
 				],
 				defaultValue: "text",
@@ -308,7 +308,7 @@ export const recipes: Recipe[] = [
 				label: "Value",
 				type: "text",
 				placeholder: "Hello World! or localhost:3000",
-				description: "Response text, backend address, or file path",
+				description: "Response text, upstream address, or file path",
 				required: true,
 			},
 		],
