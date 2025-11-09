@@ -28,6 +28,12 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { serializeCaddyfile } from "@/lib/parser/caddyfile-parser";
 
 interface VirtualBlock {
@@ -117,18 +123,28 @@ export function ContainerCard({
 			<CardHeader className="pb-3">
 				<div className="flex items-center justify-between gap-2 sm:gap-4">
 					<div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-						<button
-							type="button"
-							onClick={() => setIsExpanded(!isExpanded)}
-							className="p-1 hover:bg-accent rounded transition-colors flex-shrink-0"
-							aria-label={isExpanded ? "Collapse" : "Expand"}
-						>
-							{isExpanded ? (
-								<ChevronDown className="h-4 w-4 text-muted-foreground" />
-							) : (
-								<ChevronRight className="h-4 w-4 text-muted-foreground" />
-							)}
-						</button>
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="ghost"
+										size="icon"
+										onClick={() => setIsExpanded(!isExpanded)}
+										className="h-8 w-8 flex-shrink-0"
+										aria-label={isExpanded ? "Collapse" : "Expand"}
+									>
+										{isExpanded ? (
+											<ChevronDown className="h-4 w-4" />
+										) : (
+											<ChevronRight className="h-4 w-4" />
+										)}
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>{isExpanded ? "Collapse" : "Expand"}</p>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
 						<Container className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
 						<div className="flex-1 min-w-0">
 							<CardTitle className="font-mono text-sm sm:text-lg truncate">

@@ -1,51 +1,54 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @theme {
 	/* Breakpoints */
 	--breakpoint-xs: 480px;
 
-	/* Light mode colors */
-	--color-background: #ffffff;
-	--color-foreground: #09090b;
-	--color-card: #ffffff;
-	--color-card-foreground: #09090b;
-	--color-popover: #ffffff;
-	--color-popover-foreground: #09090b;
+	/* Radius */
+	--radius: 0.5rem;
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+
+	/* Colors for Tailwind utilities */
 	--color-primary: #22c55e;
 	--color-primary-foreground: #ffffff;
 	--color-secondary: #f4f4f5;
 	--color-secondary-foreground: #18181b;
 	--color-muted: #f4f4f5;
 	--color-muted-foreground: #71717a;
-	--color-accent: #f0fdf4;
-	--color-accent-foreground: #22c55e;
 	--color-destructive: #ef4444;
 	--color-destructive-foreground: #fafafa;
 	--color-border: #e4e4e7;
-	--color-input: #e4e4e7;
 	--color-ring: #22c55e;
-	--radius: 0.5rem;
-
-	/* Chart colors */
-	--color-chart-1: #0ea5e9;
-	--color-chart-2: #dc2626;
-	--color-chart-3: #f59e0b;
-	--color-chart-4: #8b5cf6;
-	--color-chart-5: #10b981;
-
-	/* Status colors - semantic naming for consistency */
-	--color-success: #22c55e;
-	--color-success-dark: #15803d;
-	--color-warning: #f59e0b;
-	--color-warning-dark: #b45309;
-	--color-error: #ef4444;
-	--color-error-dark: #b91c1c;
-	--color-info: #0ea5e9;
-	--color-info-dark: #0369a1;
 }
 
 /* Dark mode colors */
-.dark {
+html.dark {
+	/* Shadcn variables */
+	--background: #09090b;
+	--foreground: #fafafa;
+	--card: #18181b;
+	--card-foreground: #fafafa;
+	--popover: #18181b;
+	--popover-foreground: #fafafa;
+	--primary: #22c55e;
+	--primary-foreground: #ffffff;
+	--secondary: #27272a;
+	--secondary-foreground: #fafafa;
+	--muted: #27272a;
+	--muted-foreground: #a1a1aa;
+	--accent: #14532d;
+	--accent-foreground: #22c55e;
+	--destructive: #dc2626;
+	--destructive-foreground: #fafafa;
+	--border: #27272a;
+	--input: #27272a;
+	--ring: #22c55e;
+
+	/* Custom color variables */
 	--color-background: #09090b;
 	--color-foreground: #fafafa;
 	--color-card: #18181b;
@@ -66,14 +69,14 @@
 	--color-input: #27272a;
 	--color-ring: #22c55e;
 
-	/* Chart colors for dark mode */
+	/* Chart colors */
 	--color-chart-1: #38bdf8;
 	--color-chart-2: #f87171;
 	--color-chart-3: #fbbf24;
 	--color-chart-4: #a78bfa;
 	--color-chart-5: #34d399;
 
-	/* Status colors for dark mode */
+	/* Status colors */
 	--color-success: #22c55e;
 	--color-success-dark: #4ade80;
 	--color-warning: #fbbf24;
@@ -114,4 +117,65 @@ a,
 
 .scrollbar-hide::-webkit-scrollbar {
 	display: none; /* Chrome, Safari, Opera */
+}
+
+:root {
+	/* Shadcn variables - Light mode */
+	--background: #ffffff;
+	--foreground: #09090b;
+	--card: #ffffff;
+	--card-foreground: #09090b;
+	--popover: #ffffff;
+	--popover-foreground: #09090b;
+	--primary: #22c55e;
+	--primary-foreground: #ffffff;
+	--secondary: #f4f4f5;
+	--secondary-foreground: #18181b;
+	--muted: #f4f4f5;
+	--muted-foreground: #71717a;
+	--accent: #f0fdf4;
+	--accent-foreground: #22c55e;
+	--destructive: #ef4444;
+	--destructive-foreground: #fafafa;
+	--border: #e4e4e7;
+	--input: #e4e4e7;
+	--ring: #22c55e;
+
+	/* Custom color variables - Light mode */
+	--color-background: #ffffff;
+	--color-foreground: #09090b;
+	--color-card: #ffffff;
+	--color-card-foreground: #09090b;
+	--color-popover: #ffffff;
+	--color-popover-foreground: #09090b;
+	--color-primary: #22c55e;
+	--color-primary-foreground: #ffffff;
+	--color-secondary: #f4f4f5;
+	--color-secondary-foreground: #18181b;
+	--color-muted: #f4f4f5;
+	--color-muted-foreground: #71717a;
+	--color-accent: #f0fdf4;
+	--color-accent-foreground: #22c55e;
+	--color-destructive: #ef4444;
+	--color-destructive-foreground: #fafafa;
+	--color-border: #e4e4e7;
+	--color-input: #e4e4e7;
+	--color-ring: #22c55e;
+
+	/* Chart colors */
+	--color-chart-1: #0ea5e9;
+	--color-chart-2: #dc2626;
+	--color-chart-3: #f59e0b;
+	--color-chart-4: #8b5cf6;
+	--color-chart-5: #10b981;
+
+	/* Status colors */
+	--color-success: #22c55e;
+	--color-success-dark: #15803d;
+	--color-warning: #f59e0b;
+	--color-warning-dark: #b45309;
+	--color-error: #ef4444;
+	--color-error-dark: #b91c1c;
+	--color-info: #0ea5e9;
+	--color-info-dark: #0369a1;
 }
