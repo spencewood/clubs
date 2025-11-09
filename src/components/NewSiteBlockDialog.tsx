@@ -9,6 +9,7 @@ import {
 import { useEffect, useId, useState } from "react";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -17,8 +18,16 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { useUpstreams } from "@/contexts/UpstreamsContext";
 import { type Recipe, recipes } from "@/lib/recipes/caddyfile-recipes";
 import type { CaddySiteBlock } from "@/types/caddyfile";
@@ -137,7 +146,7 @@ export function NewSiteBlockDialog({
 							}}
 						>
 							<div className="space-y-4 py-4">
-								<div className="space-y-2">
+								<FormItem>
 									<Label htmlFor={wildcardDomainId}>
 										Domain
 										<span className="text-destructive ml-1">*</span>
@@ -161,7 +170,7 @@ export function NewSiteBlockDialog({
 										All subdomains will be matched (e.g.,
 										api.services.example.com, web.services.example.com)
 									</p>
-								</div>
+								</FormItem>
 							</div>
 
 							<DialogFooter>
@@ -253,7 +262,7 @@ export function NewSiteBlockDialog({
 						>
 							<div className="space-y-4 py-4">
 								{selectedRecipe.fields.map((field) => (
-									<div key={field.name} className="space-y-2">
+									<FormItem key={field.name}>
 										<Label htmlFor={field.name}>
 											{field.label}
 											{field.required && (
@@ -271,7 +280,9 @@ export function NewSiteBlockDialog({
 													onChange={(e) =>
 														handleFieldChange(field.name, e.target.value)
 													}
-													suggestions={upstreams.map((u) => u.address)}
+													suggestions={Array.from(
+														new Set(upstreams.map((u) => u.server)),
+													)}
 												/>
 											) : (
 												<Input
@@ -285,38 +296,41 @@ export function NewSiteBlockDialog({
 												/>
 											)
 										) : field.type === "select" ? (
-											<select
-												id={field.name}
+											<Select
 												value={formValues[field.name] || ""}
-												onChange={(e) =>
-													handleFieldChange(field.name, e.target.value)
+												onValueChange={(value) =>
+													handleFieldChange(field.name, value)
 												}
-												className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 											>
-												<option value="">Select...</option>
-												{field.options?.map((opt) => (
-													<option key={opt.value} value={opt.value}>
-														{opt.label}
-													</option>
-												))}
-											</select>
+												<SelectTrigger id={field.name}>
+													<SelectValue placeholder="Select..." />
+												</SelectTrigger>
+												<SelectContent>
+													{field.options?.map((opt) => (
+														<SelectItem key={opt.value} value={opt.value}>
+															{opt.label}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
 										) : field.type === "boolean" ? (
 											<div className="flex items-center gap-2">
-												<input
-													type="checkbox"
+												<Checkbox
 													id={field.name}
 													checked={formValues[field.name] === "true"}
-													onChange={(e) =>
+													onCheckedChange={(checked) =>
 														handleFieldChange(
 															field.name,
-															e.target.checked ? "true" : "false",
+															checked ? "true" : "false",
 														)
 													}
-													className="h-4 w-4 rounded border-input"
 												/>
-												<span className="text-sm text-muted-foreground">
+												<Label
+													htmlFor={field.name}
+													className="text-sm text-muted-foreground font-normal cursor-pointer"
+												>
 													{field.description}
-												</span>
+												</Label>
 											</div>
 										) : null}
 										{field.description && field.type !== "boolean" && (
@@ -324,7 +338,7 @@ export function NewSiteBlockDialog({
 												{field.description}
 											</p>
 										)}
-									</div>
+									</FormItem>
 								))}
 							</div>
 

@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useId, useState } from "react";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUpstreams } from "@/contexts/UpstreamsContext";
@@ -37,6 +39,11 @@ export function AddContainerSiteDialog({
 	const subdomainId = useId();
 	const matcherNameId = useId();
 	const backendId = useId();
+
+	const serverSuggestions = React.useMemo(
+		() => Array.from(new Set(upstreams.map((u) => u.server))),
+		[upstreams],
+	);
 
 	// Auto-generate matcher name from subdomain
 	const handleSubdomainChange = (value: string) => {
@@ -92,7 +99,7 @@ export function AddContainerSiteDialog({
 					}}
 				>
 					<div className="space-y-4 py-4">
-						<div className="space-y-2">
+						<FormItem>
 							<Label htmlFor={subdomainId}>
 								Subdomain
 								<span className="text-destructive ml-1">*</span>
@@ -110,9 +117,9 @@ export function AddContainerSiteDialog({
 									{fullHostname}
 								</span>
 							</p>
-						</div>
+						</FormItem>
 
-						<div className="space-y-2">
+						<FormItem>
 							<Label htmlFor={matcherNameId}>
 								Matcher Name
 								<span className="text-destructive ml-1">*</span>
@@ -128,9 +135,9 @@ export function AddContainerSiteDialog({
 								Used in Caddy config as{" "}
 								<span className="font-mono">@{matcherName || "matcher"}</span>
 							</p>
-						</div>
+						</FormItem>
 
-						<div className="space-y-2">
+						<FormItem>
 							<Label htmlFor={backendId}>Upstream Server (Optional)</Label>
 							<AutocompleteInput
 								id={backendId}
@@ -138,12 +145,12 @@ export function AddContainerSiteDialog({
 								placeholder="localhost:8080"
 								value={backend}
 								onChange={(e) => setBackend(e.target.value)}
-								suggestions={upstreams.map((u) => u.address)}
+								suggestions={serverSuggestions}
 							/>
 							<p className="text-sm text-muted-foreground">
 								If provided, will add a reverse_proxy directive
 							</p>
-						</div>
+						</FormItem>
 
 						{/* Preview */}
 						<div className="p-3 bg-muted rounded-lg border">
