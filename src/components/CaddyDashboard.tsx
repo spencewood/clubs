@@ -586,7 +586,10 @@ export function CaddyDashboard({
 				<div className="container mx-auto px-4 py-3">
 					<div className="flex items-center justify-between gap-4">
 						{/* Left: Logo and Title */}
-						<Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+						<Link
+							href="/"
+							className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+						>
 							<span className="text-4xl flex-shrink-0">♣</span>
 							<div>
 								<h1 className="text-2xl font-bold">Clubs</h1>
