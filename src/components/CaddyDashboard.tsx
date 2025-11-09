@@ -773,12 +773,14 @@ export function CaddyDashboard({
 															sharedConfig={container.sharedConfig.map((d) =>
 																getDirectiveSummary(d),
 															)}
-															virtualBlocks={container.virtualBlocks.map((vb) => ({
-																...vb,
-																directives: vb.directives.map((d) =>
-																	formatDirectiveForDisplay(d),
-																),
-															}))}
+															virtualBlocks={container.virtualBlocks.map(
+																(vb) => ({
+																	...vb,
+																	directives: vb.directives.map((d) =>
+																		formatDirectiveForDisplay(d),
+																	),
+																}),
+															)}
 															originalSiteBlock={siteBlock}
 															onEdit={handleEditSiteBlock}
 															onDelete={handleDeleteSiteBlock}
