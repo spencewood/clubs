@@ -1,4 +1,4 @@
-import { Globe, Pencil, Plus, Server, Trash2 } from "lucide-react";
+import { Globe, Pencil, Plus, Save, Server, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -216,11 +216,12 @@ export function SiteBlockEditDialog({
 						</div>
 					</div>
 
-					<div className="flex gap-2 pt-4 border-t">
+					<div className="flex gap-2 pt-4 border-t justify-end">
 						<Button variant="outline" onClick={() => onOpenChange(false)}>
 							Cancel
 						</Button>
-						<Button onClick={handleSave} className="flex-1">
+						<Button onClick={handleSave}>
+							<Save className="h-4 w-4 mr-2" />
 							Save Changes
 						</Button>
 					</div>

@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -225,7 +225,10 @@ export function EditContainerSiteDialog({
 					<Button variant="outline" onClick={() => onOpenChange(false)}>
 						Cancel
 					</Button>
-					<Button onClick={handleSave}>Save Changes</Button>
+					<Button onClick={handleSave}>
+						<Save className="h-4 w-4 mr-2" />
+						Save Changes
+					</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

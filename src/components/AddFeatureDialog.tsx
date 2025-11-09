@@ -9,6 +9,7 @@ import {
 	FolderOpen,
 	Globe,
 	Lock,
+	Plus as PlusIcon,
 } from "lucide-react";
 import { useId, useState } from "react";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
@@ -305,16 +306,13 @@ export function AddFeatureDialog({
 							))}
 						</div>
 
-						<div className="flex gap-2 pt-4">
+						<div className="flex gap-2 pt-4 justify-end">
 							<Button variant="outline" onClick={handleBack}>
 								<ArrowLeft className="h-4 w-4 mr-2" />
 								Back
 							</Button>
-							<Button
-								onClick={handleSubmit}
-								disabled={!isFormValid()}
-								className="flex-1"
-							>
+							<Button onClick={handleSubmit} disabled={!isFormValid()}>
+								<PlusIcon className="h-4 w-4 mr-2" />
 								Add Feature
 							</Button>
 						</div>
@@ -339,16 +337,13 @@ export function AddFeatureDialog({
 							</p>
 						</div>
 
-						<div className="flex gap-2 pt-4">
+						<div className="flex gap-2 pt-4 justify-end">
 							<Button variant="outline" onClick={handleBack}>
 								<ArrowLeft className="h-4 w-4 mr-2" />
 								Back
 							</Button>
-							<Button
-								onClick={handleSubmit}
-								disabled={!isFormValid()}
-								className="flex-1"
-							>
+							<Button onClick={handleSubmit} disabled={!isFormValid()}>
+								<PlusIcon className="h-4 w-4 mr-2" />
 								Add Directive
 							</Button>
 						</div>
