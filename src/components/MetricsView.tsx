@@ -24,6 +24,11 @@ import {
 import { Skeleton } from "./ui/skeleton";
 import { ViewHeader } from "./ViewHeader";
 
+interface TooltipPayloadEntry {
+	name: string;
+	value: number;
+}
+
 interface UpstreamMetric {
 	address: string;
 	num_requests: number;
@@ -74,106 +79,6 @@ function ChartSkeleton({
 	return (
 		<div className={`w-full ${aspectRatio} flex items-center justify-center`}>
 			<Skeleton className="w-full h-full rounded-md" />
-		</div>
-	);
-}
-
-// Custom tooltip for pie charts
-interface PieChartTooltipProps {
-	active?: boolean;
-	payload?: Array<{
-		name: string;
-		value: number;
-		dataKey: string;
-		payload: { fill: string };
-	}>;
-	allData?: Array<Record<string, number | string>>;
-}
-
-function PieChartTooltip({ active, payload, allData }: PieChartTooltipProps) {
-	if (!active || !payload?.length) {
-		return null;
-	}
-
-	const data = payload[0];
-
-	// Calculate percentage by summing all values from the chart data
-	// The dataKey tells us which field to sum (e.g., 'requests' or 'rate')
-	const dataKey = data.dataKey;
-	const total =
-		allData?.reduce(
-			(sum: number, item: Record<string, number | string>) =>
-				sum +
-				(typeof item[dataKey] === "number" ? (item[dataKey] as number) : 0),
-			0,
-		) || 0;
-	const percentage =
-		total > 0 ? ((data.value / total) * 100).toFixed(1) : "0.0";
-
-	return (
-		<div
-			className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl"
-			style={{ transition: "none" }}
-		>
-			<div className="font-medium text-foreground mb-1">{data.name}</div>
-			<div className="flex items-center gap-2">
-				<div
-					className="w-3 h-3 rounded-sm"
-					style={{ backgroundColor: data.payload.fill }}
-				/>
-				<span className="text-muted-foreground">{data.dataKey}:</span>
-				<span className="font-mono font-medium text-foreground">
-					{data.value.toLocaleString()}
-				</span>
-			</div>
-			<div className="text-muted-foreground mt-1">{percentage}% of total</div>
-		</div>
-	);
-}
-
-// Custom tooltip for area/line charts
-interface AreaChartTooltipProps {
-	active?: boolean;
-	payload?: Array<{
-		name: string;
-		value: number | string;
-		color: string;
-	}>;
-	label?: string;
-}
-
-function AreaChartTooltip({ active, payload, label }: AreaChartTooltipProps) {
-	if (!active || !payload?.length) {
-		return null;
-	}
-
-	return (
-		<div
-			className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl min-w-[180px]"
-			style={{ transition: "none" }}
-		>
-			<div className="font-medium text-foreground mb-2">{label}</div>
-			<div className="space-y-1.5">
-				{payload.map((entry) => (
-					<div
-						key={entry.name}
-						className="flex items-center justify-between gap-4"
-					>
-						<div className="flex items-center gap-2">
-							<div
-								className="w-3 h-3 rounded-sm"
-								style={{ backgroundColor: entry.color }}
-							/>
-							<span className="text-muted-foreground">{entry.name}:</span>
-						</div>
-						<span className="font-mono font-medium text-foreground">
-							{typeof entry.value === "number"
-								? entry.value.toFixed(1)
-								: entry.value}
-						</span>
-					</div>
-				))}
-			</div>
 		</div>
 	);
 }
@@ -478,7 +383,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 		.slice(0, 10)
 		.map((u) => ({
 			name:
-				u.address.length > 20 ? `${u.address.substring(0, 20)}...` : u.address,
+				u.address.length > 14 ? `${u.address.substring(0, 14)}...` : u.address,
 			requests: u.num_requests,
 		}));
 
@@ -492,12 +397,58 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 		.slice(0, 8)
 		.map((u) => ({
 			name:
-				u.address.length > 18 ? `${u.address.substring(0, 18)}...` : u.address,
+				u.address.length > 14 ? `${u.address.substring(0, 14)}...` : u.address,
 			rate:
 				u.num_requests > 0
 					? Number(((u.fails / u.num_requests) * 100).toFixed(2))
 					: 0,
 		}));
+
+	// Build dynamic chart config for traffic pie chart
+	const trafficChartConfig: ChartConfig = trafficData.reduce(
+		(config, entry, index) => {
+			const colors = [
+				"hsl(210, 100%, 56%)",
+				"hsl(210, 100%, 66%)",
+				"hsl(210, 100%, 46%)",
+				"hsl(200, 100%, 56%)",
+				"hsl(200, 100%, 66%)",
+				"hsl(220, 100%, 56%)",
+				"hsl(220, 100%, 66%)",
+				"hsl(190, 100%, 56%)",
+				"hsl(230, 100%, 56%)",
+				"hsl(180, 100%, 56%)",
+			];
+			config[entry.name] = {
+				label: entry.name,
+				color: colors[index % colors.length],
+			};
+			return config;
+		},
+		{} as ChartConfig,
+	);
+
+	// Build dynamic chart config for error pie chart
+	const errorChartConfig: ChartConfig = errorData.reduce(
+		(config, entry, index) => {
+			const colors = [
+				"hsl(25, 95%, 53%)",
+				"hsl(25, 95%, 63%)",
+				"hsl(25, 95%, 43%)",
+				"hsl(30, 95%, 53%)",
+				"hsl(30, 95%, 63%)",
+				"hsl(20, 95%, 53%)",
+				"hsl(35, 95%, 53%)",
+				"hsl(15, 95%, 53%)",
+			];
+			config[entry.name] = {
+				label: entry.name,
+				color: colors[index % colors.length],
+			};
+			return config;
+		},
+		{} as ChartConfig,
+	);
 
 	// Determine which data to show in the trend chart based on filter
 	const chartDataToShow =
@@ -751,9 +702,28 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 												}}
 											/>
 											<ChartTooltip
-												content={<AreaChartTooltip />}
-												animationDuration={0}
-												isAnimationActive={false}
+												content={({ active, payload, label }) => {
+													if (!active || !payload || payload.length === 0) {
+														return null;
+													}
+													return (
+														<div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
+															<div className="font-medium mb-1">{label}</div>
+															<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+																{payload.map((entry: TooltipPayloadEntry) => (
+																	<>
+																		<div className="text-muted-foreground">
+																			{entry.name}:
+																		</div>
+																		<div className="font-mono text-right tabular-nums">
+																			{entry.value.toFixed(2)}
+																		</div>
+																	</>
+																))}
+															</div>
+														</div>
+													);
+												}}
 											/>
 											<ChartLegend content={<ChartLegendContent />} />
 											<Area
@@ -763,7 +733,6 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 												fillOpacity={0.4}
 												stroke="var(--color-requestsPerMin)"
 												strokeWidth={2}
-												isAnimationActive={false}
 											/>
 											<Area
 												dataKey="failsPerMin"
@@ -772,7 +741,6 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 												fillOpacity={0.4}
 												stroke="var(--color-failsPerMin)"
 												strokeWidth={2}
-												isAnimationActive={false}
 											/>
 										</AreaChart>
 									) : (
@@ -801,9 +769,28 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 												}}
 											/>
 											<ChartTooltip
-												content={<AreaChartTooltip />}
-												animationDuration={0}
-												isAnimationActive={false}
+												content={({ active, payload, label }) => {
+													if (!active || !payload || payload.length === 0) {
+														return null;
+													}
+													return (
+														<div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
+															<div className="font-medium mb-1">{label}</div>
+															<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+																{payload.map((entry: TooltipPayloadEntry) => (
+																	<>
+																		<div className="text-muted-foreground">
+																			{entry.name}:
+																		</div>
+																		<div className="font-mono text-right tabular-nums">
+																			{entry.value.toFixed(2)}
+																		</div>
+																	</>
+																))}
+															</div>
+														</div>
+													);
+												}}
 											/>
 											<ChartLegend content={<ChartLegendContent />} />
 											{chartDataToShow.length > 0 &&
@@ -843,7 +830,6 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 																fill={color}
 																fillOpacity={0.2}
 																strokeWidth={2}
-																isAnimationActive={false}
 															/>
 														);
 													})}
@@ -881,47 +867,93 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 							</div>
 						</div>
 					) : (
-						<div className="w-full h-[350px]">
+						<div className="w-full">
 							{isChartReady ? (
-								<ChartContainer config={chartConfig} className="w-full h-full">
-									<PieChart>
-										<ChartTooltip
-											content={<PieChartTooltip allData={trafficData} />}
-											animationDuration={0}
-											isAnimationActive={false}
-										/>
-										<Pie
-											data={trafficData}
-											dataKey="requests"
-											nameKey="name"
-											cx="50%"
-											cy="50%"
-											outerRadius={120}
-										>
-											{trafficData.map((entry) => {
-												const colors = [
-													"hsl(210, 100%, 56%)",
-													"hsl(210, 100%, 66%)",
-													"hsl(210, 100%, 46%)",
-													"hsl(200, 100%, 56%)",
-													"hsl(200, 100%, 66%)",
-													"hsl(220, 100%, 56%)",
-													"hsl(220, 100%, 66%)",
-													"hsl(190, 100%, 56%)",
-													"hsl(230, 100%, 56%)",
-													"hsl(180, 100%, 56%)",
-												];
-												const index = trafficData.indexOf(entry);
-												return (
-													<Cell
-														key={`cell-${entry.name}`}
-														fill={colors[index % colors.length]}
+								<div className="flex flex-col">
+									<ChartContainer
+										config={trafficChartConfig}
+										className="w-full h-[280px]"
+									>
+										<PieChart>
+											<ChartTooltip
+												content={({ active, payload }) => {
+													if (!active || !payload || payload.length === 0) {
+														return null;
+													}
+													const data = payload[0];
+													return (
+														<div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
+															<div className="font-medium">{data.name}</div>
+															<div className="text-muted-foreground">
+																{data.value?.toLocaleString()} requests
+															</div>
+														</div>
+													);
+												}}
+											/>
+											<Pie
+												data={trafficData}
+												dataKey="requests"
+												nameKey="name"
+												cx="50%"
+												cy="50%"
+												outerRadius={110}
+											>
+												{trafficData.map((entry) => {
+													const colors = [
+														"hsl(210, 100%, 56%)",
+														"hsl(210, 100%, 66%)",
+														"hsl(210, 100%, 46%)",
+														"hsl(200, 100%, 56%)",
+														"hsl(200, 100%, 66%)",
+														"hsl(220, 100%, 56%)",
+														"hsl(220, 100%, 66%)",
+														"hsl(190, 100%, 56%)",
+														"hsl(230, 100%, 56%)",
+														"hsl(180, 100%, 56%)",
+													];
+													const index = trafficData.indexOf(entry);
+													return (
+														<Cell
+															key={`cell-${entry.name}`}
+															fill={colors[index % colors.length]}
+														/>
+													);
+												})}
+											</Pie>
+										</PieChart>
+									</ChartContainer>
+									<div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-2 pt-4 max-h-32 overflow-y-auto">
+										{trafficData.map((entry, index) => {
+											const colors = [
+												"hsl(210, 100%, 56%)",
+												"hsl(210, 100%, 66%)",
+												"hsl(210, 100%, 46%)",
+												"hsl(200, 100%, 56%)",
+												"hsl(200, 100%, 66%)",
+												"hsl(220, 100%, 56%)",
+												"hsl(220, 100%, 66%)",
+												"hsl(190, 100%, 56%)",
+												"hsl(230, 100%, 56%)",
+												"hsl(180, 100%, 56%)",
+											];
+											return (
+												<div
+													key={entry.name}
+													className="flex items-center gap-1.5"
+												>
+													<div
+														className="h-2 w-2 shrink-0 rounded-[2px]"
+														style={{
+															backgroundColor: colors[index % colors.length],
+														}}
 													/>
-												);
-											})}
-										</Pie>
-									</PieChart>
-								</ChartContainer>
+													<span className="text-xs">{entry.name}</span>
+												</div>
+											);
+										})}
+									</div>
+								</div>
 							) : (
 								<ChartSkeleton aspectRatio="aspect-[4/3]" />
 							)}
@@ -939,45 +971,89 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 								</span>
 							)}
 						</h3>
-						<div className="w-full h-[350px]">
+						<div className="w-full">
 							{isChartReady ? (
-								<ChartContainer config={chartConfig} className="w-full h-full">
-									<PieChart>
-										<ChartTooltip
-											content={<PieChartTooltip allData={errorData} />}
-											animationDuration={0}
-											isAnimationActive={false}
-										/>
-										<Pie
-											data={errorData}
-											dataKey="rate"
-											nameKey="name"
-											cx="50%"
-											cy="50%"
-											outerRadius={120}
-										>
-											{errorData.map((entry) => {
-												const colors = [
-													"hsl(25, 95%, 53%)",
-													"hsl(25, 95%, 63%)",
-													"hsl(25, 95%, 43%)",
-													"hsl(30, 95%, 53%)",
-													"hsl(30, 95%, 63%)",
-													"hsl(20, 95%, 53%)",
-													"hsl(35, 95%, 53%)",
-													"hsl(15, 95%, 53%)",
-												];
-												const index = errorData.indexOf(entry);
-												return (
-													<Cell
-														key={`cell-${entry.name}`}
-														fill={colors[index % colors.length]}
+								<div className="flex flex-col">
+									<ChartContainer
+										config={errorChartConfig}
+										className="w-full h-[280px]"
+									>
+										<PieChart>
+											<ChartTooltip
+												content={({ active, payload }) => {
+													if (!active || !payload || payload.length === 0) {
+														return null;
+													}
+													const data = payload[0];
+													return (
+														<div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
+															<div className="font-medium">{data.name}</div>
+															<div className="text-muted-foreground">
+																{data.value}% error rate
+															</div>
+														</div>
+													);
+												}}
+											/>
+											<Pie
+												data={errorData}
+												dataKey="rate"
+												nameKey="name"
+												cx="50%"
+												cy="50%"
+												outerRadius={110}
+											>
+												{errorData.map((entry) => {
+													const colors = [
+														"hsl(25, 95%, 53%)",
+														"hsl(25, 95%, 63%)",
+														"hsl(25, 95%, 43%)",
+														"hsl(30, 95%, 53%)",
+														"hsl(30, 95%, 63%)",
+														"hsl(20, 95%, 53%)",
+														"hsl(35, 95%, 53%)",
+														"hsl(15, 95%, 53%)",
+													];
+													const index = errorData.indexOf(entry);
+													return (
+														<Cell
+															key={`cell-${entry.name}`}
+															fill={colors[index % colors.length]}
+														/>
+													);
+												})}
+											</Pie>
+										</PieChart>
+									</ChartContainer>
+									<div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-2 pt-4 max-h-32 overflow-y-auto">
+										{errorData.map((entry, index) => {
+											const colors = [
+												"hsl(25, 95%, 53%)",
+												"hsl(25, 95%, 63%)",
+												"hsl(25, 95%, 43%)",
+												"hsl(30, 95%, 53%)",
+												"hsl(30, 95%, 63%)",
+												"hsl(20, 95%, 53%)",
+												"hsl(35, 95%, 53%)",
+												"hsl(15, 95%, 53%)",
+											];
+											return (
+												<div
+													key={entry.name}
+													className="flex items-center gap-1.5"
+												>
+													<div
+														className="h-2 w-2 shrink-0 rounded-[2px]"
+														style={{
+															backgroundColor: colors[index % colors.length],
+														}}
 													/>
-												);
-											})}
-										</Pie>
-									</PieChart>
-								</ChartContainer>
+													<span className="text-xs">{entry.name}</span>
+												</div>
+											);
+										})}
+									</div>
+								</div>
 							) : (
 								<ChartSkeleton aspectRatio="aspect-[4/3]" />
 							)}
@@ -986,7 +1062,35 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 				) : (
 					<Card className="p-6">
 						<h3 className="text-lg font-semibold mb-4">Error Rates</h3>
-						<ChartSkeleton aspectRatio="aspect-[4/3]" />
+						<div className="flex items-center justify-center h-auto min-h-[280px]">
+							<div className="text-center space-y-3">
+								<div className="w-16 h-16 mx-auto rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+									<svg
+										className="w-8 h-8 text-green-600 dark:text-green-400"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										role="img"
+										aria-label="Success checkmark"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M5 13l4 4L19 7"
+										/>
+									</svg>
+								</div>
+								<div>
+									<h4 className="font-semibold text-foreground">
+										No Errors Detected
+									</h4>
+									<p className="text-sm text-muted-foreground mt-1">
+										All upstreams are operating normally
+									</p>
+								</div>
+							</div>
+						</div>
 					</Card>
 				)}
 			</div>
