@@ -15,6 +15,7 @@ export interface CaddyFeature {
 		options?: Array<{ value: string; label: string }>;
 		placeholder?: string;
 		helpText?: string;
+		autocomplete?: "upstreams"; // Enable autocomplete from known upstreams
 	}>;
 	generate: (values: Record<string, unknown>) => CaddyDirective[];
 	parse: (directive: CaddyDirective) => Record<string, unknown> | null;
@@ -58,18 +59,20 @@ function createDirectiveWithBlock(
 export const caddyFeatures: CaddyFeature[] = [
 	{
 		id: "reverse-proxy",
-		name: "Proxy to Backend",
-		description: "Forward requests to another server",
+		name: "Proxy to Upstream",
+		description: "Forward requests to an upstream server",
 		icon: "ArrowLeftRight",
 		category: "proxy",
 		fields: [
 			{
 				name: "backend",
-				label: "Backend Server",
+				label: "Upstream Server",
 				type: "text",
 				required: true,
 				placeholder: "localhost:8080",
-				helpText: "The server to proxy requests to",
+				helpText:
+					"The upstream server to proxy requests to (select from list or type a new one)",
+				autocomplete: "upstreams",
 			},
 			{
 				name: "path",

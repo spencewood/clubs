@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { LeftPanelProvider } from "@/contexts/LeftPanelContext";
+import { UpstreamsProvider } from "@/contexts/UpstreamsContext";
 
 export const metadata: Metadata = {
 	title: "Clubs - Caddy Configuration Manager",
@@ -23,7 +24,9 @@ export default function RootLayout({
 					enableSystem
 					disableTransitionOnChange
 				>
-					<LeftPanelProvider>{children}</LeftPanelProvider>
+					<UpstreamsProvider>
+						<LeftPanelProvider>{children}</LeftPanelProvider>
+					</UpstreamsProvider>
 					<Toaster position="top-right" richColors closeButton />
 				</ThemeProvider>
 			</body>
