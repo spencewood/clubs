@@ -199,6 +199,39 @@ tls.example.com {
 	reverse_proxy localhost:3000
 }
 
+# Container with multiple services sharing configuration
+*.services.example.com {
+	# Shared TLS configuration for all subdomains
+	tls {
+		protocols tls1.2 tls1.3
+	}
+
+	# Shared security headers
+	header / {
+		Strict-Transport-Security "max-age=31536000;"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+
+	# API Service
+	@api host api.services.example.com
+	handle @api {
+		reverse_proxy localhost:8080
+	}
+
+	# Dashboard
+	@dashboard host dashboard.services.example.com
+	handle @dashboard {
+		reverse_proxy localhost:3000
+		encode gzip
+	}
+
+	# Catch-all for undefined subdomains
+	handle {
+		respond "Service not found" 404
+	}
+}
+
 # PHP-FPM example
 php.example.com {
 	root * /var/www/php
