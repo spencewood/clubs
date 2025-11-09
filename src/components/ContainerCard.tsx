@@ -171,6 +171,10 @@ export function ContainerCard({
 									</Button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="end">
+									<DropdownMenuItem onClick={() => onAddSite(id)}>
+										<Plus className="h-4 w-4 mr-2" />
+										Add Site
+									</DropdownMenuItem>
 									<DropdownMenuItem onClick={() => onEdit(id)}>
 										<Settings className="h-4 w-4 mr-2" />
 										Edit
@@ -189,6 +193,15 @@ export function ContainerCard({
 
 					{/* Desktop: All buttons visible */}
 					<div className="hidden sm:flex gap-2 flex-shrink-0">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => onAddSite(id)}
+							title="Add site to container"
+							className="h-9 w-auto px-3"
+						>
+							<Plus className="h-4 w-4" />
+						</Button>
 						<Button
 							variant="outline"
 							size="sm"
@@ -347,17 +360,6 @@ export function ContainerCard({
 								</Card>
 							);
 						})}
-
-						{/* Add Site Button */}
-						<button
-							type="button"
-							onClick={() => onAddSite(id)}
-							className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-[var(--color-success)] hover:bg-[var(--color-success)]/5 transition-colors text-muted-foreground hover:text-foreground"
-						>
-							<Plus className="h-4 w-4" />
-							<Globe className="h-4 w-4" />
-							<span className="text-sm font-medium">Site</span>
-						</button>
 					</div>
 				</CardContent>
 			)}
