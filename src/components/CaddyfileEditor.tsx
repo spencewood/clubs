@@ -15,8 +15,19 @@ import {
 } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import CodeMirror from "@uiw/react-codemirror";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getCaddyConfig } from "@/lib/api";
+import {
+	basicCaddyAutocomplete,
+	caddyAutocomplete,
+} from "@/lib/caddy-autocomplete";
+import {
+	type CaddyContext,
+	extractCaddyContext,
+} from "@/lib/caddy-context-extractor";
+import { caddyHover } from "@/lib/caddy-hover";
 import { caddyfile } from "@/lib/caddyfile-mode";
+import type { CaddyJSONConfig } from "@/lib/server/caddy-api-client";
 
 interface CaddyfileEditorProps {
 	value: string;
@@ -76,6 +87,27 @@ export function CaddyfileEditor({
 	placeholder,
 	highlightLines,
 }: CaddyfileEditorProps) {
+	// State for Caddy context (extracted from live config)
+	const [caddyContext, setCaddyContext] = useState<CaddyContext | null>(null);
+
+	// Fetch Caddy context on mount
+	useEffect(() => {
+		async function fetchContext() {
+			try {
+				const result = await getCaddyConfig();
+				if (result.success && result.config) {
+					const context = extractCaddyContext(result.config as CaddyJSONConfig);
+					setCaddyContext(context);
+				}
+			} catch (error) {
+				console.error("Failed to fetch Caddy context:", error);
+				// Continue with basic autocomplete if fetch fails
+			}
+		}
+
+		fetchContext();
+	}, []);
+
 	// Custom syntax highlighting - override comments only
 	const customHighlighting = useMemo(
 		() =>
@@ -172,6 +204,114 @@ export function CaddyfileEditor({
 					borderLeft: "3px solid var(--color-primary)",
 					paddingLeft: "4px",
 				},
+				// Autocomplete styling - matches Radix UI/shadcn patterns
+				".cm-tooltip-autocomplete": {
+					backgroundColor: "var(--color-popover)",
+					color: "var(--color-popover-foreground)",
+					border: "1px solid var(--color-border)",
+					borderRadius: "calc(var(--radius) - 2px)", // rounded-md
+					boxShadow:
+						"0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)", // shadow-md
+					fontFamily: "ui-monospace, monospace",
+					fontSize: "0.875rem", // text-sm (14px)
+					zIndex: "50",
+				},
+				".cm-tooltip-autocomplete > ul": {
+					fontFamily: "ui-monospace, monospace",
+					maxHeight: "300px",
+					overflowY: "auto",
+					overflowX: "hidden",
+					padding: "0.25rem", // p-1
+					scrollPaddingTop: "0.25rem",
+					scrollPaddingBottom: "0.25rem",
+				},
+				".cm-tooltip-autocomplete > ul > li": {
+					position: "relative",
+					display: "flex",
+					alignItems: "center",
+					gap: "0.5rem", // gap-2
+					paddingLeft: "0.5rem", // px-2
+					paddingRight: "0.5rem",
+					paddingTop: "0.375rem", // py-1.5
+					paddingBottom: "0.375rem",
+					fontSize: "0.875rem", // text-sm
+					lineHeight: "1.25rem",
+					borderRadius: "calc(var(--radius) - 4px)", // rounded-sm
+					outline: "none",
+					cursor: "default",
+					userSelect: "none",
+					transition: "background-color 150ms, color 150ms",
+					color: "var(--color-popover-foreground)",
+				},
+				".cm-tooltip-autocomplete > ul > li[aria-selected]": {
+					backgroundColor: "var(--color-accent)",
+					color: "var(--color-accent-foreground)",
+				},
+				// Completion item parts
+				".cm-completionLabel": {
+					fontFamily: "ui-monospace, monospace",
+					fontSize: "0.875rem", // text-sm
+					color: "inherit",
+				},
+				".cm-completionDetail": {
+					fontStyle: "normal",
+					fontSize: "0.75rem", // text-xs
+					color: "var(--color-muted-foreground)",
+					marginLeft: "auto",
+				},
+				".cm-completionInfo": {
+					padding: "1rem",
+					backgroundColor: "var(--color-popover)",
+					color: "var(--color-popover-foreground)",
+					border: "1px solid var(--color-border)",
+					borderRadius: "calc(var(--radius) - 2px)",
+					fontSize: "0.75rem", // text-xs
+					lineHeight: "1.5",
+					maxWidth: "400px",
+					boxShadow:
+						"0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)", // shadow-md
+					whiteSpace: "pre-wrap",
+					zIndex: "50",
+				},
+				".cm-completionInfo.cm-completionInfo-left": {
+					marginRight: "0.5rem",
+				},
+				".cm-completionInfo.cm-completionInfo-right": {
+					marginLeft: "0.5rem",
+				},
+				// Hover tooltip styling - matches Radix UI/shadcn patterns
+				".cm-caddy-hover": {
+					padding: "1rem",
+					backgroundColor: "var(--color-popover)",
+					color: "var(--color-popover-foreground)",
+					border: "1px solid var(--color-border)",
+					borderRadius: "calc(var(--radius) - 2px)",
+					maxWidth: "400px",
+					boxShadow:
+						"0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)", // shadow-md
+					zIndex: "50",
+				},
+				".cm-caddy-hover-title": {
+					fontFamily: "ui-monospace, monospace",
+					fontWeight: "600",
+					fontSize: "0.875rem", // text-sm
+					marginBottom: "0.375rem",
+					color: "inherit",
+				},
+				".cm-caddy-hover-description": {
+					fontSize: "0.75rem", // text-xs
+					lineHeight: "1.5",
+					color: "var(--color-muted-foreground)",
+					marginBottom: "0.375rem",
+				},
+				".cm-caddy-hover-example": {
+					fontFamily: "ui-monospace, monospace",
+					fontSize: "0.75rem", // text-xs
+					padding: "0.25rem 0.375rem",
+					backgroundColor: "var(--color-muted)",
+					borderRadius: "calc(var(--radius) - 4px)",
+					color: "inherit",
+				},
 			}),
 		[],
 	);
@@ -211,6 +351,12 @@ export function CaddyfileEditor({
 				customHighlighting,
 				createHighlightPlugin(highlightLines ?? null),
 				theme,
+				// Smart autocomplete with context (or basic fallback)
+				caddyContext
+					? caddyAutocomplete(caddyContext)
+					: basicCaddyAutocomplete(),
+				// Hover tooltips for directive documentation
+				caddyHover(),
 			]}
 			indentWithTab={true}
 		/>

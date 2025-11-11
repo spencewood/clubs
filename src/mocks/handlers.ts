@@ -707,6 +707,114 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 		});
 	}),
 
+	// Generate Caddy JSON Schema
+	http.get("/api/caddy/schema", async ({ request }) => {
+		await delay(150);
+
+		const url = new URL(request.url);
+		const mode = url.searchParams.get("mode") || "comprehensive";
+
+		// Base schema (minimal)
+		const baseSchema = {
+			$schema: "http://json-schema.org/draft-07/schema#",
+			title: "Caddy Configuration Schema (Base)",
+			description: "Base JSON Schema for Caddy configurations",
+			type: "object",
+			properties: {
+				admin: {
+					type: "object",
+					description: "Admin API configuration",
+				},
+				apps: {
+					type: "object",
+					description: "Application modules",
+					properties: {
+						http: { type: "object" },
+						tls: { type: "object" },
+						pki: { type: "object" },
+					},
+				},
+			},
+			additionalProperties: true,
+		};
+
+		if (mode === "base") {
+			return HttpResponse.json({
+				success: true,
+				schema: baseSchema,
+				mode: "base",
+			});
+		}
+
+		// Comprehensive schema (introspected from mock config)
+		if (!mockCaddyAPIAvailable) {
+			return HttpResponse.json({
+				success: true,
+				schema: baseSchema,
+				mode: "base",
+				warning: "Caddy API not available, returning base schema",
+			});
+		}
+
+		// Generate comprehensive schema based on mock Caddy config
+		const comprehensiveSchema = {
+			$schema: "http://json-schema.org/draft-07/schema#",
+			title: "Caddy Configuration Schema",
+			description: "JSON Schema generated from the current Caddy configuration",
+			type: "object",
+			properties: {
+				admin: {
+					type: "object",
+					description: "Admin API configuration",
+					properties: {
+						listen: { type: "string" },
+					},
+				},
+				apps: {
+					type: "object",
+					description: "Application modules",
+					properties: {
+						http: {
+							type: "object",
+							properties: {
+								servers: {
+									type: "object",
+									additionalProperties: {
+										type: "object",
+										properties: {
+											listen: {
+												type: "array",
+												items: { type: "string" },
+											},
+											routes: {
+												type: "array",
+												items: { type: "object" },
+											},
+										},
+									},
+								},
+							},
+						},
+						tls: {
+							type: "object",
+							properties: {
+								automation: { type: "object" },
+								certificates: { type: "object" },
+							},
+						},
+					},
+				},
+			},
+			additionalProperties: true,
+		};
+
+		return HttpResponse.json({
+			success: true,
+			schema: comprehensiveSchema,
+			mode: "comprehensive",
+		});
+	}),
+
 	// Get ACME certificates
 	http.get("/api/certificates", async () => {
 		await delay(100);

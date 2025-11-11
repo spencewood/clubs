@@ -1,10 +1,72 @@
 import { recordApiCall } from "./metrics";
 
-// Caddy JSON Config type (simplified for API usage)
+// Caddy JSON Config types with detailed structure for context extraction
+
+export interface CaddyUpstream {
+	dial?: string;
+	[key: string]: unknown;
+}
+
+export interface CaddyHandler {
+	handler?: string;
+	upstreams?: CaddyUpstream[];
+	routes?: CaddyRoute[];
+	handle?: CaddyHandler[];
+	[key: string]: unknown;
+}
+
+export interface CaddyMatcher {
+	host?: string[];
+	path?: string[];
+	[key: string]: unknown;
+}
+
+export interface CaddyRoute {
+	match?: CaddyMatcher[];
+	handle?: CaddyHandler[];
+	[key: string]: unknown;
+}
+
+export interface CaddyServer {
+	routes?: CaddyRoute[];
+	[key: string]: unknown;
+}
+
+export interface CaddyHTTPApp {
+	servers?: Record<string, CaddyServer>;
+	[key: string]: unknown;
+}
+
+export interface CaddyTLSPolicy {
+	protocols?: string[];
+	[key: string]: unknown;
+}
+
+export interface CaddyTLSAutomation {
+	policies?: CaddyTLSPolicy[];
+	[key: string]: unknown;
+}
+
+export interface CaddyTLSApp {
+	automation?: CaddyTLSAutomation;
+	[key: string]: unknown;
+}
+
+export interface CaddyApps {
+	http?: CaddyHTTPApp;
+	tls?: CaddyTLSApp;
+	[key: string]: unknown;
+}
+
+// Main Caddy JSON Config type
 export interface CaddyJSONConfig {
-	apps?: {
+	apps?: CaddyApps;
+	admin?: {
+		listen?: string;
 		[key: string]: unknown;
 	};
+	logging?: unknown;
+	storage?: unknown;
 	[key: string]: unknown;
 }
 
@@ -401,6 +463,18 @@ export class CaddyAPIClient {
 				error: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
+	}
+
+	/**
+	 * Generate a JSON Schema from the current Caddy configuration
+	 * This introspects the running config to create a schema that can be used
+	 * for validation, autocomplete, and documentation.
+	 *
+	 * Note: This method requires the schema generator to be imported separately
+	 * to avoid circular dependencies. Use the static helper below or import directly.
+	 */
+	async getConfigForSchema(): Promise<CaddyJSONConfig> {
+		return await this.getConfig();
 	}
 }
 
