@@ -21,6 +21,7 @@
 		"version": "changeset version"
 	},
 	"dependencies": {
+		"@codemirror/autocomplete": "^6.19.1",
 		"@codemirror/lang-javascript": "^6.2.4",
 		"@codemirror/language": "^6.11.3",
 		"@codemirror/legacy-modes": "^6.5.2",

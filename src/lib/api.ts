@@ -346,3 +346,49 @@ export async function getCaddyPKICA(caId = "local"): Promise<{
 		};
 	}
 }
+
+/**
+ * Generate a JSON Schema for Caddy configuration
+ * This introspects the running Caddy instance to create a schema
+ * that matches the installed modules and configuration structure.
+ *
+ * @param mode - "comprehensive" (introspect running Caddy) or "base" (minimal schema)
+ */
+export async function getCaddySchema(
+	mode: "comprehensive" | "base" = "comprehensive",
+): Promise<{
+	success: boolean;
+	schema?: unknown;
+	mode?: string;
+	warning?: string;
+	error?: string;
+}> {
+	try {
+		const url = `${API_BASE}/api/caddy/schema?mode=${encodeURIComponent(mode)}`;
+
+		const response = await fetch(url);
+
+		if (!response.ok) {
+			const data = await response.json();
+			return {
+				success: false,
+				error: data.error || "Failed to generate schema",
+				schema: data.schema, // May include fallback schema
+				mode: data.mode,
+			};
+		}
+
+		const data = await response.json();
+		return {
+			success: true,
+			schema: data.schema,
+			mode: data.mode,
+			warning: data.warning,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Network error",
+		};
+	}
+}
