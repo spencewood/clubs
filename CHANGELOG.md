@@ -1,5 +1,12 @@
 # clubs
 
+## 0.14.0
+
+### Minor Changes
+
+- 7b93988: Add autocompletion for Caddy directives, handlers, and upstreams
+- f0d3558: Add autocomplete for upstream selection
+
 ## 0.13.1
 
 ### Patch Changes
