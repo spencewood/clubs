@@ -221,6 +221,11 @@ export const caddyFeatures: CaddyFeature[] = [
 			if (directive.name !== "header") return null;
 			if (directive.args.length < 2) return null;
 
+			// Check for subdirectives - if present, return null for raw editing
+			if (directive.block && directive.block.length > 0) {
+				return null;
+			}
+
 			const name = directive.args[0];
 			// Remove quotes from value if present
 			const value = directive.args
@@ -365,6 +370,19 @@ export const caddyFeatures: CaddyFeature[] = [
 		category: "security",
 		fields: [
 			{
+				name: "mode",
+				label: "Certificate Mode",
+				type: "select",
+				required: true,
+				defaultValue: "auto",
+				options: [
+					{ value: "auto", label: "Automatic (Let's Encrypt)" },
+					{ value: "internal", label: "Internal (Self-signed)" },
+					{ value: "custom", label: "Custom Certificate Files" },
+				],
+				helpText: "How to manage TLS certificates",
+			},
+			{
 				name: "email",
 				label: "Email for Let's Encrypt",
 				type: "text",
@@ -387,38 +405,108 @@ export const caddyFeatures: CaddyFeature[] = [
 			},
 		],
 		generate: (values) => {
+			const mode = values.mode as string;
 			const email = values.email as string | undefined;
 			const certFile = values.certFile as string | undefined;
 			const keyFile = values.keyFile as string | undefined;
 
-			if (certFile && keyFile) {
+			if (mode === "internal") {
+				return [createDirective("tls internal")];
+			}
+			if (mode === "custom" && certFile && keyFile) {
 				return [createDirective(`tls ${certFile} ${keyFile}`)];
 			}
-			if (email) {
+			if (mode === "auto" && email) {
 				return [createDirective(`tls ${email}`)];
+			}
+			if (mode === "auto") {
+				return [createDirective("tls")];
 			}
 			return [createDirective("tls")];
 		},
 		parse: (directive) => {
 			if (directive.name !== "tls") return null;
 
+			// Check for subdirectives - if present, return null for raw editing
+			if (directive.block && directive.block.length > 0) {
+				return null;
+			}
+
 			if (directive.args.length === 0) {
-				// Just "tls" with no args
-				return {};
+				// Just "tls" with no args - auto mode
+				return { mode: "auto" };
 			}
 			if (directive.args.length === 1) {
-				// Could be email
 				const arg = directive.args[0];
-				if (arg.includes("@")) {
-					return { email: arg };
+				if (arg === "internal") {
+					return { mode: "internal" };
 				}
-				return {};
+				if (arg.includes("@")) {
+					return { mode: "auto", email: arg };
+				}
+				return { mode: "auto" };
 			}
 			if (directive.args.length === 2) {
 				// cert and key files
 				return {
+					mode: "custom",
 					certFile: directive.args[0],
 					keyFile: directive.args[1],
+				};
+			}
+			return null;
+		},
+	},
+	{
+		id: "dns",
+		name: "DNS Provider (ACME)",
+		description: "Configure DNS provider for ACME challenges",
+		icon: "Globe",
+		category: "security",
+		fields: [
+			{
+				name: "provider",
+				label: "DNS Provider",
+				type: "select",
+				required: true,
+				defaultValue: "cloudflare",
+				options: [
+					{ value: "cloudflare", label: "Cloudflare" },
+					{ value: "route53", label: "AWS Route53" },
+					{ value: "digitalocean", label: "DigitalOcean" },
+					{ value: "gandi", label: "Gandi" },
+					{ value: "googleclouddns", label: "Google Cloud DNS" },
+					{ value: "namecheap", label: "Namecheap" },
+					{ value: "duckdns", label: "DuckDNS" },
+				],
+				helpText: "DNS provider for automatic certificate management",
+			},
+			{
+				name: "apiToken",
+				label: "API Token",
+				type: "text",
+				required: true,
+				placeholder: "your-api-token-here",
+				helpText: "API token for DNS provider authentication",
+			},
+		],
+		generate: (values) => {
+			const provider = values.provider as string;
+			const apiToken = values.apiToken as string;
+			return [createDirective(`dns ${provider} ${apiToken}`)];
+		},
+		parse: (directive) => {
+			if (directive.name !== "dns") return null;
+
+			// Check for subdirectives - if present, return null for raw editing
+			if (directive.block && directive.block.length > 0) {
+				return null;
+			}
+
+			if (directive.args.length >= 2) {
+				return {
+					provider: directive.args[0],
+					apiToken: directive.args.slice(1).join(" "),
 				};
 			}
 			return null;

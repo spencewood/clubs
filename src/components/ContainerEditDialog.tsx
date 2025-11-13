@@ -1,5 +1,7 @@
-import { Check, Edit2, Plus, Save, Trash2, X } from "lucide-react";
+import { Edit2, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { AddFeatureDialog } from "@/components/AddFeatureDialog";
+import { EditDirectiveDialog } from "@/components/EditDirectiveDialog";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -25,10 +27,6 @@ interface ContainerEditDialogProps {
 	onSave: (siteBlock: CaddySiteBlock) => void;
 }
 
-function generateId(): string {
-	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-}
-
 export function ContainerEditDialog({
 	siteBlock,
 	open,
@@ -37,11 +35,10 @@ export function ContainerEditDialog({
 }: ContainerEditDialogProps) {
 	const [container, setContainer] = useState<VirtualContainer | null>(null);
 	const [wildcardDomain, setWildcardDomain] = useState("");
-	const [newDirective, setNewDirective] = useState("");
-	const [editingDirectiveId, setEditingDirectiveId] = useState<string | null>(
-		null,
-	);
-	const [editingDirectiveText, setEditingDirectiveText] = useState("");
+	const [editingDirective, setEditingDirective] =
+		useState<CaddyDirective | null>(null);
+	const [editDialogOpen, setEditDialogOpen] = useState(false);
+	const [addFeatureDialogOpen, setAddFeatureDialogOpen] = useState(false);
 	const wildcardDomainId = useId();
 
 	useEffect(() => {
@@ -65,25 +62,13 @@ export function ContainerEditDialog({
 		onOpenChange(false);
 	};
 
-	const handleAddDirective = () => {
-		if (!container || !newDirective.trim()) return;
-
-		const parts = newDirective.trim().split(/\s+/);
-		const name = parts[0];
-		const args = parts.slice(1);
-
-		const directive: CaddyDirective = {
-			id: generateId(),
-			name,
-			args,
-			raw: newDirective.trim(),
-		};
+	const handleAddDirectives = (directives: CaddyDirective[]) => {
+		if (!container) return;
 
 		setContainer({
 			...container,
-			sharedConfig: [...container.sharedConfig, directive],
+			sharedConfig: [...container.sharedConfig, ...directives],
 		});
-		setNewDirective("");
 	};
 
 	const handleRemoveDirective = (id: string) => {
@@ -96,43 +81,19 @@ export function ContainerEditDialog({
 	};
 
 	const handleStartEdit = (directive: CaddyDirective) => {
-		setEditingDirectiveId(directive.id);
-		// Reconstruct the raw text from the directive
-		const text =
-			directive.raw || `${directive.name} ${directive.args.join(" ")}`;
-		setEditingDirectiveText(text);
+		setEditingDirective(directive);
+		setEditDialogOpen(true);
 	};
 
-	const handleSaveEdit = () => {
-		if (!container || !editingDirectiveId) return;
-
-		const parts = editingDirectiveText.trim().split(/\s+/);
-		const name = parts[0];
-		const args = parts.slice(1);
-
-		const updatedConfig = container.sharedConfig.map((d) =>
-			d.id === editingDirectiveId
-				? {
-						...d,
-						name,
-						args,
-						raw: editingDirectiveText.trim(),
-					}
-				: d,
-		);
+	const handleSaveEdit = (updatedDirective: CaddyDirective) => {
+		if (!container) return;
 
 		setContainer({
 			...container,
-			sharedConfig: updatedConfig,
+			sharedConfig: container.sharedConfig.map((d) =>
+				d.id === updatedDirective.id ? updatedDirective : d,
+			),
 		});
-
-		setEditingDirectiveId(null);
-		setEditingDirectiveText("");
-	};
-
-	const handleCancelEdit = () => {
-		setEditingDirectiveId(null);
-		setEditingDirectiveText("");
 	};
 
 	if (!container) return null;
@@ -179,91 +140,42 @@ export function ContainerEditDialog({
 										key={directive.id}
 										className="border rounded-lg bg-[var(--color-info)]/5 border-[var(--color-info)]/30"
 									>
-										{editingDirectiveId === directive.id ? (
-											// Edit mode
-											<div className="p-3 space-y-2">
-												<Input
-													value={editingDirectiveText}
-													onChange={(e) =>
-														setEditingDirectiveText(e.target.value)
-													}
-													className="font-mono text-sm"
-													placeholder="e.g., encode gzip"
-													onKeyDown={(e) => {
-														if (e.key === "Enter") {
-															e.preventDefault();
-															handleSaveEdit();
-														} else if (e.key === "Escape") {
-															handleCancelEdit();
-														}
-													}}
-													autoFocus
-												/>
-												<div className="flex gap-2">
-													<Button
-														size="sm"
-														onClick={handleSaveEdit}
-														disabled={!editingDirectiveText.trim()}
-													>
-														<Check className="h-3 w-3 mr-1" />
-														Save
-													</Button>
-													<Button
-														size="sm"
-														variant="outline"
-														onClick={handleCancelEdit}
-													>
-														<X className="h-3 w-3 mr-1" />
-														Cancel
-													</Button>
-												</div>
+										<div className="flex items-center gap-2 p-3">
+											<div className="flex-1 font-mono text-sm font-semibold text-[var(--color-info-dark)]">
+												{directive.name}{" "}
+												{directive.args.length > 0 && directive.args.join(" ")}
 											</div>
-										) : (
-											// View mode
-											<>
-												<div className="flex items-center gap-2 p-3">
-													<div className="flex-1 font-mono text-sm font-semibold text-[var(--color-info-dark)]">
-														{directive.name}{" "}
-														{directive.args.length > 0 &&
-															directive.args.join(" ")}
-													</div>
-													{/* Only allow editing simple directives without blocks */}
-													{(!directive.block ||
-														directive.block.length === 0) && (
-														<Button
-															variant="ghost"
-															size="icon"
-															onClick={() => handleStartEdit(directive)}
-															className="h-8 w-8"
-															title="Edit directive"
-														>
-															<Edit2 className="h-4 w-4" />
-														</Button>
-													)}
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() => handleRemoveDirective(directive.id)}
-														className="h-8 w-8"
-														title="Delete directive"
+											<Button
+												variant="ghost"
+												size="icon"
+												onClick={() => handleStartEdit(directive)}
+												className="h-8 w-8"
+												title="Edit directive"
+											>
+												<Edit2 className="h-4 w-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="icon"
+												onClick={() => handleRemoveDirective(directive.id)}
+												className="h-8 w-8"
+												title="Delete directive"
+											>
+												<Trash2 className="h-4 w-4" />
+											</Button>
+										</div>
+										{directive.block && directive.block.length > 0 && (
+											<div className="px-3 pb-3 space-y-1 border-t border-[var(--color-info)]/30 pt-2">
+												{directive.block.map((subDirective) => (
+													<div
+														key={subDirective.id}
+														className="font-mono text-xs text-[var(--color-info-dark)] pl-4"
 													>
-														<Trash2 className="h-4 w-4" />
-													</Button>
-												</div>
-												{directive.block && directive.block.length > 0 && (
-													<div className="px-3 pb-3 space-y-1 border-t border-[var(--color-info)]/30 pt-2">
-														{directive.block.map((subDirective) => (
-															<div
-																key={subDirective.id}
-																className="font-mono text-xs text-[var(--color-info-dark)] pl-4"
-															>
-																{subDirective.raw ||
-																	`${subDirective.name} ${subDirective.args.join(" ")}`}
-															</div>
-														))}
+														{subDirective.raw ||
+															`${subDirective.name} ${subDirective.args.join(" ")}`}
 													</div>
-												)}
-											</>
+												))}
+											</div>
 										)}
 									</div>
 								))
@@ -271,40 +183,20 @@ export function ContainerEditDialog({
 						</div>
 
 						{/* Add Directive */}
-						<div className="flex gap-2">
-							<Input
-								value={newDirective}
-								onChange={(e) => setNewDirective(e.target.value)}
-								placeholder="e.g., encode gzip or tls internal"
-								onKeyDown={(e) => {
-									if (e.key === "Enter") {
-										e.preventDefault();
-										handleAddDirective();
-									}
-								}}
-							/>
+						<div>
 							<Button
-								onClick={handleAddDirective}
-								disabled={!newDirective.trim()}
+								onClick={() => setAddFeatureDialogOpen(true)}
 								size="sm"
+								className="w-full"
 							>
 								<Plus className="h-4 w-4 mr-2" />
-								Add
+								Add Directive
 							</Button>
+							<p className="text-sm text-muted-foreground mt-2">
+								Add Caddy directives that will apply to all sites (e.g., tls,
+								encode, header)
+							</p>
 						</div>
-						<p className="text-sm text-muted-foreground">
-							Add Caddy directives that will apply to all sites (e.g., tls,
-							encode, header)
-						</p>
-					</div>
-
-					{/* Info about complex edits */}
-					<div className="p-3 bg-muted rounded-lg border">
-						<p className="text-sm text-muted-foreground">
-							<strong>Note:</strong> Complex directives with nested blocks (like
-							tls, header) cannot be edited inline. Use the <strong>Raw</strong>{" "}
-							tab for full control over these directives.
-						</p>
 					</div>
 				</div>
 
@@ -318,6 +210,19 @@ export function ContainerEditDialog({
 					</Button>
 				</DialogFooter>
 			</DialogContent>
+
+			<EditDirectiveDialog
+				directive={editingDirective}
+				open={editDialogOpen}
+				onOpenChange={setEditDialogOpen}
+				onSave={handleSaveEdit}
+			/>
+
+			<AddFeatureDialog
+				open={addFeatureDialogOpen}
+				onOpenChange={setAddFeatureDialogOpen}
+				onAddDirectives={handleAddDirectives}
+			/>
 		</Dialog>
 	);
 }
