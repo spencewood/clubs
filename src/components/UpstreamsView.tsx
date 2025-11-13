@@ -364,17 +364,21 @@ export function UpstreamsView({
 						return (
 							<Card key={server.server} className="p-4">
 								<div className="flex items-center justify-between">
-									<div className="flex items-center gap-3 flex-1">
-										<Icon className={`w-5 h-5 ${health.color}`} />
-										<div className="flex-1">
-											<div className="font-mono font-semibold">
+									<div className="flex items-center gap-3 flex-1 min-w-0">
+										<Icon className={`w-5 h-5 ${health.color} flex-shrink-0`} />
+										<div className="flex-1 min-w-0">
+											<div className="font-mono font-semibold truncate">
 												{server.server}
 											</div>
 											<div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
 												{server.ports.length > 0 && (
-													<span>
+													<span className="flex items-center gap-1">
 														<span className="font-medium">Ports:</span>{" "}
-														{server.ports.join(", ")}
+														<span className="truncate">
+															{server.ports.length > 5
+																? `${server.ports.slice(0, 5).join(", ")} +${server.ports.length - 5} more`
+																: server.ports.join(", ")}
+														</span>
 													</span>
 												)}
 												{!server.isOffline && (
