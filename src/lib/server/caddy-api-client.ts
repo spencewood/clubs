@@ -288,11 +288,23 @@ export class CaddyAPIClient {
 				return { running: false };
 			}
 
-			// Try to parse the response body for version info
-			const text = await response.text();
+			// Try to parse as JSON first (standard format)
+			const contentType = response.headers.get("content-type");
+			if (contentType?.includes("application/json")) {
+				try {
+					const data = await response.json();
+					return {
+						running: true,
+						version: data.version?.replace(/^v/, ""), // Remove leading 'v' if present
+					};
+				} catch {
+					// Fall through to text parsing
+				}
+			}
 
-			// Caddy's root endpoint returns version in the response body
-			// The response typically looks like: "v2.8.4 h1:abcd123..."
+			// Fallback: parse as plain text
+			// Some versions of Caddy may return: "v2.8.4 h1:abcd123..."
+			const text = await response.text();
 			const versionMatch = text.match(/^v?(\d+\.\d+\.\d+[^\s]*)/);
 
 			return {
