@@ -15,6 +15,8 @@ export default defineConfig({
 			"**/dist/**",
 			"**/out/**",
 			"**/build/**",
+			"**/tests/**",
+			"**/*.spec.ts",
 		],
 		coverage: {
 			provider: "v8",
