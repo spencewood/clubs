@@ -239,7 +239,7 @@ export function SiteBlockCard({
 			<Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Delete site block?</DialogTitle>
+						<DialogTitle>Delete site?</DialogTitle>
 						<DialogDescription>
 							Are you sure you want to delete{" "}
 							<span className="font-mono font-semibold">

@@ -341,7 +341,7 @@ export function UpstreamsView({
 							</h3>
 							<p className="text-sm text-muted-foreground">
 								{statusFilter === "all"
-									? "No upstream servers are configured."
+									? "No upstreams are configured."
 									: `No ${statusFilter} upstreams found.`}
 							</p>
 							{statusFilter !== "all" && (
