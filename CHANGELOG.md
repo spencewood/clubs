@@ -1,5 +1,11 @@
 # clubs
 
+## 0.15.1
+
+### Patch Changes
+
+- cf45de0: Add caddy version in status dropdown
+
 ## 0.15.0
 
 ### Minor Changes
