@@ -34,7 +34,7 @@ Clubs is a web-based tool for editing and managing Caddy server configurations. 
 ```bash
 # Run standalone (simplest)
 docker run -d \
-  -p 8080:80 \
+  -p 8080:3000 \
   -v ./config:/config \
   -e CADDYFILE_PATH=/config/Caddyfile \
   spencewood/clubs:latest
@@ -51,7 +51,7 @@ docker-compose up -d
 **Ports:**
 - **80/443**: Caddy web server (your sites)
 - **2019**: Caddy Admin API (internal - for live reload)
-- **8080**: Clubs web UI (container port 80 mapped to host 8080)
+- **8080**: Clubs web UI (container port 3000 mapped to host 8080)
 
 ## Deployment Options
 
