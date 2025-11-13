@@ -138,10 +138,10 @@ export function ContainerEditDialog({
 								container.sharedConfig.map((directive) => (
 									<div
 										key={directive.id}
-										className="border rounded-lg bg-[var(--color-info)]/5 border-[var(--color-info)]/30"
+										className="border rounded-lg bg-[--color-info]/5 border-[--color-info]/30"
 									>
 										<div className="flex items-center gap-2 p-3">
-											<div className="flex-1 font-mono text-sm font-semibold text-[var(--color-info-dark)]">
+											<div className="flex-1 font-mono text-sm font-semibold text-[--color-info-dark]">
 												{directive.name}{" "}
 												{directive.args.length > 0 && directive.args.join(" ")}
 											</div>
@@ -165,11 +165,11 @@ export function ContainerEditDialog({
 											</Button>
 										</div>
 										{directive.block && directive.block.length > 0 && (
-											<div className="px-3 pb-3 space-y-1 border-t border-[var(--color-info)]/30 pt-2">
+											<div className="px-3 pb-3 space-y-1 border-t border-[--color-info]/30 pt-2">
 												{directive.block.map((subDirective) => (
 													<div
 														key={subDirective.id}
-														className="font-mono text-xs text-[var(--color-info-dark)] pl-4"
+														className="font-mono text-xs text-[--color-info-dark] pl-4"
 													>
 														{subDirective.raw ||
 															`${subDirective.name} ${subDirective.args.join(" ")}`}

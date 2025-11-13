@@ -2,6 +2,11 @@
 
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
+import type {
+	NameType,
+	Payload,
+	ValueType,
+} from "recharts/types/component/DefaultTooltipContent";
 
 import { cn } from "@/lib/utils";
 
@@ -112,8 +117,8 @@ const ChartTooltipContent = React.forwardRef<
 			indicator?: "line" | "dot" | "dashed";
 			nameKey?: string;
 			labelKey?: string;
-			payload?: any[];
-			label?: any;
+			payload?: Payload<ValueType, NameType>[];
+			label?: string | number;
 		}
 >(
 	(
@@ -182,22 +187,24 @@ const ChartTooltipContent = React.forwardRef<
 			<div
 				ref={ref}
 				className={cn(
-					"grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
+					"grid min-w-32 items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
 					className,
 				)}
 			>
 				{!nestLabel ? tooltipLabel : null}
 				<div className="grid gap-1.5">
 					{payload
-						.filter((item: any) => item.type !== "none")
-						.map((item: any, index: number) => {
+						.filter(
+							(item: Payload<ValueType, NameType>) => item.type !== "none",
+						)
+						.map((item: Payload<ValueType, NameType>, index: number) => {
 							const key = `${nameKey || item.name || item.dataKey || "value"}`;
 							const itemConfig = getPayloadConfigFromPayload(config, item, key);
-							const indicatorColor = color || item.payload.fill || item.color;
+							const indicatorColor = color || item.payload?.fill || item.color;
 
 							return (
 								<div
-									key={item.dataKey}
+									key={`${item.dataKey}-${index}`}
 									className={cn(
 										"flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground",
 										indicator === "dot" && "items-center",
@@ -213,7 +220,7 @@ const ChartTooltipContent = React.forwardRef<
 												!hideIndicator && (
 													<div
 														className={cn(
-															"shrink-0 rounded-[2px] border-[--color-border] bg-[--color-bg]",
+															"shrink-0 rounded-xs border-[--color-border] bg-[--color-bg]",
 															{
 																"h-2.5 w-2.5": indicator === "dot",
 																"w-1": indicator === "line",
@@ -267,7 +274,7 @@ const ChartLegendContent = React.forwardRef<
 	HTMLDivElement,
 	React.ComponentProps<"div"> & {
 		hideIcon?: boolean;
-		payload?: any[];
+		payload?: Payload<ValueType, NameType>[];
 		verticalAlign?: "top" | "bottom";
 		nameKey?: string;
 	}
@@ -292,14 +299,14 @@ const ChartLegendContent = React.forwardRef<
 				)}
 			>
 				{payload
-					.filter((item: any) => item.type !== "none")
-					.map((item: any) => {
+					.filter((item: Payload<ValueType, NameType>) => item.type !== "none")
+					.map((item: Payload<ValueType, NameType>) => {
 						const key = `${nameKey || item.dataKey || "value"}`;
 						const itemConfig = getPayloadConfigFromPayload(config, item, key);
 
 						return (
 							<div
-								key={item.value}
+								key={key}
 								className={cn(
 									"flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground",
 								)}
@@ -308,7 +315,7 @@ const ChartLegendContent = React.forwardRef<
 									<itemConfig.icon />
 								) : (
 									<div
-										className="h-2 w-2 shrink-0 rounded-[2px]"
+										className="h-2 w-2 shrink-0 rounded-xs"
 										style={{
 											backgroundColor: item.color,
 										}}

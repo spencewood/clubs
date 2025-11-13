@@ -526,7 +526,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 					<Card
 						className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 							metricFilter === "requests"
-								? "border-[var(--color-info-dark)] shadow-md"
+								? "border-[--color-info-dark] shadow-md"
 								: "hover:border-muted-foreground/40"
 						}`}
 						onClick={() =>
@@ -534,7 +534,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						}
 					>
 						<TrendingUp
-							className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-info)] opacity-20"
+							className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[--color-info] opacity-20"
 							strokeWidth={1.5}
 						/>
 						<div className="relative">
@@ -547,7 +547,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 					<Card
 						className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 							metricFilter === "failures"
-								? "border-[var(--color-error-dark)] shadow-md"
+								? "border-[--color-error-dark] shadow-md"
 								: "hover:border-muted-foreground/40"
 						}`}
 						onClick={() =>
@@ -555,7 +555,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						}
 					>
 						<XCircle
-							className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-error)] opacity-20"
+							className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[--color-error] opacity-20"
 							strokeWidth={1.5}
 						/>
 						<div className="relative">
@@ -568,7 +568,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 					<Card
 						className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 							metricFilter === "errors"
-								? "border-[var(--color-warning-dark)] shadow-md"
+								? "border-[--color-warning-dark] shadow-md"
 								: "hover:border-muted-foreground/40"
 						}`}
 						onClick={() =>
@@ -576,7 +576,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 						}
 					>
 						<AlertTriangle
-							className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-warning)] opacity-20"
+							className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[--color-warning] opacity-20"
 							strokeWidth={1.5}
 						/>
 						<div className="relative">
@@ -943,7 +943,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 													className="flex items-center gap-1.5"
 												>
 													<div
-														className="h-2 w-2 shrink-0 rounded-[2px]"
+														className="h-2 w-2 shrink-0 rounded-xs"
 														style={{
 															backgroundColor: colors[index % colors.length],
 														}}
@@ -1043,7 +1043,7 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 													className="flex items-center gap-1.5"
 												>
 													<div
-														className="h-2 w-2 shrink-0 rounded-[2px]"
+														className="h-2 w-2 shrink-0 rounded-xs"
 														style={{
 															backgroundColor: colors[index % colors.length],
 														}}
