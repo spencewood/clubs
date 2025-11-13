@@ -1,5 +1,16 @@
 # clubs
 
+## 0.15.0
+
+### Minor Changes
+
+- f4527e7: Add e2e tests with playwright
+
+### Patch Changes
+
+- 963a0a9: Make dialog editing easier with api
+- fafcf67: Fix minor mobile ux issues on upstreams page
+
 ## 0.14.0
 
 ### Minor Changes
