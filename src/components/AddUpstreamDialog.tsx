@@ -54,7 +54,7 @@ export function AddUpstreamDialog({
 				<DialogHeader>
 					<DialogTitle>Add Upstream to Quick List</DialogTitle>
 					<DialogDescription>
-						Add a server address to your quick list for easy access when
+						Add an upstream address to your quick list for easy access when
 						creating reverse proxies
 					</DialogDescription>
 				</DialogHeader>
@@ -74,7 +74,7 @@ export function AddUpstreamDialog({
 							}}
 						/>
 						<p className="text-xs text-muted-foreground">
-							Enter a server hostname or IP address (with or without port)
+							Enter an upstream hostname or IP address (with or without port)
 						</p>
 					</div>
 
