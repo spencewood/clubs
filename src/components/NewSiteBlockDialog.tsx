@@ -204,7 +204,7 @@ export function NewSiteBlockDialog({
 												onClick={() => handleRecipeSelect(recipe)}
 												className="flex items-start gap-3 p-4 rounded-lg border-2 border-muted hover:border-primary hover:bg-primary/5 transition-colors text-left"
 											>
-												<Icon className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+												<Icon className="h-6 w-6 text-primary shrink-0 mt-0.5" />
 												<div className="flex-1">
 													<h4 className="font-semibold">{recipe.name}</h4>
 													<p className="text-sm text-muted-foreground mt-1">
@@ -234,7 +234,7 @@ export function NewSiteBlockDialog({
 									onClick={handleBlankCreate}
 									className="w-full flex items-start gap-3 p-4 rounded-lg border-2 border-dashed border-muted hover:border-primary hover:bg-primary/5 transition-colors text-left"
 								>
-									<Plus className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-0.5" />
+									<Plus className="h-6 w-6 text-muted-foreground shrink-0 mt-0.5" />
 									<div className="flex-1">
 										<h4 className="font-semibold">Start from Scratch</h4>
 										<p className="text-sm text-muted-foreground mt-1">

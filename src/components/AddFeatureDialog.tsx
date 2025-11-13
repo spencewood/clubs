@@ -176,7 +176,7 @@ export function AddFeatureDialog({
 										onClick={() => handleFeatureSelect(feature)}
 										className="flex items-start gap-3 p-4 border rounded-lg hover:bg-accent hover:border-primary transition-colors text-left"
 									>
-										<Icon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+										<Icon className="h-5 w-5 text-primary mt-0.5 shrink-0" />
 										<div className="min-w-0 flex-1">
 											<div className="font-medium">{feature.name}</div>
 											<div className="text-sm text-muted-foreground mt-1">

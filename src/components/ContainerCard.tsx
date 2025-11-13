@@ -130,7 +130,7 @@ export function ContainerCard({
 										variant="ghost"
 										size="icon"
 										onClick={() => setIsExpanded(!isExpanded)}
-										className="h-8 w-8 flex-shrink-0"
+										className="h-8 w-8 shrink-0"
 										aria-label={isExpanded ? "Collapse" : "Expand"}
 									>
 										{isExpanded ? (
@@ -145,7 +145,7 @@ export function ContainerCard({
 								</TooltipContent>
 							</Tooltip>
 						</TooltipProvider>
-						<Container className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+						<Container className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
 						<div className="flex-1 min-w-0">
 							<CardTitle className="font-mono text-sm sm:text-lg truncate">
 								{wildcardDomain}
@@ -158,7 +158,7 @@ export function ContainerCard({
 					</div>
 					{/* Mobile: Single menu button */}
 					{mounted && (
-						<div className="flex gap-1 flex-shrink-0 sm:hidden">
+						<div className="flex gap-1 shrink-0 sm:hidden">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button
@@ -192,7 +192,7 @@ export function ContainerCard({
 					)}
 
 					{/* Desktop: All buttons visible */}
-					<div className="hidden sm:flex gap-2 flex-shrink-0">
+					<div className="hidden sm:flex gap-2 shrink-0">
 						<Button
 							variant="outline"
 							size="sm"
@@ -265,7 +265,7 @@ export function ContainerCard({
 									<CardContent className="p-2 sm:p-4">
 										<div className="flex items-center justify-between gap-1 sm:gap-4">
 											<div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 overflow-hidden">
-												<Globe className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+												<Globe className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
 												<div className="flex-1 min-w-0 overflow-hidden">
 													<div className="font-mono text-sm sm:text-base font-medium truncate break-all">
 														{block.hostname}
@@ -280,7 +280,7 @@ export function ContainerCard({
 												<button
 													type="button"
 													onClick={handleOpenInBrowser}
-													className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
+													className="text-muted-foreground hover:text-primary transition-colors shrink-0"
 													title={`Open ${block.hostname} in browser`}
 												>
 													<ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -288,7 +288,7 @@ export function ContainerCard({
 											)}
 											{/* Mobile: Single menu button */}
 											{mounted && (
-												<div className="flex gap-1 flex-shrink-0 sm:hidden">
+												<div className="flex gap-1 shrink-0 sm:hidden">
 													<DropdownMenu>
 														<DropdownMenuTrigger asChild>
 															<Button
@@ -326,7 +326,7 @@ export function ContainerCard({
 											)}
 
 											{/* Desktop: All buttons visible */}
-											<div className="hidden sm:flex gap-2 flex-shrink-0">
+											<div className="hidden sm:flex gap-2 shrink-0">
 												<Button
 													variant="outline"
 													size="sm"

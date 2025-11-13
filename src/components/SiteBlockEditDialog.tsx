@@ -193,7 +193,7 @@ export function SiteBlockEditDialog({
 													{getFeatureDescription(directive)}
 												</div>
 											</div>
-											<div className="flex gap-2 flex-shrink-0">
+											<div className="flex gap-2 shrink-0">
 												<Button
 													variant="ghost"
 													size="icon"

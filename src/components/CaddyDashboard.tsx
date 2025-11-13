@@ -582,7 +582,7 @@ export function CaddyDashboard({
 
 	return (
 		<div className="min-h-screen bg-background pb-16">
-			<header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+			<header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur @supports-[backdrop-filter]:bg-card/60">
 				<div className="container mx-auto px-4 py-3">
 					<div className="flex items-center justify-between gap-4">
 						{/* Left: Logo and Title */}
@@ -590,7 +590,7 @@ export function CaddyDashboard({
 							href="/"
 							className="flex items-center gap-3 hover:opacity-80 transition-opacity"
 						>
-							<span className="text-4xl flex-shrink-0">♣</span>
+							<span className="text-4xl shrink-0">♣</span>
 							<div>
 								<h1 className="text-2xl font-bold">Clubs</h1>
 								<p className="text-xs text-muted-foreground">
@@ -620,8 +620,8 @@ export function CaddyDashboard({
 						<div
 							className={`space-y-4 bg-card border rounded-lg shadow-lg p-3 sm:p-6 min-h-[calc(100vh-12rem)] will-change-transform relative transition-all duration-500 overflow-visible ${
 								leftPanelExpanded
-									? "xl:static -translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:w-full xl:flex-shrink-0"
-									: "xl:static translate-x-0 opacity-100 pointer-events-auto z-20 xl:z-10 xl:w-1/2 xl:flex-shrink-0"
+									? "xl:static -translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:w-full xl:shrink-0"
+									: "xl:static translate-x-0 opacity-100 pointer-events-auto z-20 xl:z-10 xl:w-1/2 xl:shrink-0"
 							}`}
 							style={{
 								transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -817,7 +817,7 @@ export function CaddyDashboard({
 							className={`flex flex-col space-y-4 xl:z-auto min-h-[calc(100vh-12rem)] ${
 								leftPanelExpanded
 									? "absolute inset-0 z-10 opacity-100 xl:opacity-0 xl:pointer-events-none xl:flex xl:w-0 xl:overflow-hidden"
-									: "hidden xl:flex xl:relative xl:z-10 xl:opacity-60 xl:hover:opacity-100 xl:w-1/2 xl:flex-shrink-0"
+									: "hidden xl:flex xl:relative xl:z-10 xl:opacity-60 xl:hover:opacity-100 xl:w-1/2 xl:shrink-0"
 							}`}
 							style={{
 								transition:
@@ -965,7 +965,7 @@ export function CaddyDashboard({
 			)}
 
 			{/* Sticky Footer with Stats and Actions */}
-			<footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+			<footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur @supports-[backdrop-filter]:bg-card/60">
 				<div className="container mx-auto px-4 py-3">
 					<div className="flex items-center justify-between gap-4">
 						{/* Left: Stats */}
@@ -1007,7 +1007,7 @@ export function CaddyDashboard({
 										b.directives.some((d) => d.name === "tls"),
 									).length > 0 && (
 										<div className="flex items-center gap-2">
-											<ShieldCheck className="h-4 w-4 text-[var(--color-success)]" />
+											<ShieldCheck className="h-4 w-4 text-[--color-success]" />
 											<span className="font-medium">
 												{
 													config.siteBlocks.filter((b) =>

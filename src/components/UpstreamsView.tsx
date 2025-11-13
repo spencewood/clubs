@@ -36,7 +36,7 @@ function getHealthStatus(server: ConsolidatedServer): {
 		return {
 			status: "offline",
 			label: "Offline",
-			color: "text-[var(--color-muted-foreground)]",
+			color: "text-[--color-muted-foreground]",
 			icon: WifiOff,
 		};
 	}
@@ -52,7 +52,7 @@ function getHealthStatus(server: ConsolidatedServer): {
 		return {
 			status: "unhealthy",
 			label: "Unhealthy",
-			color: "text-[var(--color-error)]",
+			color: "text-[--color-error]",
 			icon: AlertCircle,
 		};
 	}
@@ -62,7 +62,7 @@ function getHealthStatus(server: ConsolidatedServer): {
 		return {
 			status: "degraded",
 			label: "Degraded",
-			color: "text-[var(--color-warning)]",
+			color: "text-[--color-warning]",
 			icon: AlertCircle,
 		};
 	}
@@ -70,7 +70,7 @@ function getHealthStatus(server: ConsolidatedServer): {
 	return {
 		status: "healthy",
 		label: "Healthy",
-		color: "text-[var(--color-success)]",
+		color: "text-[--color-success]",
 		icon: CheckCircle,
 	};
 }
@@ -242,13 +242,13 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "all"
-							? "border-[var(--color-info-dark)] shadow-md"
+							? "border-[--color-info-dark] shadow-md"
 							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("all")}
 				>
 					<Server
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-info)] opacity-20"
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[--color-info] opacity-20"
 						strokeWidth={1.5}
 					/>
 					<div className="relative">
@@ -260,13 +260,13 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "healthy"
-							? "border-[var(--color-success-dark)] shadow-md"
+							? "border-[--color-success-dark] shadow-md"
 							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("healthy")}
 				>
 					<CheckCircle
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-success)] opacity-20"
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[--color-success] opacity-20"
 						strokeWidth={1.5}
 					/>
 					<div className="relative">
@@ -278,13 +278,13 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "degraded"
-							? "border-[var(--color-warning-dark)] shadow-md"
+							? "border-[--color-warning-dark] shadow-md"
 							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("degraded")}
 				>
 					<AlertTriangle
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-warning)] opacity-20"
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[--color-warning] opacity-20"
 						strokeWidth={1.5}
 					/>
 					<div className="relative">
@@ -296,13 +296,13 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "unhealthy"
-							? "border-[var(--color-error-dark)] shadow-md"
+							? "border-[--color-error-dark] shadow-md"
 							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("unhealthy")}
 				>
 					<XCircle
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-error)] opacity-20"
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[--color-error] opacity-20"
 						strokeWidth={1.5}
 					/>
 					<div className="relative">
@@ -314,13 +314,13 @@ export function UpstreamsView({
 				<Card
 					className={`p-4 cursor-pointer transition-all relative overflow-hidden ${
 						statusFilter === "offline"
-							? "border-[var(--color-muted-foreground)] shadow-md"
+							? "border-[--color-muted-foreground] shadow-md"
 							: "hover:border-muted-foreground/40"
 					}`}
 					onClick={() => setStatusFilter("offline")}
 				>
 					<WifiOff
-						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[var(--color-muted-foreground)] opacity-20"
+						className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 text-[--color-muted-foreground] opacity-20"
 						strokeWidth={1.5}
 					/>
 					<div className="relative">
@@ -365,7 +365,7 @@ export function UpstreamsView({
 							<Card key={server.server} className="p-4">
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-3 flex-1 min-w-0">
-										<Icon className={`w-5 h-5 ${health.color} flex-shrink-0`} />
+										<Icon className={`w-5 h-5 ${health.color} shrink-0`} />
 										<div className="flex-1 min-w-0">
 											<div className="font-mono font-semibold truncate">
 												{server.server}
@@ -394,7 +394,7 @@ export function UpstreamsView({
 													</>
 												)}
 												{server.isOffline && (
-													<span className="text-gray-500">
+													<span className="text-muted-foreground">
 														No stats available
 													</span>
 												)}

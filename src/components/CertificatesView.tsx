@@ -101,10 +101,10 @@ export function CertificatesView({
 	}, [fetchCA, fetchAcmeCertificates]);
 
 	const getCertStatusColor = (daysUntilExpiry: number) => {
-		if (daysUntilExpiry < 0) return "text-[var(--color-error)]";
-		if (daysUntilExpiry <= 7) return "text-[var(--color-error)]";
-		if (daysUntilExpiry <= 30) return "text-[var(--color-warning)]";
-		return "text-[var(--color-success)]";
+		if (daysUntilExpiry < 0) return "text-[--color-error]";
+		if (daysUntilExpiry <= 7) return "text-[--color-error]";
+		if (daysUntilExpiry <= 30) return "text-[--color-warning]";
+		return "text-[--color-success]";
 	};
 
 	const getCertStatusIcon = (daysUntilExpiry: number) => {
@@ -245,9 +245,9 @@ export function CertificatesView({
 						</div>
 						<p className="text-sm">
 							{cert.hasPrivateKey ? (
-								<span className="text-[var(--color-success)]">Available</span>
+								<span className="text-[--color-success]">Available</span>
 							) : (
-								<span className="text-[var(--color-error)]">Not found</span>
+								<span className="text-[--color-error]">Not found</span>
 							)}
 						</p>
 					</div>
