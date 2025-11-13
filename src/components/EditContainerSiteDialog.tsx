@@ -1,5 +1,7 @@
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Edit2, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { AddFeatureDialog } from "@/components/AddFeatureDialog";
+import { EditDirectiveDialog } from "@/components/EditDirectiveDialog";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -22,10 +24,6 @@ interface EditContainerSiteDialogProps {
 	onSave: (siteBlock: CaddySiteBlock) => void;
 }
 
-function generateId(): string {
-	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-}
-
 export function EditContainerSiteDialog({
 	open,
 	onOpenChange,
@@ -37,7 +35,10 @@ export function EditContainerSiteDialog({
 	const [hostname, setHostname] = useState("");
 	const [matcherName, setMatcherName] = useState("");
 	const [directives, setDirectives] = useState<CaddyDirective[]>([]);
-	const [newDirective, setNewDirective] = useState("");
+	const [editingDirective, setEditingDirective] =
+		useState<CaddyDirective | null>(null);
+	const [editDialogOpen, setEditDialogOpen] = useState(false);
+	const [addFeatureDialogOpen, setAddFeatureDialogOpen] = useState(false);
 	const hostnameId = useId();
 	const matcherNameId = useId();
 
@@ -99,22 +100,21 @@ export function EditContainerSiteDialog({
 		onOpenChange(false);
 	};
 
-	const handleAddDirective = () => {
-		if (!newDirective.trim()) return;
+	const handleAddDirectives = (newDirectives: CaddyDirective[]) => {
+		setDirectives([...directives, ...newDirectives]);
+	};
 
-		const parts = newDirective.trim().split(/\s+/);
-		const name = parts[0];
-		const args = parts.slice(1);
+	const handleStartEdit = (directive: CaddyDirective) => {
+		setEditingDirective(directive);
+		setEditDialogOpen(true);
+	};
 
-		const directive: CaddyDirective = {
-			id: generateId(),
-			name,
-			args,
-			raw: newDirective.trim(),
-		};
-
-		setDirectives([...directives, directive]);
-		setNewDirective("");
+	const handleSaveEdit = (updatedDirective: CaddyDirective) => {
+		setDirectives(
+			directives.map((d) =>
+				d.id === updatedDirective.id ? updatedDirective : d,
+			),
+		);
 	};
 
 	const handleRemoveDirective = (id: string) => {
@@ -182,8 +182,18 @@ export function EditContainerSiteDialog({
 										<Button
 											variant="ghost"
 											size="icon"
+											onClick={() => handleStartEdit(directive)}
+											className="h-8 w-8"
+											title="Edit directive"
+										>
+											<Edit2 className="h-4 w-4" />
+										</Button>
+										<Button
+											variant="ghost"
+											size="icon"
 											onClick={() => handleRemoveDirective(directive.id)}
 											className="h-8 w-8"
+											title="Delete directive"
 										>
 											<Trash2 className="h-4 w-4" />
 										</Button>
@@ -193,31 +203,20 @@ export function EditContainerSiteDialog({
 						</div>
 
 						{/* Add Directive */}
-						<div className="flex gap-2">
-							<Input
-								value={newDirective}
-								onChange={(e) => setNewDirective(e.target.value)}
-								placeholder="e.g., reverse_proxy localhost:8080"
-								onKeyDown={(e) => {
-									if (e.key === "Enter") {
-										e.preventDefault();
-										handleAddDirective();
-									}
-								}}
-							/>
+						<div>
 							<Button
-								onClick={handleAddDirective}
-								disabled={!newDirective.trim()}
+								onClick={() => setAddFeatureDialogOpen(true)}
 								size="sm"
+								className="w-full"
 							>
 								<Plus className="h-4 w-4 mr-2" />
-								Add
+								Add Directive
 							</Button>
+							<p className="text-sm text-muted-foreground mt-2">
+								Add Caddy directives specific to this service (e.g.,
+								reverse_proxy, respond)
+							</p>
 						</div>
-						<p className="text-sm text-muted-foreground">
-							Add Caddy directives specific to this service (e.g.,
-							reverse_proxy, respond)
-						</p>
 					</div>
 				</div>
 
@@ -231,6 +230,19 @@ export function EditContainerSiteDialog({
 					</Button>
 				</DialogFooter>
 			</DialogContent>
+
+			<EditDirectiveDialog
+				directive={editingDirective}
+				open={editDialogOpen}
+				onOpenChange={setEditDialogOpen}
+				onSave={handleSaveEdit}
+			/>
+
+			<AddFeatureDialog
+				open={addFeatureDialogOpen}
+				onOpenChange={setAddFeatureDialogOpen}
+				onAddDirectives={handleAddDirectives}
+			/>
 		</Dialog>
 	);
 }

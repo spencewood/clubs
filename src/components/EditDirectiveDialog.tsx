@@ -69,7 +69,15 @@ export function EditDirectiveDialog({
 				setDetectedFeature(null);
 				setName(directive.name);
 				setArgs(directive.args.join(" "));
-				setBlockContent("");
+				// Load block content if present
+				if (directive.block && directive.block.length > 0) {
+					const blockText = directive.block
+						.map((sub) => sub.raw || `${sub.name} ${sub.args.join(" ")}`)
+						.join("\n");
+					setBlockContent(blockText);
+				} else {
+					setBlockContent("");
+				}
 			}
 		}
 	}, [directive]);
@@ -103,6 +111,28 @@ export function EditDirectiveDialog({
 				.filter((a) => a),
 		};
 
+		// Parse and save block content if present
+		if (blockContent.trim()) {
+			updated.block = blockContent
+				.trim()
+				.split("\n")
+				.filter((line) => line.trim())
+				.map((line) => {
+					const parts = line.trim().split(/\s+/);
+					const subName = parts[0] || "";
+					const subArgs = parts.slice(1);
+					return {
+						id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+						name: subName,
+						args: subArgs,
+						raw: line.trim(),
+					};
+				});
+		} else {
+			// Clear block if no content
+			delete updated.block;
+		}
+
 		onSave(updated);
 		onOpenChange(false);
 	};
@@ -111,6 +141,13 @@ export function EditDirectiveDialog({
 		if (directive) {
 			setName(directive.name);
 			setArgs(directive.args.join(" "));
+			// Populate block content if present
+			if (directive.block && directive.block.length > 0) {
+				const blockText = directive.block
+					.map((sub) => sub.raw || `${sub.name} ${sub.args.join(" ")}`)
+					.join("\n");
+				setBlockContent(blockText);
+			}
 		}
 		setEditMode("raw");
 	};
