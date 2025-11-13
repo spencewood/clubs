@@ -275,9 +275,17 @@ export const handlers = [
 		if (!mockCaddyAPIAvailable) {
 			return new HttpResponse(null, { status: 503 });
 		}
-		return HttpResponse.json({
-			version: "v2.7.6",
-		});
+		// Return JSON with version info (Caddy Admin API format)
+		return HttpResponse.json(
+			{
+				version: "v2.7.6",
+			},
+			{
+				headers: {
+					"Content-Type": "application/json",
+				},
+			},
+		);
 	}),
 
 	http.get("http://localhost:2019/config/", async ({ request }) => {
