@@ -134,9 +134,9 @@ Then your Clubs config should be:
 ```yaml
 services:
   clubs:
-    image: your-dockerhub-username/clubs:latest
+    image: spencewood/clubs:latest
     ports:
-      - "8080:8080"
+      - "8080:3000"
     volumes:
       - ./caddy-config:/config  # Same host path
     environment:

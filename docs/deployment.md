@@ -27,7 +27,7 @@ docker-compose up -d
 
 # Option 2: Run standalone
 docker run -d \
-  -p 8080:80 \
+  -p 8080:3000 \
   -v ./config:/config \
   -e CADDYFILE_PATH=/config/Caddyfile \
   spencewood/clubs:latest
@@ -68,7 +68,7 @@ services:
   clubs:
     image: spencewood/clubs:latest
     ports:
-      - "8080:80"
+      - "8080:3000"
     volumes:
       - ./config:/config
     environment:
@@ -111,7 +111,7 @@ services:
   clubs:
     image: spencewood/clubs:latest
     ports:
-      - "8080:80"
+      - "8080:3000"
     volumes:
       # Point to wherever your Caddyfile lives
       - /path/to/your/caddy/config:/config
@@ -139,7 +139,7 @@ services:
   clubs:
     image: spencewood/clubs:latest
     ports:
-      - "8080:80"
+      - "8080:3000"
     volumes:
       - /path/to/your/existing/caddy/config:/config
     environment:
@@ -177,7 +177,7 @@ services:
   clubs:
     image: spencewood/clubs:latest
     ports:
-      - "8080:80"
+      - "8080:3000"
     volumes:
       - ./config:/config
     environment:
@@ -306,7 +306,7 @@ networks:
 
 ```caddy
 clubs.yourdomain.com {
-    reverse_proxy clubs:80
+    reverse_proxy clubs:3000
 
     # Optional: Add authentication
     basicauth {
@@ -317,7 +317,7 @@ clubs.yourdomain.com {
 
 **Security benefits:**
 - Port 2019 (Caddy Admin API) is never exposed to the host machine
-- Port 80 (Clubs UI) is only accessible via Caddy reverse proxy
+- Port 3000 (Clubs UI) is only accessible via Caddy reverse proxy
 - All communication between Clubs and Caddy happens over internal Docker network
 - Only HTTPS traffic from Caddy reaches the outside world
 - You can add authentication/authorization at the Caddy level
@@ -369,7 +369,6 @@ docker-compose logs -f
 |----------|---------|-------------|
 | `CADDYFILE_PATH` | `./config/Caddyfile` | Path to the Caddyfile to edit |
 | `CADDY_API_URL` | `http://localhost:2019` | Caddy Admin API URL |
-| `API_PORT` | `3000` | Port for Clubs backend API (container serves on port 80) |
 | `NODE_ENV` | `development` | Set to `production` in Docker |
 
 #### Caddy Container
@@ -491,7 +490,7 @@ ports:
 3. **Protect Clubs UI** - add authentication in your Caddyfile:
 ```caddy
 clubs.example.com {
-    reverse_proxy clubs:80
+    reverse_proxy clubs:3000
     basicauth {
         admin $2a$14$hashed_password
     }
@@ -511,10 +510,11 @@ chmod 644 ./config/Caddyfile
 ## Examples
 
 See the `examples/` directory for complete docker-compose setups:
-- `examples/basic/` - Simple Caddy + Clubs
 - `examples/cloudflare/` - Custom Caddy with Cloudflare DNS
 - `examples/existing-caddy/` - Add Clubs to existing setup
 - `examples/standalone/` - File mode only
+
+For a basic setup, see the main `docker-compose.yml` in the project root.
 
 ---
 
