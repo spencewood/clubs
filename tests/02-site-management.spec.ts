@@ -39,8 +39,8 @@ test.describe('Site Management', () => {
   });
 
   test('should open Add Site dialog', async ({ page }) => {
-    // Click Add Site button
-    const addSiteButton = page.getByRole('button', { name: /Add Site/i });
+    // Click Add Site button - use exact match to avoid matching "Add site to container"
+    const addSiteButton = page.getByRole('button', { name: 'Add Site', exact: true });
     await addSiteButton.click();
 
     // Verify dialog opens
