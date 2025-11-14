@@ -50,6 +50,7 @@ import { ContainerEditDialog } from "@/components/ContainerEditDialog";
 import { EditContainerSiteDialog } from "@/components/EditContainerSiteDialog";
 import { MetricsView } from "@/components/MetricsView";
 import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
+import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { ServerInfoCard } from "@/components/ServerInfoCard";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
 import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
@@ -604,10 +605,11 @@ export function CaddyDashboard({
 							</div>
 						</Link>
 
-						{/* Right: Server Info + Theme Toggle */}
+						{/* Right: Server Info + Theme Toggle + Profile */}
 						<div className="flex items-center gap-2">
 							{caddyStatus && <ServerInfoCard initialStatus={caddyStatus} />}
 							<ThemeToggle />
+							<ProfileDropdown />
 						</div>
 					</div>
 				</div>
@@ -632,7 +634,7 @@ export function CaddyDashboard({
 								<div className="flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
 									<Link
 										href="/"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 											leftPanelView === "sites"
 												? "border-primary text-foreground"
 												: "border-transparent text-muted-foreground hover:text-foreground"
@@ -643,7 +645,7 @@ export function CaddyDashboard({
 									</Link>
 									<Link
 										href="/upstreams"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 											leftPanelView === "upstreams"
 												? "border-primary text-foreground"
 												: "border-transparent text-muted-foreground hover:text-foreground"
@@ -654,7 +656,7 @@ export function CaddyDashboard({
 									</Link>
 									<Link
 										href="/analytics"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 											leftPanelView === "analytics"
 												? "border-primary text-foreground"
 												: "border-transparent text-muted-foreground hover:text-foreground"
@@ -665,7 +667,7 @@ export function CaddyDashboard({
 									</Link>
 									<Link
 										href="/certificates"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 											leftPanelView === "certificates"
 												? "border-primary text-foreground"
 												: "border-transparent text-muted-foreground hover:text-foreground"
@@ -841,7 +843,7 @@ export function CaddyDashboard({
 										<button
 											type="button"
 											onClick={() => setRightPanelView("raw")}
-											className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
+											className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 												rightPanelView === "raw"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground/70 hover:text-foreground"
@@ -856,7 +858,7 @@ export function CaddyDashboard({
 											<button
 												type="button"
 												onClick={() => setRightPanelView("config")}
-												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
+												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 													rightPanelView === "config"
 														? "border-primary text-foreground"
 														: "border-transparent text-muted-foreground/70 hover:text-foreground"

@@ -50,6 +50,12 @@ build/
 config/Caddyfile
 config/*.caddy.bak
 
+# Local database and data
+data/
+*.db
+*.db-shm
+*.db-wal
+
 .claude
 !.claude/agents/
 .env.local
