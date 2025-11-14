@@ -39,11 +39,14 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Create directory for config (Caddyfile will be mounted here)
-RUN mkdir -p /config
+# Create directories for config and persistent data
+RUN mkdir -p /config /app/data
 
 # Expose port 3000 for Next.js
 EXPOSE 3000
+
+# Volume for persistent data (SQLite database, auto-generated secrets, etc.)
+VOLUME /app/data
 
 # Health check for Docker/K8s orchestration using Node.js (no extra deps needed)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
