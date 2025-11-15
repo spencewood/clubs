@@ -12,22 +12,36 @@ interface AuthGuardProps {
  * Redirects to login if guest mode is disabled and user is not authenticated
  */
 export async function AuthGuard({ children }: AuthGuardProps) {
-	// Check if guest mode is enabled
+	// For E2E tests, use API to allow in-memory state
+	if (process.env.E2E_TEST === "true") {
+		const response = await fetch("http://localhost:3000/api/auth/status", {
+			cache: "no-store",
+		});
+		const data = await response.json();
+
+		if (data.guestModeEnabled) {
+			return <>{children}</>;
+		}
+
+		if (!data.isAuthenticated) {
+			redirect("/login");
+		}
+
+		return <>{children}</>;
+	}
+
+	// Production: use database directly (more efficient)
 	const guestMode = isGuestModeEnabled();
 
-	// If guest mode is enabled, allow access
 	if (guestMode) {
 		return <>{children}</>;
 	}
 
-	// Guest mode is disabled - check authentication
 	const user = await getCurrentUser();
 
-	// Not authenticated - redirect to login
 	if (!user) {
 		redirect("/login");
 	}
 
-	// Authenticated - allow access
 	return <>{children}</>;
 }

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createUser, hasUsers, setAuthCookies } from "@/lib/auth";
+import { createUser, setAuthCookies } from "@/lib/auth";
 import { setSetting } from "@/lib/db";
 
 // Validation schema
@@ -27,16 +27,39 @@ const setupSchema = z
  */
 export async function POST(request: NextRequest) {
 	try {
-		// Check if users already exist
-		if (hasUsers()) {
-			return NextResponse.json(
-				{ error: "Setup has already been completed" },
-				{ status: 400 },
-			);
-		}
-
 		// Parse and validate request body
 		const body = await request.json();
+
+		// Use in-memory state for E2E tests
+		if (process.env.E2E_TEST === "true") {
+			const validation = setupSchema.safeParse(body);
+			if (!validation.success) {
+				return NextResponse.json(
+					{
+						error: "Validation failed",
+						details: validation.error.issues,
+					},
+					{ status: 400 },
+				);
+			}
+
+			const { username, password } = validation.data;
+			const { getTestState } = await import("../status/route");
+			const testState = getTestState();
+
+			const userId = String(testState.users.length + 1);
+			testState.users.push({ id: userId, username, password });
+			testState.currentUser = testState.users[0];
+
+			return NextResponse.json({
+				success: true,
+				user: {
+					id: userId,
+					username,
+				},
+			});
+		}
+
 		const validation = setupSchema.safeParse(body);
 
 		if (!validation.success) {

@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { resetMockAuthState } from "../mocks/handlers";
 
 describe("Auth API", () => {
-	beforeEach(() => {
-		// Reset mock auth state before each test
-		resetMockAuthState();
+	beforeEach(async () => {
+		// Reset auth state via API endpoint (uses in-memory state when E2E_TEST=true)
+		await fetch("/api/auth/test-reset", { method: "POST" });
 	});
 
 	describe("GET /api/auth/status", () => {

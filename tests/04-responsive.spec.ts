@@ -44,7 +44,7 @@ test.describe("Responsive Design", () => {
 		await expect(page.getByRole("link", { name: /Upstreams/i })).toBeVisible();
 	});
 
-	test("should display desktop layout correctly", async ({ page }) => {
+	test("@smoke should display desktop layout correctly", async ({ page }) => {
 		// Set desktop viewport
 		await page.setViewportSize({ width: 1920, height: 1080 });
 		await page.goto("/");

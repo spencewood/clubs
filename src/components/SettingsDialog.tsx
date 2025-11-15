@@ -70,7 +70,7 @@ export function SettingsDialog({
 		Record<string, string>
 	>({});
 
-	// Initialize state when dialog opens
+	// Initialize state when dialog opens (only when open state changes)
 	useEffect(() => {
 		if (open) {
 			setGuestModeEnabled(authStatus?.guestModeEnabled ?? false);
@@ -83,7 +83,7 @@ export function SettingsDialog({
 			setError(null);
 			setValidationErrors({});
 		}
-	}, [open, authStatus]);
+	}, [open, authStatus?.guestModeEnabled]); // Only react to the specific boolean value, not the whole object
 
 	const handleSetup = async (e?: React.FormEvent) => {
 		e?.preventDefault();

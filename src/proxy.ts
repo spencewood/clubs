@@ -11,7 +11,7 @@ const publicPaths = [
 	"/login",
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 
 	// Allow public paths
@@ -44,5 +44,4 @@ export const config = {
 		 */
 		"/((?!_next/static|_next/image|favicon.ico|.*\\..*|public).*)",
 	],
-	runtime: "nodejs",
 };

@@ -3,7 +3,8 @@ import { dirname } from "node:path";
 import Database from "better-sqlite3";
 
 // Database path - configurable via environment variable
-const DB_PATH = process.env.DATABASE_PATH || "./data/clubs.db";
+// Store the path to detect changes
+let currentDbPath = "";
 
 // Singleton database instance
 let db: Database.Database | null = null;
@@ -12,9 +13,20 @@ let db: Database.Database | null = null;
  * Get or create the database instance
  */
 export function getDatabase(): Database.Database {
+	const DB_PATH = process.env.DATABASE_PATH || "./data/clubs.db";
+
+	// If the database path has changed, close the existing connection
+	if (db && currentDbPath !== DB_PATH) {
+		db.close();
+		db = null;
+	}
+
 	if (db) {
 		return db;
 	}
+
+	// Update the current path
+	currentDbPath = DB_PATH;
 
 	// Ensure the data directory exists
 	const dir = dirname(DB_PATH);
@@ -98,7 +110,26 @@ export function closeDatabase() {
 	if (db) {
 		db.close();
 		db = null;
+		currentDbPath = "";
 	}
+}
+
+/**
+ * Force the database to reload (useful for tests)
+ * Closes the current connection and clears the cache so the next call to getDatabase() creates a fresh connection
+ */
+export function reloadDatabase() {
+	if (db) {
+		// Checkpoint WAL if in WAL mode to ensure changes are flushed
+		try {
+			db.pragma("wal_checkpoint(TRUNCATE)");
+		} catch {
+			// Ignore errors if not in WAL mode
+		}
+		db.close();
+		db = null;
+	}
+	// Don't reset currentDbPath so the same path is used
 }
 
 /**

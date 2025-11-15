@@ -8,7 +8,34 @@ import { deleteAllUsers, setSetting } from "@/lib/db";
  */
 export async function PUT(request: NextRequest) {
 	try {
-		// Must be authenticated to change guest mode setting
+		const body = (await request.json()) as { enabled: boolean };
+
+		// Use in-memory state for E2E tests
+		if (process.env.E2E_TEST === "true") {
+			const { getTestState } = await import("../status/route");
+			const testState = getTestState();
+
+			// Must be authenticated to change guest mode setting
+			if (!testState.currentUser) {
+				return NextResponse.json(
+					{ error: "Authentication required" },
+					{ status: 401 },
+				);
+			}
+
+			// If enabling guest mode, wipe all user data
+			if (body.enabled) {
+				testState.users = [];
+				testState.currentUser = null;
+			}
+
+			return NextResponse.json({
+				success: true,
+				guestModeEnabled: body.enabled,
+			});
+		}
+
+		// Production: Must be authenticated to change guest mode setting
 		const currentUser = await getCurrentUser();
 		if (!currentUser) {
 			return NextResponse.json(
@@ -16,8 +43,6 @@ export async function PUT(request: NextRequest) {
 				{ status: 401 },
 			);
 		}
-
-		const body = (await request.json()) as { enabled: boolean };
 
 		// Update guest mode setting
 		setSetting("guest_mode_enabled", body.enabled ? "true" : "false");

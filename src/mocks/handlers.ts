@@ -252,6 +252,9 @@ loadbalanced.example.com {
 	}
 }`;
 
+// Mock auth state - in-memory store for E2E tests
+// MockUser and MockAuthState removed - auth state is now managed by real API with E2E_TEST mode
+
 // Helper to toggle API availability (for testing)
 export const setMockCaddyAPIAvailable = (available: boolean) => {
 	mockCaddyAPIAvailable = available;
@@ -263,24 +266,6 @@ export const setMockCaddyfile = (content: string) => {
 
 export const getMockCaddyfile = () => {
 	return mockCaddyfile;
-};
-
-// Mock in-memory auth state
-let mockAuthState = {
-	guestModeEnabled: true,
-	users: [] as Array<{ id: number; username: string; password_hash: string }>,
-	currentUser: null as { id: number; username: string } | null,
-	refreshTokens: new Map<string, { userId: number; expiresAt: number }>(),
-};
-
-// Helper to reset auth state (for testing)
-export const resetMockAuthState = () => {
-	mockAuthState = {
-		guestModeEnabled: true,
-		users: [],
-		currentUser: null,
-		refreshTokens: new Map(),
-	};
 };
 
 export const handlers = [
@@ -631,6 +616,29 @@ export const handlers = [
 		});
 	}),
 
+	// Adapt Caddyfile to JSON config
+	http.post("/api/caddy/adapt", async ({ request }) => {
+		await delay(100);
+		const body = await request.text();
+
+		if (!body || body.trim().length === 0) {
+			return HttpResponse.json(
+				{ error: "Cannot adapt empty Caddyfile" },
+				{ status: 400 },
+			);
+		}
+
+		if (body.includes("INVALID")) {
+			return HttpResponse.json(
+				{ error: "Failed to adapt Caddyfile" },
+				{ status: 400 },
+			);
+		}
+
+		// Return minimal mock config
+		return HttpResponse.json({ server: "srv0", listen: [":443"] });
+	}),
+
 	// Get upstream health status (for tests that call getCaddyUpstreams from @/lib/api.ts)
 	// In production/SSR, this Next.js API route would proxy to the Caddy Admin API
 	// But in tests, we mock this route directly to avoid the indirection
@@ -928,176 +936,8 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 		});
 	}),
 
-	// Auth API endpoints
-	// GET /api/auth/status - Get authentication status
-	http.get("/api/auth/status", async () => {
-		await delay(50);
-
-		return HttpResponse.json({
-			guestModeEnabled: mockAuthState.guestModeEnabled,
-			isAuthenticated: !!mockAuthState.currentUser,
-			user: mockAuthState.currentUser
-				? {
-						id: mockAuthState.currentUser.id,
-						username: mockAuthState.currentUser.username,
-					}
-				: null,
-		});
-	}),
-
-	// POST /api/auth/setup - Initial setup (create first user, disable guest mode)
-	http.post("/api/auth/setup", async ({ request }) => {
-		await delay(150);
-
-		const body = (await request.json()) as {
-			username: string;
-			password: string;
-			confirmPassword: string;
-		};
-
-		// Validate
-		if (mockAuthState.users.length > 0) {
-			return HttpResponse.json(
-				{ error: "Setup has already been completed" },
-				{ status: 400 },
-			);
-		}
-
-		if (!body.username || body.username.length < 3) {
-			return HttpResponse.json(
-				{
-					error: "Validation failed",
-					details: [{ message: "Username must be at least 3 characters" }],
-				},
-				{ status: 400 },
-			);
-		}
-
-		if (!body.password || body.password.length < 8) {
-			return HttpResponse.json(
-				{
-					error: "Validation failed",
-					details: [{ message: "Password must be at least 8 characters" }],
-				},
-				{ status: 400 },
-			);
-		}
-
-		if (body.password !== body.confirmPassword) {
-			return HttpResponse.json(
-				{
-					error: "Validation failed",
-					details: [{ message: "Passwords do not match" }],
-				},
-				{ status: 400 },
-			);
-		}
-
-		// Create user
-		const user = {
-			id: 1,
-			username: body.username,
-			password_hash: `mock_hash_${body.password}`,
-		};
-		mockAuthState.users.push(user);
-		mockAuthState.guestModeEnabled = false;
-		mockAuthState.currentUser = { id: user.id, username: user.username };
-
-		return HttpResponse.json({
-			success: true,
-			user: {
-				id: user.id,
-				username: user.username,
-			},
-		});
-	}),
-
-	// POST /api/auth/login - Login with username and password
-	http.post("/api/auth/login", async ({ request }) => {
-		await delay(150);
-
-		const body = (await request.json()) as {
-			username: string;
-			password: string;
-		};
-
-		// Find user
-		const user = mockAuthState.users.find((u) => u.username === body.username);
-
-		if (!user || user.password_hash !== `mock_hash_${body.password}`) {
-			return HttpResponse.json(
-				{ error: "Invalid username or password" },
-				{ status: 401 },
-			);
-		}
-
-		// Set current user
-		mockAuthState.currentUser = { id: user.id, username: user.username };
-
-		// Generate mock refresh token
-		const refreshToken = `mock_refresh_${Date.now()}`;
-		mockAuthState.refreshTokens.set(refreshToken, {
-			userId: user.id,
-			expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-		});
-
-		return HttpResponse.json({
-			success: true,
-			user: {
-				id: user.id,
-				username: user.username,
-			},
-		});
-	}),
-
-	// POST /api/auth/logout - Logout current user
-	http.post("/api/auth/logout", async () => {
-		await delay(100);
-
-		mockAuthState.currentUser = null;
-
-		return HttpResponse.json({
-			success: true,
-			message: "Logged out successfully",
-		});
-	}),
-
-	// POST /api/auth/refresh - Refresh access token
-	http.post("/api/auth/refresh", async ({ request: _request }) => {
-		await delay(100);
-
-		// In real implementation, this would read from cookies
-		// For mock, we'll just check if there's a current user
-		if (!mockAuthState.currentUser) {
-			return HttpResponse.json(
-				{ error: "Refresh token not found" },
-				{ status: 401 },
-			);
-		}
-
-		return HttpResponse.json({
-			success: true,
-			user: {
-				id: mockAuthState.currentUser.id,
-				username: mockAuthState.currentUser.username,
-			},
-		});
-	}),
-
-	// GET /api/auth/me - Get current user info
-	http.get("/api/auth/me", async () => {
-		await delay(50);
-
-		if (!mockAuthState.currentUser) {
-			return HttpResponse.json({ error: "Not authenticated" }, { status: 401 });
-		}
-
-		return HttpResponse.json({
-			user: {
-				id: mockAuthState.currentUser.id,
-				username: mockAuthState.currentUser.username,
-				created_at: Math.floor(Date.now() / 1000),
-			},
-		});
-	}),
+	// Auth API endpoints are handled by real API routes with E2E_TEST mode
+	// All auth endpoints (/status, /setup, /login, /logout, /test-reset, /guest-mode) check for E2E_TEST env var
+	// When E2E_TEST=true, they use in-memory state from src/app/api/auth/status/route.ts
+	// This ensures consistent state management across all auth operations without MSW interception
 ];

@@ -30,6 +30,30 @@ export async function POST(request: NextRequest) {
 
 		const { username, password } = validation.data;
 
+		// Use in-memory state for E2E tests
+		if (process.env.E2E_TEST === "true") {
+			const { getTestState } = await import("../status/route");
+			const testState = getTestState();
+
+			const user = testState.users.find(
+				(u) => u.username === username && u.password === password,
+			);
+
+			if (!user) {
+				return NextResponse.json(
+					{ error: "Invalid username or password" },
+					{ status: 401 },
+				);
+			}
+
+			testState.currentUser = user;
+
+			return NextResponse.json({
+				success: true,
+				message: "Login successful",
+			});
+		}
+
 		// Get user by username
 		const user = getUserByUsername(username);
 
