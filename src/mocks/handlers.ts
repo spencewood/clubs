@@ -1138,4 +1138,29 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 			},
 		});
 	}),
+
+	// Toggle guest mode (wipes user data if enabling)
+	http.put("/api/auth/guest-mode", async ({ request }) => {
+		await delay(100);
+		const body = await request.json();
+
+		// Must be authenticated to change guest mode setting
+		if (!mockAuthState.currentUser) {
+			return HttpResponse.json(
+				{ error: "Authentication required" },
+				{ status: 401 },
+			);
+		}
+
+		// If enabling guest mode, wipe all user data
+		if (body.enabled) {
+			mockAuthState.users = [];
+			mockAuthState.currentUser = null;
+		}
+
+		return HttpResponse.json({
+			success: true,
+			guestModeEnabled: body.enabled,
+		});
+	}),
 ];

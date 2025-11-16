@@ -217,6 +217,10 @@ export function SettingsDialog({
 
 			// If enabling guest mode, user was logged out - redirect to home
 			if (guestModeEnabled) {
+				// Refresh auth status before redirect
+				if (onSuccess) {
+					onSuccess();
+				}
 				onOpenChange(false);
 				router.push("/");
 				router.refresh();
