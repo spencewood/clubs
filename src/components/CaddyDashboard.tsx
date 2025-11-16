@@ -1007,7 +1007,7 @@ export function CaddyDashboard({
 										b.directives.some((d) => d.name === "tls"),
 									).length > 0 && (
 										<div className="flex items-center gap-2">
-											<ShieldCheck className="h-4 w-4 text-[--color-success]" />
+											<ShieldCheck className="h-4 w-4 text-(--color-success)" />
 											<span className="font-medium">
 												{
 													config.siteBlocks.filter((b) =>
