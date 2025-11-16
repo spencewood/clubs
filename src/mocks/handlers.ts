@@ -265,6 +265,24 @@ export const getMockCaddyfile = () => {
 	return mockCaddyfile;
 };
 
+// Mock in-memory auth state
+let mockAuthState = {
+	guestModeEnabled: true,
+	users: [] as Array<{ id: number; username: string; password_hash: string }>,
+	currentUser: null as { id: number; username: string } | null,
+	refreshTokens: new Map<string, { userId: number; expiresAt: number }>(),
+};
+
+// Helper to reset auth state (for testing)
+export const resetMockAuthState = () => {
+	mockAuthState = {
+		guestModeEnabled: true,
+		users: [],
+		currentUser: null,
+		refreshTokens: new Map(),
+	};
+};
+
 export const handlers = [
 	// Mock Caddy Admin API endpoints (port 2019)
 	// These are called by our API routes via the caddy-api-client
@@ -907,6 +925,179 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 			certificates: mockCerts,
 			certificatesByType: grouped,
 			certificatesPath: "/data/caddy/certificates",
+		});
+	}),
+
+	// Auth API endpoints
+	// GET /api/auth/status - Get authentication status
+	http.get("/api/auth/status", async () => {
+		await delay(50);
+
+		return HttpResponse.json({
+			guestModeEnabled: mockAuthState.guestModeEnabled,
+			isAuthenticated: !!mockAuthState.currentUser,
+			user: mockAuthState.currentUser
+				? {
+						id: mockAuthState.currentUser.id,
+						username: mockAuthState.currentUser.username,
+					}
+				: null,
+		});
+	}),
+
+	// POST /api/auth/setup - Initial setup (create first user, disable guest mode)
+	http.post("/api/auth/setup", async ({ request }) => {
+		await delay(150);
+
+		const body = (await request.json()) as {
+			username: string;
+			password: string;
+			confirmPassword: string;
+		};
+
+		// Validate
+		if (mockAuthState.users.length > 0) {
+			return HttpResponse.json(
+				{ error: "Setup has already been completed" },
+				{ status: 400 },
+			);
+		}
+
+		if (!body.username || body.username.length < 3) {
+			return HttpResponse.json(
+				{
+					error: "Validation failed",
+					details: [{ message: "Username must be at least 3 characters" }],
+				},
+				{ status: 400 },
+			);
+		}
+
+		if (!body.password || body.password.length < 8) {
+			return HttpResponse.json(
+				{
+					error: "Validation failed",
+					details: [{ message: "Password must be at least 8 characters" }],
+				},
+				{ status: 400 },
+			);
+		}
+
+		if (body.password !== body.confirmPassword) {
+			return HttpResponse.json(
+				{
+					error: "Validation failed",
+					details: [{ message: "Passwords do not match" }],
+				},
+				{ status: 400 },
+			);
+		}
+
+		// Create user
+		const user = {
+			id: 1,
+			username: body.username,
+			password_hash: `mock_hash_${body.password}`,
+		};
+		mockAuthState.users.push(user);
+		mockAuthState.guestModeEnabled = false;
+		mockAuthState.currentUser = { id: user.id, username: user.username };
+
+		return HttpResponse.json({
+			success: true,
+			user: {
+				id: user.id,
+				username: user.username,
+			},
+		});
+	}),
+
+	// POST /api/auth/login - Login with username and password
+	http.post("/api/auth/login", async ({ request }) => {
+		await delay(150);
+
+		const body = (await request.json()) as {
+			username: string;
+			password: string;
+		};
+
+		// Find user
+		const user = mockAuthState.users.find((u) => u.username === body.username);
+
+		if (!user || user.password_hash !== `mock_hash_${body.password}`) {
+			return HttpResponse.json(
+				{ error: "Invalid username or password" },
+				{ status: 401 },
+			);
+		}
+
+		// Set current user
+		mockAuthState.currentUser = { id: user.id, username: user.username };
+
+		// Generate mock refresh token
+		const refreshToken = `mock_refresh_${Date.now()}`;
+		mockAuthState.refreshTokens.set(refreshToken, {
+			userId: user.id,
+			expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+		});
+
+		return HttpResponse.json({
+			success: true,
+			user: {
+				id: user.id,
+				username: user.username,
+			},
+		});
+	}),
+
+	// POST /api/auth/logout - Logout current user
+	http.post("/api/auth/logout", async () => {
+		await delay(100);
+
+		mockAuthState.currentUser = null;
+
+		return HttpResponse.json({
+			success: true,
+			message: "Logged out successfully",
+		});
+	}),
+
+	// POST /api/auth/refresh - Refresh access token
+	http.post("/api/auth/refresh", async ({ request: _request }) => {
+		await delay(100);
+
+		// In real implementation, this would read from cookies
+		// For mock, we'll just check if there's a current user
+		if (!mockAuthState.currentUser) {
+			return HttpResponse.json(
+				{ error: "Refresh token not found" },
+				{ status: 401 },
+			);
+		}
+
+		return HttpResponse.json({
+			success: true,
+			user: {
+				id: mockAuthState.currentUser.id,
+				username: mockAuthState.currentUser.username,
+			},
+		});
+	}),
+
+	// GET /api/auth/me - Get current user info
+	http.get("/api/auth/me", async () => {
+		await delay(50);
+
+		if (!mockAuthState.currentUser) {
+			return HttpResponse.json({ error: "Not authenticated" }, { status: 401 });
+		}
+
+		return HttpResponse.json({
+			user: {
+				id: mockAuthState.currentUser.id,
+				username: mockAuthState.currentUser.username,
+				created_at: Math.floor(Date.now() / 1000),
+			},
 		});
 	}),
 ];
