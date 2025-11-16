@@ -252,8 +252,28 @@ loadbalanced.example.com {
 	}
 }`;
 
-// Mock auth state - in-memory store for E2E tests
-// MockUser and MockAuthState removed - auth state is now managed by real API with E2E_TEST mode
+// Mock auth state - in-memory store for MSW tests
+let mockAuthState = {
+	users: [] as Array<{
+		id: string;
+		username: string;
+		password: string;
+		created_at: string;
+	}>,
+	currentUser: null as {
+		id: string;
+		username: string;
+		password: string;
+		created_at: string;
+	} | null,
+};
+
+const resetMockAuthState = () => {
+	mockAuthState = {
+		users: [],
+		currentUser: null,
+	};
+};
 
 // Helper to toggle API availability (for testing)
 export const setMockCaddyAPIAvailable = (available: boolean) => {
@@ -936,8 +956,186 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 		});
 	}),
 
-	// Auth API endpoints are handled by real API routes with E2E_TEST mode
-	// All auth endpoints (/status, /setup, /login, /logout, /test-reset, /guest-mode) check for E2E_TEST env var
-	// When E2E_TEST=true, they use in-memory state from src/app/api/auth/status/route.ts
-	// This ensures consistent state management across all auth operations without MSW interception
+	// Auth API endpoints - mocked for unit tests
+	// Reset test state
+	http.post("/api/auth/test-reset", async () => {
+		await delay(50);
+		resetMockAuthState();
+		return HttpResponse.json({ success: true });
+	}),
+
+	// Get auth status
+	http.get("/api/auth/status", async () => {
+		await delay(50);
+		return HttpResponse.json({
+			guestModeEnabled: mockAuthState.users.length === 0,
+			isAuthenticated: mockAuthState.currentUser !== null,
+			user: mockAuthState.currentUser
+				? {
+						id: mockAuthState.currentUser.id,
+						username: mockAuthState.currentUser.username,
+					}
+				: null,
+		});
+	}),
+
+	// Setup - create first user
+	http.post("/api/auth/setup", async ({ request }) => {
+		await delay(100);
+		const body = await request.json();
+
+		// Check if setup already completed
+		if (mockAuthState.users.length > 0) {
+			return HttpResponse.json(
+				{ error: "Setup has already been completed" },
+				{ status: 400 },
+			);
+		}
+
+		// Validate username length
+		if (!body.username || body.username.length < 3) {
+			return HttpResponse.json(
+				{
+					error: "Validation failed",
+					details: [
+						{
+							path: ["username"],
+							message: "Username must be at least 3 characters",
+						},
+					],
+				},
+				{ status: 400 },
+			);
+		}
+
+		// Validate password length
+		if (!body.password || body.password.length < 8) {
+			return HttpResponse.json(
+				{
+					error: "Validation failed",
+					details: [
+						{
+							path: ["password"],
+							message: "Password must be at least 8 characters",
+						},
+					],
+				},
+				{ status: 400 },
+			);
+		}
+
+		// Validate password confirmation
+		if (body.password !== body.confirmPassword) {
+			return HttpResponse.json(
+				{
+					error: "Validation failed",
+					details: [
+						{
+							path: ["confirmPassword"],
+							message: "Passwords do not match",
+						},
+					],
+				},
+				{ status: 400 },
+			);
+		}
+
+		// Create user
+		const userId = String(mockAuthState.users.length + 1);
+		const newUser = {
+			id: userId,
+			username: body.username,
+			password: body.password,
+			created_at: new Date().toISOString(),
+		};
+
+		mockAuthState.users.push(newUser);
+		mockAuthState.currentUser = newUser;
+
+		return HttpResponse.json({
+			success: true,
+			user: {
+				id: userId,
+				username: body.username,
+			},
+		});
+	}),
+
+	// Login
+	http.post("/api/auth/login", async ({ request }) => {
+		await delay(100);
+		const body = await request.json();
+
+		const user = mockAuthState.users.find(
+			(u) => u.username === body.username && u.password === body.password,
+		);
+
+		if (!user) {
+			return HttpResponse.json(
+				{ error: "Invalid username or password" },
+				{ status: 401 },
+			);
+		}
+
+		mockAuthState.currentUser = user;
+
+		return HttpResponse.json({
+			success: true,
+			user: {
+				id: user.id,
+				username: user.username,
+			},
+		});
+	}),
+
+	// Logout
+	http.post("/api/auth/logout", async () => {
+		await delay(50);
+		mockAuthState.currentUser = null;
+
+		return HttpResponse.json({
+			success: true,
+			message: "Logged out successfully",
+		});
+	}),
+
+	// Refresh token
+	http.post("/api/auth/refresh", async () => {
+		await delay(50);
+
+		if (!mockAuthState.currentUser) {
+			return HttpResponse.json(
+				{ error: "Refresh token not found" },
+				{ status: 401 },
+			);
+		}
+
+		return HttpResponse.json({
+			success: true,
+			user: {
+				id: mockAuthState.currentUser.id,
+				username: mockAuthState.currentUser.username,
+			},
+		});
+	}),
+
+	// Get current user
+	http.get("/api/auth/me", async () => {
+		await delay(50);
+
+		if (!mockAuthState.currentUser) {
+			return HttpResponse.json(
+				{ error: "Not authenticated" },
+				{ status: 401 },
+			);
+		}
+
+		return HttpResponse.json({
+			user: {
+				id: mockAuthState.currentUser.id,
+				username: mockAuthState.currentUser.username,
+				created_at: mockAuthState.currentUser.created_at,
+			},
+		});
+	}),
 ];
