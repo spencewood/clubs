@@ -5,7 +5,11 @@ import { isGuestModeEnabled } from "@/lib/db";
 // In-memory state for E2E tests
 let testState = {
 	users: [] as Array<{ id: string; username: string; password: string }>,
-	currentUser: null as { id: string; username: string; password: string } | null,
+	currentUser: null as {
+		id: string;
+		username: string;
+		password: string;
+	} | null,
 };
 
 export function getTestState() {

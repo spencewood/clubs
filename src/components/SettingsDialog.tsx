@@ -341,9 +341,9 @@ export function SettingsDialog({
 							{showGuestModeWarning && (
 								<Alert variant="destructive">
 									<AlertDescription className="text-sm">
-										<strong>Warning:</strong> Enabling guest mode will delete all
-										user accounts and authentication data. This action cannot be
-										undone.
+										<strong>Warning:</strong> Enabling guest mode will delete
+										all user accounts and authentication data. This action
+										cannot be undone.
 									</AlertDescription>
 								</Alert>
 							)}

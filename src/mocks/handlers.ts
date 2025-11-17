@@ -1124,10 +1124,7 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 		await delay(50);
 
 		if (!mockAuthState.currentUser) {
-			return HttpResponse.json(
-				{ error: "Not authenticated" },
-				{ status: 401 },
-			);
+			return HttpResponse.json({ error: "Not authenticated" }, { status: 401 });
 		}
 
 		return HttpResponse.json({
