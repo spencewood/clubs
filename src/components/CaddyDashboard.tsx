@@ -606,7 +606,7 @@ export function CaddyDashboard({
 						</Link>
 
 						{/* Right: Server Info + Theme Toggle + Profile */}
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 shrink-0">
 							{caddyStatus && <ServerInfoCard initialStatus={caddyStatus} />}
 							<ThemeToggle />
 							<ProfileDropdown />
