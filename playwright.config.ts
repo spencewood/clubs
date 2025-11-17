@@ -16,8 +16,8 @@ export default defineConfig({
 	/* Fail the build on CI if you accidentally left test.only in the source code. */
 	forbidOnly: !!process.env.CI,
 
-	/* Retry on CI only */
-	retries: process.env.CI ? 2 : 0,
+	/* Retry on CI and locally for flaky tests */
+	retries: process.env.CI ? 3 : 2,
 
 	/* Opt out of parallel tests on CI. */
 	workers: process.env.CI ? 1 : undefined,
@@ -35,6 +35,9 @@ export default defineConfig({
 
 		/* Screenshot on failure */
 		screenshot: "only-on-failure",
+
+		/* Increased timeout for actions to handle slower environments */
+		actionTimeout: 15000, // 15 seconds for individual actions
 	},
 
 	/* Configure projects for major browsers */

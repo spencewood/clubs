@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -70,20 +70,29 @@ export function SettingsDialog({
 		Record<string, string>
 	>({});
 
-	// Initialize state when dialog opens (only when open state changes)
+	// Track whether we've initialized the form for this dialog session
+	// This prevents race conditions where authStatus updates reset user changes
+	const hasInitializedRef = useRef(false);
+
 	useEffect(() => {
-		if (open) {
-			setGuestModeEnabled(authStatus?.guestModeEnabled ?? false);
-		} else {
+		if (open && !hasInitializedRef.current && authStatus !== null) {
+			// Only initialize once when dialog opens AND authStatus is loaded
+			// This prevents initializing with stale/null auth status
+			setGuestModeEnabled(authStatus.guestModeEnabled);
+			hasInitializedRef.current = true;
+		} else if (!open) {
+			// Reset everything when dialog closes
+			// IMPORTANT: Reset to actual auth status, not hardcoded false
 			setActiveTab("general");
-			setGuestModeEnabled(false);
+			setGuestModeEnabled(authStatus?.guestModeEnabled ?? false);
 			setUsername("");
 			setPassword("");
 			setConfirmPassword("");
 			setError(null);
 			setValidationErrors({});
+			hasInitializedRef.current = false;
 		}
-	}, [open, authStatus?.guestModeEnabled]); // Only react to the specific boolean value, not the whole object
+	}, [open, authStatus]);
 
 	const handleSetup = async (e?: React.FormEvent) => {
 		e?.preventDefault();

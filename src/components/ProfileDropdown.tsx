@@ -29,13 +29,14 @@ export function ProfileDropdown() {
 	const [showSettings, setShowSettings] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 
-	// Fetch auth status
+	// Fetch auth status - returns a promise that resolves when complete
 	const fetchStatus = useCallback(async () => {
 		try {
 			const response = await fetch("/api/auth/status");
 			if (response.ok) {
 				const data = await response.json();
 				setAuthStatus(data);
+				return data;
 			}
 		} catch (error) {
 			console.error("Failed to fetch auth status:", error);
@@ -55,6 +56,19 @@ export function ProfileDropdown() {
 			fetchStatus();
 		}
 	}, [showSettings, fetchStatus]);
+
+	// Handler to open settings - ensures auth status is loaded first
+	const handleOpenSettings = useCallback(() => {
+		// Ensure we have current auth status before opening
+		if (authStatus === null) {
+			// Auth status not loaded yet, fetch it first then open
+			fetchStatus().then(() => {
+				setShowSettings(true);
+			});
+		} else {
+			setShowSettings(true);
+		}
+	}, [authStatus, fetchStatus]);
 
 	const handleLogout = async () => {
 		try {
@@ -106,7 +120,7 @@ export function ProfileDropdown() {
 							Guest Mode
 						</div>
 					)}
-					<DropdownMenuItem onClick={() => setShowSettings(true)}>
+					<DropdownMenuItem onClick={handleOpenSettings}>
 						<Settings className="mr-2 h-4 w-4" />
 						<span>Settings</span>
 					</DropdownMenuItem>
