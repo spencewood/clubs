@@ -27,7 +27,13 @@ export default function RootLayout({
 					<UpstreamsProvider>
 						<LeftPanelProvider>{children}</LeftPanelProvider>
 					</UpstreamsProvider>
-					<Toaster position="top-right" richColors closeButton />
+					<Toaster
+						position="top-right"
+						richColors
+						closeButton
+						offset={{ top: "5rem" }}
+						mobileOffset={{ top: "5rem" }}
+					/>
 				</ThemeProvider>
 			</body>
 		</html>

@@ -252,6 +252,29 @@ loadbalanced.example.com {
 	}
 }`;
 
+// Mock auth state - in-memory store for MSW tests
+let mockAuthState = {
+	users: [] as Array<{
+		id: string;
+		username: string;
+		password: string;
+		created_at: string;
+	}>,
+	currentUser: null as {
+		id: string;
+		username: string;
+		password: string;
+		created_at: string;
+	} | null,
+};
+
+const resetMockAuthState = () => {
+	mockAuthState = {
+		users: [],
+		currentUser: null,
+	};
+};
+
 // Helper to toggle API availability (for testing)
 export const setMockCaddyAPIAvailable = (available: boolean) => {
 	mockCaddyAPIAvailable = available;
@@ -613,6 +636,29 @@ export const handlers = [
 		});
 	}),
 
+	// Adapt Caddyfile to JSON config
+	http.post("/api/caddy/adapt", async ({ request }) => {
+		await delay(100);
+		const body = await request.text();
+
+		if (!body || body.trim().length === 0) {
+			return HttpResponse.json(
+				{ error: "Cannot adapt empty Caddyfile" },
+				{ status: 400 },
+			);
+		}
+
+		if (body.includes("INVALID")) {
+			return HttpResponse.json(
+				{ error: "Failed to adapt Caddyfile" },
+				{ status: 400 },
+			);
+		}
+
+		// Return minimal mock config
+		return HttpResponse.json({ server: "srv0", listen: [":443"] });
+	}),
+
 	// Get upstream health status (for tests that call getCaddyUpstreams from @/lib/api.ts)
 	// In production/SSR, this Next.js API route would proxy to the Caddy Admin API
 	// But in tests, we mock this route directly to avoid the indirection
@@ -907,6 +953,211 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 			certificates: mockCerts,
 			certificatesByType: grouped,
 			certificatesPath: "/data/caddy/certificates",
+		});
+	}),
+
+	// Auth API endpoints - mocked for unit tests
+	// Reset test state
+	http.post("/api/auth/test-reset", async () => {
+		await delay(50);
+		resetMockAuthState();
+		return HttpResponse.json({ success: true });
+	}),
+
+	// Get auth status
+	http.get("/api/auth/status", async () => {
+		await delay(50);
+		return HttpResponse.json({
+			guestModeEnabled: mockAuthState.users.length === 0,
+			isAuthenticated: mockAuthState.currentUser !== null,
+			user: mockAuthState.currentUser
+				? {
+						id: mockAuthState.currentUser.id,
+						username: mockAuthState.currentUser.username,
+					}
+				: null,
+		});
+	}),
+
+	// Setup - create first user
+	http.post("/api/auth/setup", async ({ request }) => {
+		await delay(500); // Increased delay to allow tests to verify loading states
+		const body = await request.json();
+
+		// Check if setup already completed
+		if (mockAuthState.users.length > 0) {
+			return HttpResponse.json(
+				{ error: "Setup has already been completed" },
+				{ status: 400 },
+			);
+		}
+
+		// Validate username length
+		if (!body.username || body.username.length < 3) {
+			return HttpResponse.json(
+				{
+					error: "Validation failed",
+					details: [
+						{
+							path: ["username"],
+							message: "Username must be at least 3 characters",
+						},
+					],
+				},
+				{ status: 400 },
+			);
+		}
+
+		// Validate password length
+		if (!body.password || body.password.length < 8) {
+			return HttpResponse.json(
+				{
+					error: "Validation failed",
+					details: [
+						{
+							path: ["password"],
+							message: "Password must be at least 8 characters",
+						},
+					],
+				},
+				{ status: 400 },
+			);
+		}
+
+		// Validate password confirmation
+		if (body.password !== body.confirmPassword) {
+			return HttpResponse.json(
+				{
+					error: "Validation failed",
+					details: [
+						{
+							path: ["confirmPassword"],
+							message: "Passwords do not match",
+						},
+					],
+				},
+				{ status: 400 },
+			);
+		}
+
+		// Create user
+		const userId = String(mockAuthState.users.length + 1);
+		const newUser = {
+			id: userId,
+			username: body.username,
+			password: body.password,
+			created_at: new Date().toISOString(),
+		};
+
+		mockAuthState.users.push(newUser);
+		mockAuthState.currentUser = newUser;
+
+		return HttpResponse.json({
+			success: true,
+			user: {
+				id: userId,
+				username: body.username,
+			},
+		});
+	}),
+
+	// Login
+	http.post("/api/auth/login", async ({ request }) => {
+		await delay(100);
+		const body = await request.json();
+
+		const user = mockAuthState.users.find(
+			(u) => u.username === body.username && u.password === body.password,
+		);
+
+		if (!user) {
+			return HttpResponse.json(
+				{ error: "Invalid username or password" },
+				{ status: 401 },
+			);
+		}
+
+		mockAuthState.currentUser = user;
+
+		return HttpResponse.json({
+			success: true,
+			user: {
+				id: user.id,
+				username: user.username,
+			},
+		});
+	}),
+
+	// Logout
+	http.post("/api/auth/logout", async () => {
+		await delay(50);
+		mockAuthState.currentUser = null;
+
+		return HttpResponse.json({
+			success: true,
+			message: "Logged out successfully",
+		});
+	}),
+
+	// Refresh token
+	http.post("/api/auth/refresh", async () => {
+		await delay(50);
+
+		if (!mockAuthState.currentUser) {
+			return HttpResponse.json(
+				{ error: "Refresh token not found" },
+				{ status: 401 },
+			);
+		}
+
+		return HttpResponse.json({
+			success: true,
+			user: {
+				id: mockAuthState.currentUser.id,
+				username: mockAuthState.currentUser.username,
+			},
+		});
+	}),
+
+	// Get current user
+	http.get("/api/auth/me", async () => {
+		await delay(50);
+
+		if (!mockAuthState.currentUser) {
+			return HttpResponse.json({ error: "Not authenticated" }, { status: 401 });
+		}
+
+		return HttpResponse.json({
+			user: {
+				id: mockAuthState.currentUser.id,
+				username: mockAuthState.currentUser.username,
+				created_at: mockAuthState.currentUser.created_at,
+			},
+		});
+	}),
+
+	// Toggle guest mode (wipes user data if enabling)
+	http.put("/api/auth/guest-mode", async ({ request }) => {
+		await delay(100);
+		const body = await request.json();
+
+		// Must be authenticated to change guest mode setting
+		if (!mockAuthState.currentUser) {
+			return HttpResponse.json(
+				{ error: "Authentication required" },
+				{ status: 401 },
+			);
+		}
+
+		// If enabling guest mode, wipe all user data
+		if (body.enabled) {
+			mockAuthState.users = [];
+			mockAuthState.currentUser = null;
+		}
+
+		return HttpResponse.json({
+			success: true,
+			guestModeEnabled: body.enabled,
 		});
 	}),
 ];

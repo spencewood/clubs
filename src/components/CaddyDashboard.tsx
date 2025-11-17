@@ -50,6 +50,7 @@ import { ContainerEditDialog } from "@/components/ContainerEditDialog";
 import { EditContainerSiteDialog } from "@/components/EditContainerSiteDialog";
 import { MetricsView } from "@/components/MetricsView";
 import { NewSiteBlockDialog } from "@/components/NewSiteBlockDialog";
+import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { ServerInfoCard } from "@/components/ServerInfoCard";
 import { SiteBlockCard } from "@/components/SiteBlockCard";
 import { SiteBlockEditDialog } from "@/components/SiteBlockEditDialog";
@@ -584,18 +585,16 @@ export function CaddyDashboard({
 		<div className="min-h-screen bg-background pb-16">
 			<header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur @supports-[backdrop-filter]:bg-card/60">
 				<div className="container mx-auto px-4 py-3">
-					<div className="flex items-center justify-between gap-2 sm:gap-4 min-w-0">
+					<div className="flex items-center justify-between gap-4">
 						{/* Left: Logo and Title */}
 						<Link
 							href="/"
-							className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity min-w-0 flex-1"
+							className="flex items-center gap-3 hover:opacity-80 transition-opacity"
 						>
-							<span className="text-3xl sm:text-4xl shrink-0">♣</span>
-							<div className="min-w-0 flex-1">
-								<h1 className="text-xl sm:text-2xl font-bold truncate">
-									Clubs
-								</h1>
-								<p className="text-xs text-muted-foreground truncate">
+							<span className="text-4xl shrink-0">♣</span>
+							<div>
+								<h1 className="text-2xl font-bold">Clubs</h1>
+								<p className="text-xs text-muted-foreground">
 									Caddyfile Management System{" "}
 									<span className="opacity-60">
 										{process.env.NODE_ENV === "development"
@@ -606,10 +605,11 @@ export function CaddyDashboard({
 							</div>
 						</Link>
 
-						{/* Right: Server Info + Theme Toggle */}
+						{/* Right: Server Info + Theme Toggle + Profile */}
 						<div className="flex items-center gap-2 shrink-0">
 							{caddyStatus && <ServerInfoCard initialStatus={caddyStatus} />}
 							<ThemeToggle />
+							<ProfileDropdown />
 						</div>
 					</div>
 				</div>
@@ -617,10 +617,10 @@ export function CaddyDashboard({
 
 			<main className="container mx-auto px-4 py-6">
 				{config && (
-					<div className="relative xl:flex xl:flex-row gap-8 items-start min-h-[calc(100vh-12rem)] min-w-0 w-full">
+					<div className="relative xl:flex xl:flex-row gap-8 items-start min-h-[calc(100vh-12rem)]">
 						{/* Left: Sites/Upstreams Panel - Elevated "table" (content height) */}
 						<div
-							className={`space-y-4 bg-card border rounded-lg shadow-lg p-3 sm:p-6 min-h-[calc(100vh-12rem)] will-change-transform relative transition-all duration-500 min-w-0 ${
+							className={`space-y-4 bg-card border rounded-lg shadow-lg p-3 sm:p-6 min-h-[calc(100vh-12rem)] will-change-transform relative transition-all duration-500 overflow-visible ${
 								leftPanelExpanded
 									? "xl:static -translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:w-full xl:shrink-0"
 									: "xl:static translate-x-0 opacity-100 pointer-events-auto z-20 xl:z-10 xl:w-1/2 xl:shrink-0"
@@ -634,7 +634,7 @@ export function CaddyDashboard({
 								<div className="flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
 									<Link
 										href="/"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 											leftPanelView === "sites"
 												? "border-primary text-foreground"
 												: "border-transparent text-muted-foreground hover:text-foreground"
@@ -645,7 +645,7 @@ export function CaddyDashboard({
 									</Link>
 									<Link
 										href="/upstreams"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 											leftPanelView === "upstreams"
 												? "border-primary text-foreground"
 												: "border-transparent text-muted-foreground hover:text-foreground"
@@ -656,7 +656,7 @@ export function CaddyDashboard({
 									</Link>
 									<Link
 										href="/analytics"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 											leftPanelView === "analytics"
 												? "border-primary text-foreground"
 												: "border-transparent text-muted-foreground hover:text-foreground"
@@ -667,7 +667,7 @@ export function CaddyDashboard({
 									</Link>
 									<Link
 										href="/certificates"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 											leftPanelView === "certificates"
 												? "border-primary text-foreground"
 												: "border-transparent text-muted-foreground hover:text-foreground"
@@ -765,7 +765,7 @@ export function CaddyDashboard({
 											</p>
 										</div>
 									) : (
-										<div className="grid gap-3 w-full min-w-0 overflow-x-hidden">
+										<div className="grid gap-3">
 											{config.siteBlocks.map((siteBlock) => {
 												// Check if this is a container
 												if (isVirtualContainer(siteBlock)) {
@@ -843,7 +843,7 @@ export function CaddyDashboard({
 										<button
 											type="button"
 											onClick={() => setRightPanelView("raw")}
-											className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
+											className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 												rightPanelView === "raw"
 													? "border-primary text-foreground"
 													: "border-transparent text-muted-foreground/70 hover:text-foreground"
@@ -858,7 +858,7 @@ export function CaddyDashboard({
 											<button
 												type="button"
 												onClick={() => setRightPanelView("config")}
-												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
+												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 													rightPanelView === "config"
 														? "border-primary text-foreground"
 														: "border-transparent text-muted-foreground/70 hover:text-foreground"

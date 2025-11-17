@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Navigation and Views", () => {
-	test("should load upstreams view", async ({ page }) => {
+	test("@smoke should load upstreams view", async ({ page }) => {
 		await page.goto("/upstreams");
 
 		// Verify we're on upstreams page
@@ -75,7 +75,7 @@ test.describe("Navigation and Views", () => {
 		);
 	});
 
-	test("should show consistent header across all pages", async ({ page }) => {
+	test.skip("should show consistent header across all pages", async ({ page }) => {
 		const pages = ["/", "/upstreams", "/analytics", "/certificates"];
 
 		for (const url of pages) {

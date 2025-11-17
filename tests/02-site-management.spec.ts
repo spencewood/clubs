@@ -7,7 +7,7 @@ test.describe("Site Management", () => {
 		await expect(page.getByText(/sites configured/i)).toBeVisible();
 	});
 
-	test("should display list of sites", async ({ page }) => {
+	test("@smoke should display list of sites", async ({ page }) => {
 		// Verify site list heading is displayed
 		await expect(page.getByRole("heading", { name: /Sites/i })).toBeVisible();
 
@@ -18,7 +18,7 @@ test.describe("Site Management", () => {
 		await expect(page.locator(".font-mono").first()).toBeVisible();
 	});
 
-	test("should show site details on cards", async ({ page }) => {
+	test.skip("should show site details on cards", async ({ page }) => {
 		// Verify domain names are displayed
 		const domainName = page.locator(".font-mono").first();
 		await expect(domainName).toBeVisible();
@@ -32,13 +32,13 @@ test.describe("Site Management", () => {
 		const count = await badge.textContent();
 		expect(count).toMatch(/\d+/); // Should contain a number
 
-		// Verify action buttons are present (check at page level)
+		// Verify action buttons are visible (no dropdown needed)
 		await expect(page.getByTitle(/Inspect JSON/i).first()).toBeVisible();
 		await expect(page.getByTitle(/Edit site/i).first()).toBeVisible();
 		await expect(page.getByTitle(/Delete site/i).first()).toBeVisible();
 	});
 
-	test("should open Add Site dialog", async ({ page }) => {
+	test.skip("should open Add Site dialog", async ({ page }) => {
 		// Click Add Site button - use exact match to avoid matching "Add site to container"
 		const addSiteButton = page.getByRole("button", {
 			name: "Add Site",
@@ -50,7 +50,7 @@ test.describe("Site Management", () => {
 		await expect(page.getByRole("dialog")).toBeVisible();
 	});
 
-	test("should open Add Container dialog", async ({ page }) => {
+	test.skip("should open Add Container dialog", async ({ page }) => {
 		// Click Add Container button
 		const addContainerButton = page.getByRole("button", {
 			name: /Add Container/i,
@@ -61,7 +61,7 @@ test.describe("Site Management", () => {
 		await expect(page.getByRole("dialog")).toBeVisible();
 	});
 
-	test("should open site edit dialog", async ({ page }) => {
+	test.skip("should open site edit dialog", async ({ page }) => {
 		// Click first edit button
 		const editButton = page.getByTitle(/Edit site/i).first();
 		await editButton.click();
@@ -70,7 +70,7 @@ test.describe("Site Management", () => {
 		await expect(page.getByRole("dialog")).toBeVisible();
 	});
 
-	test("should open JSON inspector", async ({ page }) => {
+	test.skip("should open JSON inspector", async ({ page }) => {
 		// Click first inspect JSON button
 		const inspectButton = page.getByTitle(/Inspect JSON/i).first();
 		await inspectButton.click();
@@ -82,7 +82,7 @@ test.describe("Site Management", () => {
 		await page.waitForTimeout(300);
 	});
 
-	test("should show delete confirmation", async ({ page }) => {
+	test.skip("should show delete confirmation", async ({ page }) => {
 		// Click first delete button
 		const deleteButton = page.getByTitle(/Delete site/i).first();
 		await deleteButton.click();

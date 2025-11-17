@@ -1,3 +1,4 @@
+import { AuthGuard } from "@/components/AuthGuard";
 import { CaddyDashboard } from "@/components/CaddyDashboard";
 import { getInitialPageData } from "@/lib/server/data";
 
@@ -11,19 +12,21 @@ export default async function AnalyticsPage() {
 	const initialData = await getInitialPageData();
 
 	return (
-		<CaddyDashboard
-			initialConfig={initialData.config}
-			initialRawContent={initialData.rawContent}
-			initialIsLiveMode={initialData.isLiveMode}
-			initialCaddyStatus={{
-				available: initialData.caddyStatus.available,
-				version: initialData.caddyStatus.version,
-				running: initialData.caddyStatus.available,
-				url: process.env.CADDY_API_URL || "http://localhost:2019",
-			}}
-			initialView="analytics"
-			initialUpstreams={initialData.upstreams}
-			initialCertificates={initialData.certificates}
-		/>
+		<AuthGuard>
+			<CaddyDashboard
+				initialConfig={initialData.config}
+				initialRawContent={initialData.rawContent}
+				initialIsLiveMode={initialData.isLiveMode}
+				initialCaddyStatus={{
+					available: initialData.caddyStatus.available,
+					version: initialData.caddyStatus.version,
+					running: initialData.caddyStatus.available,
+					url: process.env.CADDY_API_URL || "http://localhost:2019",
+				}}
+				initialView="analytics"
+				initialUpstreams={initialData.upstreams}
+				initialCertificates={initialData.certificates}
+			/>
+		</AuthGuard>
 	);
 }

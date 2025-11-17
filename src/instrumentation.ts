@@ -2,12 +2,15 @@
 // https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
 
 export async function register() {
-	// Only run MSW in development mode
-	if (process.env.NODE_ENV === "development") {
+	// Enable MSW for development and E2E tests
+	if (
+		process.env.NODE_ENV === "development" ||
+		process.env.E2E_TEST === "true"
+	) {
 		const { server } = await import("@/mocks/node");
-		server.listen({
-			onUnhandledRequest: "bypass", // Don't error on unhandled requests in dev
-		});
-		console.log("🔶 MSW enabled for development");
+		server.listen({ onUnhandledRequest: "bypass" });
+		const context =
+			process.env.E2E_TEST === "true" ? "E2E tests" : "development";
+		console.log(`🔶 MSW enabled in Next.js server for ${context}`);
 	}
 }
