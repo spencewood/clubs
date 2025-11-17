@@ -11,8 +11,8 @@ export default function globalSetup() {
 	// Only mock external services like Caddy API (localhost:2019)
 	const e2eHandlers = handlers.filter(
 		(handler) =>
-			!handler.info.path?.includes("/api/auth") &&
-			!handler.info.path?.includes("/api/certificates"),
+			!handler.info.path?.toString().includes("/api/auth") &&
+			!handler.info.path?.toString().includes("/api/certificates"),
 	);
 
 	const server = setupServer(...e2eHandlers);
