@@ -119,8 +119,8 @@ export function ContainerCard({
 	};
 
 	return (
-		<Card className="border-l-4 border-l-primary bg-muted/30">
-			<CardHeader className="pb-3">
+		<Card className="border-l-4 border-l-primary bg-muted/30 w-full overflow-hidden">
+			<CardHeader className="pb-3 min-w-0">
 				<div className="flex items-center justify-between gap-2 sm:gap-4">
 					<div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
 						<TooltipProvider>
@@ -150,7 +150,7 @@ export function ContainerCard({
 							<CardTitle className="font-mono text-sm sm:text-lg truncate">
 								{wildcardDomain}
 							</CardTitle>
-							<div className="text-xs sm:text-sm text-muted-foreground mt-1">
+							<div className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
 								{virtualBlocks.length} site
 								{virtualBlocks.length !== 1 ? "s" : ""}
 							</div>
@@ -224,18 +224,18 @@ export function ContainerCard({
 			</CardHeader>
 
 			{isExpanded && (
-				<CardContent className="pt-0 space-y-3">
+				<CardContent className="pt-0 space-y-3 min-w-0">
 					{/* Shared Configuration Section */}
 					{sharedConfig.length > 0 && (
-						<div className="p-2 sm:p-3 bg-muted rounded-lg border">
+						<div className="p-2 sm:p-3 bg-muted rounded-lg border w-full">
 							<h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
 								Shared Configuration
 							</h4>
-							<div className="space-y-1 overflow-x-auto">
+							<div className="space-y-1">
 								{sharedConfig.map((config) => (
 									<div
 										key={config}
-										className="text-xs sm:text-sm font-mono break-all sm:break-normal"
+										className="text-xs sm:text-sm font-mono truncate"
 									>
 										{config}
 									</div>
@@ -260,14 +260,14 @@ export function ContainerCard({
 							return (
 								<Card
 									key={block.id}
-									className="border-l-2 border-l-primary/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+									className="border-l-2 border-l-primary/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 w-full overflow-hidden"
 								>
-									<CardContent className="p-2 sm:p-4">
+									<CardContent className="p-2 sm:p-4 min-w-0">
 										<div className="flex items-center justify-between gap-1 sm:gap-4">
-											<div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 overflow-hidden">
+											<div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
 												<Globe className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
-												<div className="flex-1 min-w-0 overflow-hidden">
-													<div className="font-mono text-sm sm:text-base font-medium truncate break-all">
+												<div className="flex-1 min-w-0">
+													<div className="font-mono text-sm sm:text-base font-medium truncate">
 														{block.hostname}
 													</div>
 													<div className="hidden sm:block text-sm text-muted-foreground truncate">

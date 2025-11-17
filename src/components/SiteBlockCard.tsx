@@ -109,18 +109,18 @@ export function SiteBlockCard({
 	};
 
 	return (
-		<Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
-			<CardContent className="p-2 sm:p-4">
+		<Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 w-full overflow-hidden">
+			<CardContent className="p-2 sm:p-4 min-w-0">
 				<div className="flex items-center justify-between gap-1 sm:gap-4">
-					<div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 overflow-hidden">
+					<div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
 						{isDomain ? (
 							<Globe className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
 						) : (
 							<Server className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
 						)}
-						<div className="flex-1 min-w-0 overflow-hidden">
-							<div className="flex items-center gap-2">
-								<div className="font-mono text-sm sm:text-base font-medium truncate break-all">
+						<div className="flex-1 min-w-0">
+							<div className="flex items-center gap-2 min-w-0">
+								<div className="font-mono text-sm sm:text-base font-medium truncate flex-1 min-w-0">
 									{siteBlock.addresses.join(", ")}
 								</div>
 								{siteBlock.directives.length > 0 && (
