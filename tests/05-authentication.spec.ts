@@ -21,8 +21,10 @@ test.describe('Authentication System', () => {
   test.describe.configure({ mode: 'serial' });
 
   // Reset mock auth state before each test via HTTP request
-  test.beforeEach(async ({ request }) => {
+  test.beforeEach(async ({ request, context }) => {
     await request.post('http://localhost:3000/api/auth/test-reset');
+    // Clear all cookies and storage to ensure clean state
+    await context.clearCookies();
   });
 
   test.describe('Initial Guest Mode State', () => {
@@ -35,13 +37,28 @@ test.describe('Authentication System', () => {
     });
 
     test('should show Settings option in profile dropdown', async ({ page }) => {
+      // Set up a promise to wait for the auth status API call
+      const authStatusPromise = page.waitForResponse(response =>
+        response.url().includes('/api/auth/status') && response.status() === 200
+      );
+
       await page.goto('/');
 
-      // Open profile dropdown
-      await page.getByRole('button', { name: /profile menu/i }).click();
+      // Wait for the auth status API call to complete before interacting with profile dropdown
+      // This ensures the ProfileDropdown component has loaded and is not in the loading state
+      await authStatusPromise;
 
-      // Verify Settings option is visible
-      await expect(page.getByRole('menuitem', { name: /Settings/i })).toBeVisible();
+      // Wait for the profile button to be visible and stable (auth status loaded)
+      const profileButton = page.getByRole('button', { name: /profile menu/i });
+      await expect(profileButton).toBeVisible();
+
+      // Open profile dropdown
+      await profileButton.click();
+
+      // Wait for the dropdown menu to be rendered in the portal and fully visible
+      // Use a more specific selector that waits for the menu container to be ready
+      const settingsMenuItem = page.getByRole('menuitem', { name: /Settings/i });
+      await expect(settingsMenuItem).toBeVisible();
 
       // In guest mode, Logout should not be visible yet
       const logoutOption = page.getByRole('menuitem', { name: /Logout/i });
@@ -68,14 +85,43 @@ test.describe('Authentication System', () => {
     test('should show guest mode toggle in settings', async ({ page }) => {
       await page.goto('/');
 
-      // Open settings
-      await page.getByRole('button', { name: /profile menu/i }).click();
-      await page.getByRole('menuitem', { name: /Settings/i }).click();
-      await page.getByRole('button', { name: /Users/i }).click();
+      // Wait for auth status to be loaded
+      const authStatusPromise = page.waitForResponse(response =>
+        response.url().includes('/api/auth/status') && response.status() === 200
+      );
+      await authStatusPromise;
 
-      // Verify guest mode toggle is visible
-      await expect(page.getByText(/Guest mode is currently enabled/i)).toBeVisible();
-      await expect(page.getByRole('switch', { name: /Guest Mode/i })).toBeVisible();
+      // Wait for the profile button to be visible and stable
+      const profileButton = page.getByRole('button', { name: /profile menu/i });
+      await expect(profileButton).toBeVisible();
+
+      // Open settings
+      await profileButton.click();
+      await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for settings dialog to be fully open before clicking Users button
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
+      // Click Users button and wait for it to be ready
+      const usersButton = page.getByRole('button', { name: /Users/i });
+      await expect(usersButton).toBeVisible();
+      await usersButton.click();
+
+      // Wait for tab transition to complete - the button gets border-primary class when active
+      // This ensures the tab content has started rendering before we look for elements
+      await expect(usersButton).toHaveClass(/border-primary/);
+
+      // Wait for Users tab content to be rendered - use the Alert as an indicator
+      // This is critical for mobile viewports where rendering may be slower
+      const guestModeText = page.getByText(/Guest mode is currently enabled/i);
+      await expect(guestModeText).toBeAttached();
+      await expect(guestModeText).toBeVisible();
+
+      // Now verify the switch is visible - scroll into view for mobile viewports
+      const guestModeSwitch = page.getByRole('switch', { name: /Guest Mode/i });
+      await expect(guestModeSwitch).toBeAttached();
+      await guestModeSwitch.scrollIntoViewIfNeeded();
+      await expect(guestModeSwitch).toBeVisible();
     });
 
     test('should show credentials form when enabling disable guest mode', async ({ page }) => {
@@ -84,18 +130,45 @@ test.describe('Authentication System', () => {
       // Open settings
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for settings dialog to be fully visible before interacting
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
 
+      // Wait for the Users tab content to be fully loaded
+      await expect(page.getByText(/Guest mode is currently enabled/i)).toBeVisible();
+
       // Click to enable "Disable Guest Mode"
-      await page.getByRole('switch', { name: /Guest Mode/i }).click();
+      // Scroll the switch into view first (important for mobile viewports)
+      const guestModeSwitch = page.getByRole('switch', { name: /Guest Mode/i });
+      await guestModeSwitch.scrollIntoViewIfNeeded();
+
+      // Ensure switch is in the expected initial state (checked/enabled)
+      await expect(guestModeSwitch).toBeChecked();
+
+      // Click the switch to disable guest mode
+      await guestModeSwitch.click();
+
+      // Wait for the switch state to actually change before checking for the form
+      // This is critical on mobile viewports where state updates may be slower
+      await expect(guestModeSwitch).not.toBeChecked();
+
       // Wait for the admin creation form to appear
-      await expect(page.getByLabel(/Username/i)).toBeVisible();
-      await expect(page.getByLabel(/^Password \*$/)).toBeVisible();
+      // On mobile viewports, the form may need to be scrolled into view
+      const usernameField = page.getByLabel(/Username/i);
+      await expect(usernameField).toBeAttached();
+      await usernameField.scrollIntoViewIfNeeded();
+      await expect(usernameField).toBeVisible();
 
       // Verify credentials form appears
-      await expect(page.getByLabel(/Username/i)).toBeVisible();
-      await expect(page.getByLabel(/^Password \*$/)).toBeVisible();
-      await expect(page.getByLabel(/Confirm Password/i)).toBeVisible();
+      const passwordField = page.getByLabel(/^Password \*$/);
+      await passwordField.scrollIntoViewIfNeeded();
+      await expect(passwordField).toBeVisible();
+
+      const confirmPasswordField = page.getByLabel(/Confirm Password/i);
+      await confirmPasswordField.scrollIntoViewIfNeeded();
+      await expect(confirmPasswordField).toBeVisible();
     });
 
     test('should close settings dialog on cancel', async ({ page }) => {
@@ -121,22 +194,53 @@ test.describe('Authentication System', () => {
       // Open settings and enable auth
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for settings dialog to be fully visible
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
-      await page.getByRole('switch', { name: /Guest Mode/i }).click();
+
+      // Wait for the Users tab content to be fully loaded
+      await expect(page.getByText(/Guest mode is currently enabled/i)).toBeVisible();
+
+      // Click to disable guest mode and show the form
+      const guestModeSwitch = page.getByRole('switch', { name: /Guest Mode/i });
+      await guestModeSwitch.scrollIntoViewIfNeeded();
+      await expect(guestModeSwitch).toBeChecked();
+      await guestModeSwitch.click();
+
+      // Wait for the switch state to change before checking for the form
+      await expect(guestModeSwitch).not.toBeChecked();
+
       // Wait for the admin creation form to appear
-      await expect(page.getByLabel(/Username/i)).toBeVisible();
-      await expect(page.getByLabel(/^Password \*$/)).toBeVisible();
+      const usernameField = page.getByLabel(/Username/i);
+      await expect(usernameField).toBeAttached();
+      await usernameField.scrollIntoViewIfNeeded();
+      await expect(usernameField).toBeVisible();
 
       // Enter short username
-      await page.getByLabel(/Username/i).fill('ab');
-      await page.getByLabel(/^Password \*$/).fill('password123');
-      await page.getByLabel(/Confirm Password/i).fill('password123');
+      await usernameField.fill('ab');
+
+      const passwordField = page.getByLabel(/^Password \*$/);
+      await passwordField.scrollIntoViewIfNeeded();
+      await passwordField.fill('password123');
+
+      const confirmPasswordField = page.getByLabel(/Confirm Password/i);
+      await confirmPasswordField.scrollIntoViewIfNeeded();
+      await confirmPasswordField.fill('password123');
 
       // Try to save
-      await page.getByRole('button', { name: /Save Changes/i }).click();
+      const saveButton = page.getByRole('button', { name: /Save Changes/i });
+      await saveButton.scrollIntoViewIfNeeded();
+      await saveButton.click();
 
       // Verify error message appears
-      await expect(page.getByText(/Username must be at least 3 characters/i)).toBeVisible();
+      const errorMessage = page.getByText(/Username must be at least 3 characters/i);
+      // Wait for error to be attached first (validation is async)
+      await expect(errorMessage).toBeAttached();
+      // Scroll error into view for mobile viewports
+      await errorMessage.scrollIntoViewIfNeeded();
+      await expect(errorMessage).toBeVisible();
     });
 
     test('should validate password length (min 8 characters)', async ({ page }) => {
@@ -145,22 +249,53 @@ test.describe('Authentication System', () => {
       // Open settings and enable auth
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for settings dialog to be fully visible
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
-      await page.getByRole('switch', { name: /Guest Mode/i }).click();
+
+      // Wait for the Users tab content to be fully loaded
+      await expect(page.getByText(/Guest mode is currently enabled/i)).toBeVisible();
+
+      // Click to disable guest mode and show the form
+      const guestModeSwitch = page.getByRole('switch', { name: /Guest Mode/i });
+      await guestModeSwitch.scrollIntoViewIfNeeded();
+      await expect(guestModeSwitch).toBeChecked();
+      await guestModeSwitch.click();
+
+      // Wait for the switch state to change before checking for the form
+      await expect(guestModeSwitch).not.toBeChecked();
+
       // Wait for the admin creation form to appear
-      await expect(page.getByLabel(/Username/i)).toBeVisible();
-      await expect(page.getByLabel(/^Password \*$/)).toBeVisible();
+      const usernameField = page.getByLabel(/Username/i);
+      await expect(usernameField).toBeAttached();
+      await usernameField.scrollIntoViewIfNeeded();
+      await expect(usernameField).toBeVisible();
 
       // Enter short password
-      await page.getByLabel(/Username/i).fill('admin');
-      await page.getByLabel(/^Password \*$/).fill('short');
-      await page.getByLabel(/Confirm Password/i).fill('short');
+      await usernameField.fill('admin');
+
+      const passwordField = page.getByLabel(/^Password \*$/);
+      await passwordField.scrollIntoViewIfNeeded();
+      await passwordField.fill('short');
+
+      const confirmPasswordField = page.getByLabel(/Confirm Password/i);
+      await confirmPasswordField.scrollIntoViewIfNeeded();
+      await confirmPasswordField.fill('short');
 
       // Try to save
-      await page.getByRole('button', { name: /Save Changes/i }).click();
+      const saveButton = page.getByRole('button', { name: /Save Changes/i });
+      await saveButton.scrollIntoViewIfNeeded();
+      await saveButton.click();
 
       // Verify error message appears
-      await expect(page.getByText(/Password must be at least 8 characters/i)).toBeVisible();
+      const errorMessage = page.getByText(/Password must be at least 8 characters/i);
+      // Wait for error to be attached first (validation is async)
+      await expect(errorMessage).toBeAttached();
+      // Scroll error into view for mobile viewports
+      await errorMessage.scrollIntoViewIfNeeded();
+      await expect(errorMessage).toBeVisible();
     });
 
     test('should validate password confirmation match', async ({ page }) => {
@@ -169,22 +304,53 @@ test.describe('Authentication System', () => {
       // Open settings and enable auth
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for settings dialog to be fully visible
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
-      await page.getByRole('switch', { name: /Guest Mode/i }).click();
+
+      // Wait for the Users tab content to be fully loaded
+      await expect(page.getByText(/Guest mode is currently enabled/i)).toBeVisible();
+
+      // Click to disable guest mode and show the form
+      const guestModeSwitch = page.getByRole('switch', { name: /Guest Mode/i });
+      await guestModeSwitch.scrollIntoViewIfNeeded();
+      await expect(guestModeSwitch).toBeChecked();
+      await guestModeSwitch.click();
+
+      // Wait for the switch state to change before checking for the form
+      await expect(guestModeSwitch).not.toBeChecked();
+
       // Wait for the admin creation form to appear
-      await expect(page.getByLabel(/Username/i)).toBeVisible();
-      await expect(page.getByLabel(/^Password \*$/)).toBeVisible();
+      const usernameField = page.getByLabel(/Username/i);
+      await expect(usernameField).toBeAttached();
+      await usernameField.scrollIntoViewIfNeeded();
+      await expect(usernameField).toBeVisible();
 
       // Enter mismatched passwords
-      await page.getByLabel(/Username/i).fill('admin');
-      await page.getByLabel(/^Password \*$/).fill('password123');
-      await page.getByLabel(/Confirm Password/i).fill('different123');
+      await usernameField.fill('admin');
+
+      const passwordField = page.getByLabel(/^Password \*$/);
+      await passwordField.scrollIntoViewIfNeeded();
+      await passwordField.fill('password123');
+
+      const confirmPasswordField = page.getByLabel(/Confirm Password/i);
+      await confirmPasswordField.scrollIntoViewIfNeeded();
+      await confirmPasswordField.fill('different123');
 
       // Try to save
-      await page.getByRole('button', { name: /Save Changes/i }).click();
+      const saveButton = page.getByRole('button', { name: /Save Changes/i });
+      await saveButton.scrollIntoViewIfNeeded();
+      await saveButton.click();
 
       // Verify error message appears
-      await expect(page.getByText(/do not match/i)).toBeVisible();
+      const errorMessage = page.getByText(/Passwords do not match/i);
+      // Wait for error to be attached first (validation is async)
+      await expect(errorMessage).toBeAttached();
+      // Scroll error into view for mobile viewports
+      await errorMessage.scrollIntoViewIfNeeded();
+      await expect(errorMessage).toBeVisible();
     });
 
     test('should successfully create first user and disable guest mode', async ({ page }) => {
@@ -193,19 +359,45 @@ test.describe('Authentication System', () => {
       // Open settings and enable auth
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for settings dialog to be fully visible
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
-      await page.getByRole('switch', { name: /Guest Mode/i }).click();
+
+      // Wait for the Users tab content to be fully loaded
+      await expect(page.getByText(/Guest mode is currently enabled/i)).toBeVisible();
+
+      // Click to disable guest mode and show the form
+      const guestModeSwitch = page.getByRole('switch', { name: /Guest Mode/i });
+      await guestModeSwitch.scrollIntoViewIfNeeded();
+      await expect(guestModeSwitch).toBeChecked();
+      await guestModeSwitch.click();
+
+      // Wait for the switch state to change before checking for the form
+      await expect(guestModeSwitch).not.toBeChecked();
+
       // Wait for the admin creation form to appear
-      await expect(page.getByLabel(/Username/i)).toBeVisible();
-      await expect(page.getByLabel(/^Password \*$/)).toBeVisible();
+      const usernameField = page.getByLabel(/Username/i);
+      await expect(usernameField).toBeAttached();
+      await usernameField.scrollIntoViewIfNeeded();
+      await expect(usernameField).toBeVisible();
 
       // Fill in valid credentials
-      await page.getByLabel(/Username/i).fill('admin');
-      await page.getByLabel(/^Password \*$/).fill('password123');
-      await page.getByLabel(/Confirm Password/i).fill('password123');
+      await usernameField.fill('admin');
+
+      const passwordField = page.getByLabel(/^Password \*$/);
+      await passwordField.scrollIntoViewIfNeeded();
+      await passwordField.fill('password123');
+
+      const confirmPasswordField = page.getByLabel(/Confirm Password/i);
+      await confirmPasswordField.scrollIntoViewIfNeeded();
+      await confirmPasswordField.fill('password123');
 
       // Save
-      await page.getByRole('button', { name: /Save Changes/i }).click();
+      const saveButton = page.getByRole('button', { name: /Save Changes/i });
+      await saveButton.scrollIntoViewIfNeeded();
+      await saveButton.click();
 
       // Verify success toast appears
       await expect(page.getByText(/Authentication enabled/i)).toBeVisible();
@@ -214,7 +406,11 @@ test.describe('Authentication System', () => {
       await expect(page.getByRole('heading', { name: /Settings/i })).not.toBeVisible();
 
       // Verify profile dropdown now shows username
-      await page.getByRole('button', { name: /profile menu/i }).click();
+      // On mobile viewports, ensure profile button is visible after dialog closes
+      const profileButton = page.getByRole('button', { name: /profile menu/i });
+      await profileButton.scrollIntoViewIfNeeded();
+      await expect(profileButton).toBeVisible();
+      await profileButton.click();
       await expect(page.getByRole('menu').getByText('admin')).toBeVisible();
 
       // Verify Logout option is now available
@@ -237,7 +433,12 @@ test.describe('Authentication System', () => {
       // Wait for settings dialog to be fully visible
       await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
 
-      await page.getByRole('switch', { name: /Guest Mode/i }).click();
+      const guestModeSwitch = page.getByRole('switch', { name: /Guest Mode/i });
+      await expect(guestModeSwitch).toBeChecked();
+      await guestModeSwitch.click();
+
+      // Wait for the switch state to change
+      await expect(guestModeSwitch).not.toBeChecked();
 
       // Wait for the admin creation form to appear with increased timeout
       await expect(page.getByLabel(/Username/i)).toBeVisible({ timeout: 10000 });
@@ -291,23 +492,51 @@ test.describe('Authentication System', () => {
 
       // Verify error message
       await expect(page.getByText(/Invalid username or password/i)).toBeVisible();
+
+      // Should still be on login page
+      await expect(page).toHaveURL(/\/login/);
     });
 
     test('should successfully login with correct credentials', async ({ page }) => {
+      // Ensure we're on the login page before starting
+      await expect(page).toHaveURL(/\/login/);
+      await expect(page.getByRole('heading', { name: /Login to Clubs/i })).toBeVisible();
+
       // Login with correct credentials
       await page.getByLabel(/Username/i).fill('testuser');
       await page.getByLabel(/Password/i).fill('testpass123');
-      await page.getByRole('button', { name: /Login/i }).click();
 
-      // Should redirect to home page
-      await expect(page).toHaveURL('/');
+      // Set up a promise to wait for the auth status API call after login
+      const authStatusPromise = page.waitForResponse(response =>
+        response.url().includes('/api/auth/status') && response.status() === 200
+      );
 
-      // Wait for home page to be fully loaded
-      await expect(page.locator('h1')).toContainText('Clubs');
+      // Click login and wait for navigation
+      const loginButton = page.getByRole('button', { name: /Login/i });
+      await loginButton.click();
 
-      // Verify authenticated state
-      await page.getByRole('button', { name: /profile menu/i }).click();
-      await expect(page.getByText('testuser')).toBeVisible();
+      // Wait for navigation to complete with increased timeout
+      await page.waitForURL('/', { timeout: 15000 });
+
+      // Wait for home page to be fully loaded - this ensures AuthGuard passed and page rendered
+      await expect(page.locator('h1')).toContainText('Clubs', { timeout: 15000 });
+
+      // Wait for the auth status API call to complete before interacting with profile dropdown
+      // This ensures the ProfileDropdown component has loaded and is not in the loading state
+      await authStatusPromise;
+
+      // Verify authenticated state - wait for profile button to be ready
+      const profileButton = page.getByRole('button', { name: /profile menu/i });
+      await expect(profileButton).toBeVisible({ timeout: 10000 });
+
+      // Ensure profile button is in view on mobile viewports
+      await profileButton.scrollIntoViewIfNeeded();
+      await profileButton.click();
+
+      // Wait for dropdown menu to open and verify username and logout option are visible
+      const menu = page.getByRole('menu');
+      await expect(menu).toBeVisible();
+      await expect(menu.getByText('testuser')).toBeVisible();
       await expect(page.getByRole('menuitem', { name: /Logout/i })).toBeVisible();
     });
   });
@@ -327,7 +556,12 @@ test.describe('Authentication System', () => {
       // Wait for settings dialog to be fully visible
       await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
 
-      await page.getByRole('switch', { name: /Guest Mode/i }).click();
+      const guestModeSwitch = page.getByRole('switch', { name: /Guest Mode/i });
+      await expect(guestModeSwitch).toBeChecked();
+      await guestModeSwitch.click();
+
+      // Wait for the switch state to change
+      await expect(guestModeSwitch).not.toBeChecked();
 
       // Wait for the admin creation form to appear with increased timeout
       await expect(page.getByLabel(/Username/i)).toBeVisible({ timeout: 10000 });
@@ -396,10 +630,15 @@ test.describe('Authentication System', () => {
       await expect(page.getByText(/Guest mode is currently enabled/i)).toBeVisible();
 
       // Step 3: Disable guest mode and create admin user
-      await page.getByRole('switch', { name: /Guest Mode/i }).click();
+      const guestModeSwitch = page.getByRole('switch', { name: /Guest Mode/i });
+      await expect(guestModeSwitch).toBeChecked();
+      await guestModeSwitch.click();
+
+      // Wait for the switch state to change
+      await expect(guestModeSwitch).not.toBeChecked();
+
       // Wait for the admin creation form to appear
       await expect(page.getByLabel(/Username/i)).toBeVisible();
-      await expect(page.getByLabel(/^Password \*$/)).toBeVisible();
       await expect(page.getByLabel(/^Password \*$/)).toBeVisible();
       await page.getByLabel(/Username/i).fill('admin');
       await page.getByLabel(/^Password \*$/).fill('securepass123');
@@ -467,7 +706,12 @@ test.describe('Authentication System', () => {
       // Wait for settings dialog to be fully visible
       await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
 
-      await page.getByRole('switch', { name: /Guest Mode/i }).click();
+      const guestModeSwitch = page.getByRole('switch', { name: /Guest Mode/i });
+      await expect(guestModeSwitch).toBeChecked();
+      await guestModeSwitch.click();
+
+      // Wait for the switch state to change
+      await expect(guestModeSwitch).not.toBeChecked();
 
       // Wait for the admin creation form to appear with increased timeout
       await expect(page.getByLabel(/Username/i)).toBeVisible({ timeout: 10000 });

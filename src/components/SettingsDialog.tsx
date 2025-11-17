@@ -265,7 +265,7 @@ export function SettingsDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[550px]">
+			<DialogContent className="sm:max-w-[550px] flex flex-col max-h-[90vh]">
 				<DialogHeader>
 					<DialogTitle>Settings</DialogTitle>
 					<DialogDescription>
@@ -273,174 +273,176 @@ export function SettingsDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				{/* Tab Navigation */}
-				<div className="flex gap-2 border-b border-muted-foreground/20 mb-4">
-					<button
-						type="button"
-						onClick={() => setActiveTab("general")}
-						className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-							activeTab === "general"
-								? "border-primary text-foreground"
-								: "border-transparent text-muted-foreground hover:text-foreground"
-						}`}
-					>
-						General
-					</button>
-					<button
-						type="button"
-						onClick={() => setActiveTab("users")}
-						className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-							activeTab === "users"
-								? "border-primary text-foreground"
-								: "border-transparent text-muted-foreground hover:text-foreground"
-						}`}
-					>
-						Users
-					</button>
-				</div>
-
-				{/* Tab Content */}
-				{activeTab === "general" && (
-					<div className="space-y-4">
-						<div className="text-sm text-muted-foreground">
-							General application settings will appear here.
-						</div>
+				<div className="flex-1 overflow-y-auto -mx-6 px-6">
+					{/* Tab Navigation */}
+					<div className="flex gap-2 border-b border-muted-foreground/20 mb-4">
+						<button
+							type="button"
+							onClick={() => setActiveTab("general")}
+							className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+								activeTab === "general"
+									? "border-primary text-foreground"
+									: "border-transparent text-muted-foreground hover:text-foreground"
+							}`}
+						>
+							General
+						</button>
+						<button
+							type="button"
+							onClick={() => setActiveTab("users")}
+							className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+								activeTab === "users"
+									? "border-primary text-foreground"
+									: "border-transparent text-muted-foreground hover:text-foreground"
+							}`}
+						>
+							Users
+						</button>
 					</div>
-				)}
 
-				{activeTab === "users" && (
-					<div className="space-y-4">
-						<Alert>
-							<AlertDescription className="text-sm">
-								{authStatus?.guestModeEnabled
-									? "Guest mode is currently enabled. Anyone can access this interface without authentication."
-									: authStatus?.isAuthenticated
-										? `Authentication is enabled. Logged in as ${authStatus.user?.username}`
-										: "Authentication is required."}
-							</AlertDescription>
-						</Alert>
-
-						<div className="flex items-center justify-between rounded-lg border p-4">
-							<div className="space-y-0.5">
-								<Label htmlFor="guest-mode" className="text-base">
-									Guest Mode
-								</Label>
-								<p className="text-sm text-muted-foreground">
-									Allow unauthenticated access to the interface
-								</p>
+					{/* Tab Content */}
+					{activeTab === "general" && (
+						<div className="space-y-4">
+							<div className="text-sm text-muted-foreground">
+								General application settings will appear here.
 							</div>
-							<Switch
-								id="guest-mode"
-								checked={guestModeEnabled}
-								onCheckedChange={setGuestModeEnabled}
-								disabled={isLoading}
-							/>
 						</div>
+					)}
 
-						{showGuestModeWarning && (
-							<Alert variant="destructive">
+					{activeTab === "users" && (
+						<div className="space-y-4">
+							<Alert>
 								<AlertDescription className="text-sm">
-									<strong>Warning:</strong> Enabling guest mode will delete all
-									user accounts and authentication data. This action cannot be
-									undone.
+									{authStatus?.guestModeEnabled
+										? "Guest mode is currently enabled. Anyone can access this interface without authentication."
+										: authStatus?.isAuthenticated
+											? `Authentication is enabled. Logged in as ${authStatus.user?.username}`
+											: "Authentication is required."}
 								</AlertDescription>
 							</Alert>
-						)}
 
-						{showCredentialsForm && (
-							<>
-								<Separator />
-								<form
-									id="admin-form"
-									onSubmit={handleSetup}
-									className="space-y-4"
-								>
-									<div className="text-sm font-medium">
-										Create Admin Account
-									</div>
-									<div className="text-sm text-muted-foreground">
-										Set up the first admin account to enable authentication:
-									</div>
-
-									{error && (
-										<Alert variant="destructive">
-											<AlertDescription>{error}</AlertDescription>
-										</Alert>
-									)}
-
-									<div className="space-y-2">
-										<Label htmlFor="username">
-											Username <span className="text-destructive">*</span>
-										</Label>
-										<Input
-											id="username"
-											type="text"
-											placeholder="Enter username"
-											value={username}
-											onChange={(e) => setUsername(e.target.value)}
-											disabled={isLoading}
-											autoFocus
-										/>
-										{validationErrors.username && (
-											<p className="text-xs text-destructive">
-												{validationErrors.username}
-											</p>
-										)}
-									</div>
-
-									<div className="space-y-2">
-										<Label htmlFor="password">
-											Password <span className="text-destructive">*</span>
-										</Label>
-										<Input
-											id="password"
-											type="password"
-											placeholder="Enter password (min 8 characters)"
-											value={password}
-											onChange={(e) => setPassword(e.target.value)}
-											disabled={isLoading}
-										/>
-										{validationErrors.password && (
-											<p className="text-xs text-destructive">
-												{validationErrors.password}
-											</p>
-										)}
-									</div>
-
-									<div className="space-y-2">
-										<Label htmlFor="confirmPassword">
-											Confirm Password{" "}
-											<span className="text-destructive">*</span>
-										</Label>
-										<Input
-											id="confirmPassword"
-											type="password"
-											placeholder="Re-enter password"
-											value={confirmPassword}
-											onChange={(e) => setConfirmPassword(e.target.value)}
-											disabled={isLoading}
-										/>
-										{validationErrors.confirmPassword && (
-											<p className="text-xs text-destructive">
-												{validationErrors.confirmPassword}
-											</p>
-										)}
-									</div>
-								</form>
-							</>
-						)}
-
-						{authStatus?.isAuthenticated && (
-							<>
-								<Separator />
-								<div className="text-sm font-medium">User Management</div>
-								<div className="text-sm text-muted-foreground">
-									Additional user management features coming soon.
+							<div className="flex items-center justify-between rounded-lg border p-4">
+								<div className="space-y-0.5">
+									<Label htmlFor="guest-mode" className="text-base">
+										Guest Mode
+									</Label>
+									<p className="text-sm text-muted-foreground">
+										Allow unauthenticated access to the interface
+									</p>
 								</div>
-							</>
-						)}
-					</div>
-				)}
+								<Switch
+									id="guest-mode"
+									checked={guestModeEnabled}
+									onCheckedChange={setGuestModeEnabled}
+									disabled={isLoading}
+								/>
+							</div>
+
+							{showGuestModeWarning && (
+								<Alert variant="destructive">
+									<AlertDescription className="text-sm">
+										<strong>Warning:</strong> Enabling guest mode will delete all
+										user accounts and authentication data. This action cannot be
+										undone.
+									</AlertDescription>
+								</Alert>
+							)}
+
+							{showCredentialsForm && (
+								<>
+									<Separator />
+									<form
+										id="admin-form"
+										onSubmit={handleSetup}
+										className="space-y-4"
+									>
+										<div className="text-sm font-medium">
+											Create Admin Account
+										</div>
+										<div className="text-sm text-muted-foreground">
+											Set up the first admin account to enable authentication:
+										</div>
+
+										{error && (
+											<Alert variant="destructive">
+												<AlertDescription>{error}</AlertDescription>
+											</Alert>
+										)}
+
+										<div className="space-y-2">
+											<Label htmlFor="username">
+												Username <span className="text-destructive">*</span>
+											</Label>
+											<Input
+												id="username"
+												type="text"
+												placeholder="Enter username"
+												value={username}
+												onChange={(e) => setUsername(e.target.value)}
+												disabled={isLoading}
+												autoFocus
+											/>
+											{validationErrors.username && (
+												<p className="text-xs text-destructive">
+													{validationErrors.username}
+												</p>
+											)}
+										</div>
+
+										<div className="space-y-2">
+											<Label htmlFor="password">
+												Password <span className="text-destructive">*</span>
+											</Label>
+											<Input
+												id="password"
+												type="password"
+												placeholder="Enter password (min 8 characters)"
+												value={password}
+												onChange={(e) => setPassword(e.target.value)}
+												disabled={isLoading}
+											/>
+											{validationErrors.password && (
+												<p className="text-xs text-destructive">
+													{validationErrors.password}
+												</p>
+											)}
+										</div>
+
+										<div className="space-y-2">
+											<Label htmlFor="confirmPassword">
+												Confirm Password{" "}
+												<span className="text-destructive">*</span>
+											</Label>
+											<Input
+												id="confirmPassword"
+												type="password"
+												placeholder="Re-enter password"
+												value={confirmPassword}
+												onChange={(e) => setConfirmPassword(e.target.value)}
+												disabled={isLoading}
+											/>
+											{validationErrors.confirmPassword && (
+												<p className="text-xs text-destructive">
+													{validationErrors.confirmPassword}
+												</p>
+											)}
+										</div>
+									</form>
+								</>
+							)}
+
+							{authStatus?.isAuthenticated && (
+								<>
+									<Separator />
+									<div className="text-sm font-medium">User Management</div>
+									<div className="text-sm text-muted-foreground">
+										Additional user management features coming soon.
+									</div>
+								</>
+							)}
+						</div>
+					)}
+				</div>
 
 				<DialogFooter>
 					<Button

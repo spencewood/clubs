@@ -981,7 +981,7 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 
 	// Setup - create first user
 	http.post("/api/auth/setup", async ({ request }) => {
-		await delay(100);
+		await delay(500); // Increased delay to allow tests to verify loading states
 		const body = await request.json();
 
 		// Check if setup already completed

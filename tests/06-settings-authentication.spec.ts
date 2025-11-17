@@ -5,8 +5,10 @@ test.describe('Settings Dialog - Authentication Features', () => {
   test.describe.configure({ mode: 'serial' });
 
   // Reset mock auth state before each test via HTTP request
-  test.beforeEach(async ({ request }) => {
+  test.beforeEach(async ({ request, context }) => {
     await request.post('http://localhost:3000/api/auth/test-reset');
+    // Clear all cookies and storage to ensure clean state
+    await context.clearCookies();
   });
 
   test.describe('1. Opening Settings Dialog and Tab Navigation', () => {
@@ -35,29 +37,42 @@ test.describe('Settings Dialog - Authentication Features', () => {
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
 
-      // Verify General tab is active by default
+      // Wait for dialog to be fully visible and stable
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
+      // Get tab references
       const generalTab = page.getByRole('button', { name: 'General' });
       const usersTab = page.getByRole('button', { name: 'Users' });
 
+      // Wait for tabs to be rendered and clickable
+      await expect(generalTab).toBeVisible();
+      await expect(usersTab).toBeVisible();
+
+      // Verify General tab is active by default
+      // Wait for the tab to have the active class first (most reliable indicator)
       await expect(generalTab).toHaveClass(/border-primary/);
+      // Then verify content is visible
       await expect(page.getByText(/General application settings will appear here/i)).toBeVisible();
 
       // Click Users tab
       await usersTab.click();
 
-      // Verify Users tab is now active
+      // Wait for Users tab to become active (class changes first)
       await expect(usersTab).toHaveClass(/border-primary/);
+      // Verify General tab is no longer active
       await expect(generalTab).not.toHaveClass(/border-primary/);
-
-      // Verify Users tab content is visible
+      // Wait for Users tab content to be visible
       await expect(page.getByText(/Guest mode is currently enabled/i)).toBeVisible();
       await expect(page.locator('label[for="guest-mode"]')).toBeVisible();
 
       // Click General tab again
       await generalTab.click();
 
-      // Verify back on General tab
+      // Wait for General tab to become active (class changes first)
       await expect(generalTab).toHaveClass(/border-primary/);
+      // Verify Users tab is no longer active
+      await expect(usersTab).not.toHaveClass(/border-primary/);
+      // Wait for General tab content to be visible
       await expect(page.getByText(/General application settings will appear here/i)).toBeVisible();
     });
 
@@ -148,27 +163,52 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Open settings and navigate to Users tab
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
-      await page.getByRole('button', { name: /Users/i }).click();
 
-      // Verify guest mode status message
+      // Wait for settings dialog to be fully visible before clicking Users tab
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
+      // Click Users tab and wait for it to be ready
+      const usersButton = page.getByRole('button', { name: /Users/i });
+      await expect(usersButton).toBeVisible();
+      await usersButton.click();
+
+      // Wait for Users tab content to be fully loaded
       await expect(page.getByText(/Guest mode is currently enabled/i)).toBeVisible();
-      await expect(page.getByText(/Anyone can access this interface without authentication/i)).toBeVisible();
 
-      // Verify Guest Mode toggle exists and is checked
+      // Verify guest mode status message - scroll into view for mobile viewports
+      const statusMessage = page.getByText(/Guest mode is currently enabled/i);
+      await statusMessage.scrollIntoViewIfNeeded();
+      await expect(statusMessage).toBeVisible();
+
+      const detailMessage = page.getByText(/Anyone can access this interface without authentication/i);
+      await detailMessage.scrollIntoViewIfNeeded();
+      await expect(detailMessage).toBeVisible();
+
+      // Verify Guest Mode toggle exists and is checked - scroll into view for mobile viewports
       const guestModeSwitch = page.locator('#guest-mode');
+      await guestModeSwitch.scrollIntoViewIfNeeded();
       await expect(guestModeSwitch).toBeVisible();
       await expect(guestModeSwitch).toBeChecked();
 
-      // Verify toggle label and description
-      await expect(page.getByText('Guest Mode', { exact: true })).toBeVisible();
-      await expect(page.getByText(/Allow unauthenticated access to the interface/i)).toBeVisible();
+      // Verify toggle label and description - scroll into view for mobile viewports
+      const guestModeLabel = page.getByText('Guest Mode', { exact: true });
+      await guestModeLabel.scrollIntoViewIfNeeded();
+      await expect(guestModeLabel).toBeVisible();
+
+      const guestModeDescription = page.getByText(/Allow unauthenticated access to the interface/i);
+      await guestModeDescription.scrollIntoViewIfNeeded();
+      await expect(guestModeDescription).toBeVisible();
     });
 
     test('2.2 Profile dropdown shows "Guest Mode" label', async ({ page }) => {
       await page.goto('/');
 
+      // Wait for profile button to be visible (component loads asynchronously)
+      const profileButton = page.getByRole('button', { name: /profile menu/i });
+      await expect(profileButton).toBeVisible();
+
       // Open profile dropdown
-      await page.getByRole('button', { name: /profile menu/i }).click();
+      await profileButton.click();
 
       // Verify "Guest Mode" label is shown
       await expect(page.getByText('Guest Mode')).toBeVisible();
@@ -183,10 +223,21 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Open settings and navigate to Users tab
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
-      await page.getByRole('button', { name: /Users/i }).click();
 
-      // Verify guest mode is checked initially (after test reset)
+      // Wait for settings dialog to be fully visible before clicking Users tab
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
+      // Click Users tab and wait for it to be ready
+      const usersButton = page.getByRole('button', { name: /Users/i });
+      await expect(usersButton).toBeVisible();
+      await usersButton.click();
+
+      // Wait for Users tab content to be fully loaded
+      await expect(page.getByText(/Guest mode is currently enabled/i)).toBeVisible();
+
+      // Verify guest mode is checked initially (after test reset) - scroll into view for mobile viewports
       const guestModeToggle = page.locator('#guest-mode');
+      await guestModeToggle.scrollIntoViewIfNeeded();
       await expect(guestModeToggle).toBeEnabled();
       await expect(guestModeToggle).toBeChecked();
 
@@ -196,19 +247,40 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Verify guest mode is now unchecked
       await expect(page.locator('#guest-mode')).not.toBeChecked();
 
-      // Verify admin creation form appears
-      await expect(page.getByText('Create Admin Account')).toBeVisible();
-      await expect(page.getByText(/Set up the first admin account to enable authentication/i)).toBeVisible();
+      // Verify admin creation form appears - scroll into view for mobile viewports
+      const createAdminHeading = page.getByText('Create Admin Account');
+      await createAdminHeading.scrollIntoViewIfNeeded();
+      await expect(createAdminHeading).toBeVisible();
 
-      // Verify form fields are present
-      await expect(page.getByLabel(/Username/i)).toBeVisible();
-      await expect(page.getByLabel(/^Password \*$/)).toBeVisible();
-      await expect(page.getByLabel(/Confirm Password/i)).toBeVisible();
+      const createAdminDescription = page.getByText(/Set up the first admin account to enable authentication/i);
+      await createAdminDescription.scrollIntoViewIfNeeded();
+      await expect(createAdminDescription).toBeVisible();
 
-      // Verify all fields are required (have asterisk)
-      await expect(page.getByText('Username *', { exact: true })).toBeVisible();
-      await expect(page.locator('label[for="password"]', { hasText: 'Password *' })).toBeVisible();
-      await expect(page.getByText('Confirm Password *', { exact: true })).toBeVisible();
+      // Verify form fields are present - scroll into view for mobile viewports
+      const usernameField = page.getByLabel(/Username/i);
+      await usernameField.scrollIntoViewIfNeeded();
+      await expect(usernameField).toBeVisible();
+
+      const passwordField = page.getByLabel(/^Password \*$/);
+      await passwordField.scrollIntoViewIfNeeded();
+      await expect(passwordField).toBeVisible();
+
+      const confirmPasswordField = page.getByLabel(/Confirm Password/i);
+      await confirmPasswordField.scrollIntoViewIfNeeded();
+      await expect(confirmPasswordField).toBeVisible();
+
+      // Verify all fields are required (have asterisk) - scroll into view for mobile viewports
+      const usernameLabel = page.getByText('Username *', { exact: true });
+      await usernameLabel.scrollIntoViewIfNeeded();
+      await expect(usernameLabel).toBeVisible();
+
+      const passwordLabel = page.locator('label[for="password"]', { hasText: 'Password *' });
+      await passwordLabel.scrollIntoViewIfNeeded();
+      await expect(passwordLabel).toBeVisible();
+
+      const confirmPasswordLabel = page.getByText('Confirm Password *', { exact: true });
+      await confirmPasswordLabel.scrollIntoViewIfNeeded();
+      await expect(confirmPasswordLabel).toBeVisible();
     });
 
     test('2.4 Username field has autofocus when form appears', async ({ page }) => {
@@ -294,7 +366,9 @@ test.describe('Settings Dialog - Authentication Features', () => {
 
   test.describe('3. Admin Account Creation - Form Validation', () => {
     test.beforeEach(async ({ page }) => {
+      // Navigate and reload to clear any React state cache and ensure fresh auth status
       await page.goto('/');
+      await page.reload();
 
       // CRITICAL: Wait for auth status to be fetched and show "Guest Mode" before proceeding
       // This ensures the test-reset has taken effect and page state is correct
@@ -312,6 +386,9 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Now toggle guest mode OFF to show the form
       await guestModeToggle.click();
 
+      // Wait for the switch state to change
+      await expect(guestModeToggle).not.toBeChecked();
+
       // Wait for admin creation form to appear and be fully interactive
       await expect(page.getByText('Create Admin Account')).toBeVisible({ timeout: 5000 });
       await expect(page.getByLabel(/Username/i)).toBeVisible({ timeout: 5000 });
@@ -321,32 +398,37 @@ test.describe('Settings Dialog - Authentication Features', () => {
       await expect(page.getByLabel(/Confirm Password/i)).toBeVisible({ timeout: 5000 });
       await expect(page.getByRole('button', { name: /Save Changes/i })).toBeEnabled({ timeout: 5000 });
 
-      // Small wait to ensure React state is settled
-      await page.waitForTimeout(100);
+      // Wait for autofocus to complete - this ensures React state is fully settled
+      // The admin form automatically focuses the username field
+      await expect(page.getByLabel(/Username/i)).toBeFocused({ timeout: 2000 });
     });
 
     test('3.1 Validate username minimum length (3 characters)', async ({ page }) => {
-      // Wait for username field to be ready and interactive
+      // Get field references
       const usernameField = page.getByLabel(/Username/i);
-      await expect(usernameField).toBeEnabled();
-
-      // Ensure the field is ready to accept input by waiting for it to be attached and editable
-      await usernameField.waitFor({ state: 'attached', timeout: 5000 });
-
-      // Clear any existing value and enter 2-character username (too short)
-      await usernameField.clear();
-      await usernameField.fill('ab');
-      await expect(usernameField).toHaveValue('ab');
-
-      // Fill password fields
       const passwordField = page.getByLabel(/^Password \*$/);
-      await passwordField.clear();
-      await passwordField.fill('password123');
-      await expect(passwordField).toHaveValue('password123');
-
       const confirmPasswordField = page.getByLabel(/Confirm Password/i);
-      await confirmPasswordField.clear();
+
+      // Wait for all fields to be ready and interactive
+      await expect(usernameField).toBeEnabled();
+      await expect(passwordField).toBeEnabled();
+      await expect(confirmPasswordField).toBeEnabled();
+
+      // Username field should already be focused from beforeEach
+      // Fill username with 2 characters (too short) using fill directly
+      // No need for clear() since beforeEach ensures clean form state
+      await usernameField.fill('ab');
+
+      // Fill password fields using click + fill for better stability
+      await passwordField.click();
+      await passwordField.fill('password123');
+
+      await confirmPasswordField.click();
       await confirmPasswordField.fill('password123');
+
+      // Verify all fields have correct values before submitting
+      await expect(usernameField).toHaveValue('ab');
+      await expect(passwordField).toHaveValue('password123');
       await expect(confirmPasswordField).toHaveValue('password123');
 
       // Click Save Changes and wait for it to be clickable
@@ -357,7 +439,15 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Verify error message appears with timeout for async validation
       // Use a more specific selector to avoid false positives
       const errorMessage = page.locator('p.text-xs.text-destructive', { hasText: /Username must be at least 3 characters/i });
-      await expect(errorMessage).toBeVisible({ timeout: 10000 });
+
+      // Wait for error to be attached to DOM first
+      await errorMessage.waitFor({ state: 'attached', timeout: 10000 });
+
+      // Scroll the error message into view (important for mobile viewports where dialog content is scrollable)
+      await errorMessage.scrollIntoViewIfNeeded();
+
+      // Now verify it's visible
+      await expect(errorMessage).toBeVisible({ timeout: 1000 });
 
       // Verify dialog is still open
       await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
@@ -398,7 +488,15 @@ test.describe('Settings Dialog - Authentication Features', () => {
 
       // Verify error message appears with timeout for async validation
       const errorMessage = page.locator('p.text-xs.text-destructive', { hasText: /Username must be at most 50 characters/i });
-      await expect(errorMessage).toBeVisible({ timeout: 10000 });
+
+      // Wait for error to be attached to DOM first
+      await errorMessage.waitFor({ state: 'attached', timeout: 10000 });
+
+      // Scroll the error message into view (important for mobile viewports where dialog content is scrollable)
+      await errorMessage.scrollIntoViewIfNeeded();
+
+      // Now verify it's visible
+      await expect(errorMessage).toBeVisible({ timeout: 1000 });
 
       // Verify dialog is still open
       await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
@@ -438,7 +536,15 @@ test.describe('Settings Dialog - Authentication Features', () => {
 
       // Verify error message appears with timeout for async validation
       const errorMessage = page.locator('p.text-xs.text-destructive', { hasText: /Password must be at least 8 characters/i });
-      await expect(errorMessage).toBeVisible({ timeout: 10000 });
+
+      // Wait for error to be attached to DOM first
+      await errorMessage.waitFor({ state: 'attached', timeout: 10000 });
+
+      // Scroll the error message into view (important for mobile viewports where dialog content is scrollable)
+      await errorMessage.scrollIntoViewIfNeeded();
+
+      // Now verify it's visible
+      await expect(errorMessage).toBeVisible({ timeout: 1000 });
 
       // Verify dialog is still open
       await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
@@ -479,7 +585,15 @@ test.describe('Settings Dialog - Authentication Features', () => {
 
       // Verify error message appears with timeout for async validation
       const errorMessage = page.locator('p.text-xs.text-destructive', { hasText: /Password must be at most 100 characters/i });
-      await expect(errorMessage).toBeVisible({ timeout: 10000 });
+
+      // Wait for error to be attached to DOM first
+      await errorMessage.waitFor({ state: 'attached', timeout: 10000 });
+
+      // Scroll the error message into view (important for mobile viewports where dialog content is scrollable)
+      await errorMessage.scrollIntoViewIfNeeded();
+
+      // Now verify it's visible
+      await expect(errorMessage).toBeVisible({ timeout: 1000 });
 
       // Verify dialog is still open
       await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
@@ -520,7 +634,15 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Verify error message appears with timeout for async validation
       // Use a more specific selector to avoid false positives
       const errorMessage = page.locator('p.text-xs.text-destructive', { hasText: /Passwords do not match/i });
-      await expect(errorMessage).toBeVisible({ timeout: 10000 });
+
+      // Wait for error to be attached to DOM first
+      await errorMessage.waitFor({ state: 'attached', timeout: 10000 });
+
+      // Scroll the error message into view (important for mobile viewports where dialog content is scrollable)
+      await errorMessage.scrollIntoViewIfNeeded();
+
+      // Now verify it's visible
+      await expect(errorMessage).toBeVisible({ timeout: 1000 });
 
       // Verify dialog is still open
       await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
@@ -563,8 +685,16 @@ test.describe('Settings Dialog - Authentication Features', () => {
       const usernameError = page.locator('p.text-xs.text-destructive', { hasText: /Username must be at least 3 characters/i });
       const passwordError = page.locator('p.text-xs.text-destructive', { hasText: /Password must be at least 8 characters/i });
 
-      await expect(usernameError).toBeVisible({ timeout: 10000 });
-      await expect(passwordError).toBeVisible({ timeout: 10000 });
+      // Wait for errors to be attached to DOM first
+      await usernameError.waitFor({ state: 'attached', timeout: 10000 });
+      await passwordError.waitFor({ state: 'attached', timeout: 10000 });
+
+      // Scroll the username error into view (important for mobile viewports where dialog content is scrollable)
+      await usernameError.scrollIntoViewIfNeeded();
+
+      // Now verify both errors are visible
+      await expect(usernameError).toBeVisible({ timeout: 1000 });
+      await expect(passwordError).toBeVisible({ timeout: 1000 });
 
       // Verify dialog is still open
       await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
@@ -604,7 +734,15 @@ test.describe('Settings Dialog - Authentication Features', () => {
 
       // Verify error message appears with timeout for async validation
       const errorMessage = page.locator('p.text-xs.text-destructive', { hasText: /Username must be at least 3 characters/i });
-      await expect(errorMessage).toBeVisible({ timeout: 10000 });
+
+      // Wait for error to be attached to DOM first
+      await errorMessage.waitFor({ state: 'attached', timeout: 10000 });
+
+      // Scroll the error message into view (important for mobile viewports where dialog content is scrollable)
+      await errorMessage.scrollIntoViewIfNeeded();
+
+      // Now verify it's visible
+      await expect(errorMessage).toBeVisible({ timeout: 1000 });
 
       // Correct the username
       await usernameField.clear();
@@ -615,8 +753,11 @@ test.describe('Settings Dialog - Authentication Features', () => {
       await expect(saveButton).toBeEnabled();
       await saveButton.click();
 
-      // Error should be gone and success should occur
-      await expect(errorMessage).not.toBeVisible();
+      // Wait for error to be cleared from DOM (happens immediately when handleSave is called)
+      // Using waitFor with detached state since the error element gets removed
+      await errorMessage.waitFor({ state: 'detached', timeout: 5000 });
+
+      // Wait for success message (this ensures form submission completed)
       await expect(page.getByText(/Authentication enabled/i)).toBeVisible({ timeout: 10000 });
 
       // Verify dialog closes
@@ -637,17 +778,18 @@ test.describe('Settings Dialog - Authentication Features', () => {
       await expect(confirmPasswordField).toBeEnabled();
       await confirmPasswordField.waitFor({ state: 'attached', timeout: 5000 });
 
-      // Clear all fields to ensure they are empty
+      // First fill fields with some value, then clear to ensure onChange events fire
+      // This is needed because fields start empty and clearing empty fields doesn't trigger onChange
+      await usernameField.fill('temp');
       await usernameField.clear();
-      await usernameField.fill('');
       await expect(usernameField).toHaveValue('');
 
+      await passwordField.fill('temp');
       await passwordField.clear();
-      await passwordField.fill('');
       await expect(passwordField).toHaveValue('');
 
+      await confirmPasswordField.fill('temp');
       await confirmPasswordField.clear();
-      await confirmPasswordField.fill('');
       await expect(confirmPasswordField).toHaveValue('');
 
       // Click Save Changes and wait for it to be clickable
@@ -660,8 +802,17 @@ test.describe('Settings Dialog - Authentication Features', () => {
       const usernameError = page.locator('p.text-xs.text-destructive', { hasText: /Username must be at least 3 characters/i });
       const passwordError = page.locator('p.text-xs.text-destructive', { hasText: /Password must be at least 8 characters/i });
 
-      await expect(usernameError).toBeVisible({ timeout: 10000 });
-      await expect(passwordError).toBeVisible({ timeout: 10000 });
+      // Wait for errors to be attached to DOM first
+      await usernameError.waitFor({ state: 'attached', timeout: 10000 });
+      await passwordError.waitFor({ state: 'attached', timeout: 10000 });
+
+      // Scroll the error messages into view (important for mobile viewports where dialog content is scrollable)
+      await usernameError.scrollIntoViewIfNeeded();
+      await passwordError.scrollIntoViewIfNeeded();
+
+      // Now verify they're visible
+      await expect(usernameError).toBeVisible({ timeout: 1000 });
+      await expect(passwordError).toBeVisible({ timeout: 1000 });
 
       // Verify dialog is still open
       await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
@@ -873,6 +1024,10 @@ test.describe('Settings Dialog - Authentication Features', () => {
       await page.goto('/');
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for dialog to be fully visible before interacting with tabs
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
       await page.locator('#guest-mode').click();
       await page.getByLabel(/Username/i).fill('admin');
@@ -888,6 +1043,10 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Open settings
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for dialog to be fully visible before interacting with tabs
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
 
       // Verify guest mode is currently disabled
@@ -910,6 +1069,10 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Open settings
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for dialog to be fully visible before interacting with tabs
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
 
       // Verify guest mode is currently disabled
@@ -923,6 +1086,10 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Open settings
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for dialog to be fully visible before interacting with tabs
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
 
       // Toggle guest mode ON - warning appears
@@ -940,6 +1107,10 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Open settings
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for dialog to be fully visible before interacting with tabs
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
 
       // Toggle guest mode ON
@@ -955,6 +1126,10 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Open settings
       await page.getByRole('button', { name: /profile menu/i }).click();
       await page.getByRole('menuitem', { name: /Settings/i }).click();
+
+      // Wait for dialog to be fully visible before interacting with tabs
+      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
+
       await page.getByRole('button', { name: /Users/i }).click();
 
       // Toggle guest mode ON - warning appears
@@ -1335,10 +1510,18 @@ test.describe('Settings Dialog - Authentication Features', () => {
 
       // Verify error message appears with timeout and specific selector
       const errorMessage = page.locator('p.text-xs.text-destructive', { hasText: /Username must be at least 3 characters/i });
-      await expect(errorMessage).toBeVisible({ timeout: 10000 });
 
-      // Close dialog
-      await page.getByRole('button', { name: /Cancel/i }).click();
+      // Wait for error to be attached to DOM first
+      await errorMessage.waitFor({ state: 'attached', timeout: 10000 });
+
+      // Scroll the error message into view (important for mobile viewports where dialog content is scrollable)
+      await errorMessage.scrollIntoViewIfNeeded();
+
+      // Now verify it's visible
+      await expect(errorMessage).toBeVisible({ timeout: 1000 });
+
+      // Close dialog using Escape key (more reliable than clicking Cancel on mobile)
+      await page.keyboard.press('Escape');
       await expect(page.getByRole('heading', { name: /Settings/i })).not.toBeVisible({ timeout: 5000 });
 
       // Reopen dialog
@@ -1454,9 +1637,9 @@ test.describe('Settings Dialog - Authentication Features', () => {
       // Click Save
       await page.getByRole('button', { name: /Save Changes/i }).click();
 
-      // Both buttons should be disabled during loading
-      await expect(page.getByRole('button', { name: /Cancel/i })).toBeDisabled();
-      await expect(page.getByRole('button', { name: /Saving/i })).toBeDisabled();
+      // Both buttons should be disabled during loading (MSW has 500ms delay)
+      await expect(page.getByRole('button', { name: /Cancel/i })).toBeDisabled({ timeout: 1000 });
+      await expect(page.getByRole('button', { name: /Saving/i })).toBeDisabled({ timeout: 1000 });
 
       // Wait for completion
       await expect(page.getByText(/Authentication enabled/i)).toBeVisible();
