@@ -584,16 +584,18 @@ export function CaddyDashboard({
 		<div className="min-h-screen bg-background pb-16">
 			<header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur @supports-[backdrop-filter]:bg-card/60">
 				<div className="container mx-auto px-4 py-3">
-					<div className="flex items-center justify-between gap-4">
+					<div className="flex items-center justify-between gap-2 sm:gap-4 min-w-0">
 						{/* Left: Logo and Title */}
 						<Link
 							href="/"
-							className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+							className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity min-w-0 flex-1"
 						>
-							<span className="text-4xl shrink-0">♣</span>
-							<div>
-								<h1 className="text-2xl font-bold">Clubs</h1>
-								<p className="text-xs text-muted-foreground">
+							<span className="text-3xl sm:text-4xl shrink-0">♣</span>
+							<div className="min-w-0 flex-1">
+								<h1 className="text-xl sm:text-2xl font-bold truncate">
+									Clubs
+								</h1>
+								<p className="text-xs text-muted-foreground truncate">
 									Caddyfile Management System{" "}
 									<span className="opacity-60">
 										{process.env.NODE_ENV === "development"
@@ -605,7 +607,7 @@ export function CaddyDashboard({
 						</Link>
 
 						{/* Right: Server Info + Theme Toggle */}
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 shrink-0">
 							{caddyStatus && <ServerInfoCard initialStatus={caddyStatus} />}
 							<ThemeToggle />
 						</div>
@@ -615,10 +617,10 @@ export function CaddyDashboard({
 
 			<main className="container mx-auto px-4 py-6">
 				{config && (
-					<div className="relative xl:flex xl:flex-row gap-8 items-start min-h-[calc(100vh-12rem)]">
+					<div className="relative xl:flex xl:flex-row gap-8 items-start min-h-[calc(100vh-12rem)] min-w-0 w-full">
 						{/* Left: Sites/Upstreams Panel - Elevated "table" (content height) */}
 						<div
-							className={`space-y-4 bg-card border rounded-lg shadow-lg p-3 sm:p-6 min-h-[calc(100vh-12rem)] will-change-transform relative transition-all duration-500 overflow-visible ${
+							className={`space-y-4 bg-card border rounded-lg shadow-lg p-3 sm:p-6 min-h-[calc(100vh-12rem)] will-change-transform relative transition-all duration-500 min-w-0 ${
 								leftPanelExpanded
 									? "xl:static -translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:w-full xl:shrink-0"
 									: "xl:static translate-x-0 opacity-100 pointer-events-auto z-20 xl:z-10 xl:w-1/2 xl:shrink-0"
@@ -763,7 +765,7 @@ export function CaddyDashboard({
 											</p>
 										</div>
 									) : (
-										<div className="grid gap-3">
+										<div className="grid gap-3 w-full min-w-0 overflow-x-hidden">
 											{config.siteBlocks.map((siteBlock) => {
 												// Check if this is a container
 												if (isVirtualContainer(siteBlock)) {
