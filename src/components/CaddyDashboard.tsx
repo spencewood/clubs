@@ -181,6 +181,15 @@ function FullConfigView() {
 	);
 }
 
+export interface AuthStatus {
+	guestModeEnabled: boolean;
+	isAuthenticated: boolean;
+	user: {
+		id: number;
+		username: string;
+	} | null;
+}
+
 export interface CaddyDashboardProps {
 	initialConfig: CaddyConfig;
 	initialRawContent: string;
@@ -201,6 +210,7 @@ export interface CaddyDashboardProps {
 		intermediate_certificate: string;
 	} | null;
 	initialAcmeCertificates?: AcmeCertificate[];
+	initialAuthStatus?: AuthStatus;
 }
 
 export function CaddyDashboard({
@@ -212,6 +222,7 @@ export function CaddyDashboard({
 	initialUpstreams,
 	initialCertificates,
 	initialAcmeCertificates = [],
+	initialAuthStatus,
 }: CaddyDashboardProps) {
 	const [config, setConfig] = useState<CaddyConfig | null>(initialConfig);
 	const [rawContent, setRawContent] = useState<string>(initialRawContent);
@@ -584,325 +595,333 @@ export function CaddyDashboard({
 	return (
 		<div className="min-h-screen bg-background pb-16">
 			<header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur @supports-[backdrop-filter]:bg-card/60">
-				<div className="container mx-auto px-4 py-3">
-					<div className="flex items-center justify-between gap-4">
-						{/* Left: Logo and Title */}
-						<Link
-							href="/"
-							className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-						>
-							<span className="text-4xl shrink-0">♣</span>
-							<div>
-								<h1 className="text-2xl font-bold">Clubs</h1>
-								<p className="text-xs text-muted-foreground">
-									Caddyfile Management System{" "}
-									<span className="opacity-60">
-										{process.env.NODE_ENV === "development"
-											? "dev"
-											: `v${packageJson.version}`}
-									</span>
-								</p>
-							</div>
-						</Link>
+				<div className="w-full py-3">
+					<div className="container mx-auto px-4">
+						<div className="flex items-center justify-between gap-4">
+							{/* Left: Logo and Title */}
+							<Link
+								href="/"
+								className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+							>
+								<span className="text-4xl shrink-0">♣</span>
+								<div>
+									<h1 className="text-2xl font-bold">Clubs</h1>
+									<p className="text-xs text-muted-foreground">
+										Caddyfile Management System{" "}
+										<span className="opacity-60">
+											{process.env.NODE_ENV === "development"
+												? "dev"
+												: `v${packageJson.version}`}
+										</span>
+									</p>
+								</div>
+							</Link>
 
-						{/* Right: Server Info + Theme Toggle + Profile */}
-						<div className="flex items-center gap-2 shrink-0">
-							{caddyStatus && <ServerInfoCard initialStatus={caddyStatus} />}
-							<ThemeToggle />
-							<ProfileDropdown />
+							{/* Right: Server Info + Theme Toggle + Profile */}
+							<div className="flex items-center gap-2">
+								{caddyStatus && <ServerInfoCard initialStatus={caddyStatus} />}
+								<ThemeToggle />
+								<ProfileDropdown initialAuthStatus={initialAuthStatus} />
+							</div>
 						</div>
 					</div>
 				</div>
 			</header>
 
-			<main className="container mx-auto px-4 py-6">
-				{config && (
-					<div className="relative xl:flex xl:flex-row gap-8 items-start min-h-[calc(100vh-12rem)]">
-						{/* Left: Sites/Upstreams Panel - Elevated "table" (content height) */}
-						<div
-							className={`space-y-4 bg-card border rounded-lg shadow-lg p-3 sm:p-6 min-h-[calc(100vh-12rem)] will-change-transform relative transition-all duration-500 overflow-visible ${
-								leftPanelExpanded
-									? "xl:static -translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:w-full xl:shrink-0"
-									: "xl:static translate-x-0 opacity-100 pointer-events-auto z-20 xl:z-10 xl:w-1/2 xl:shrink-0"
-							}`}
-							style={{
-								transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-							}}
-						>
-							{/* Tab Navigation with Expand/Collapse */}
-							<div className="flex items-center justify-between gap-1 sm:gap-2 pb-2">
-								<div className="flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
-									<Link
-										href="/"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-											leftPanelView === "sites"
-												? "border-primary text-foreground"
-												: "border-transparent text-muted-foreground hover:text-foreground"
-										}`}
-									>
-										<Server className="w-4 h-4 shrink-0" />
-										Sites
-									</Link>
-									<Link
-										href="/upstreams"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-											leftPanelView === "upstreams"
-												? "border-primary text-foreground"
-												: "border-transparent text-muted-foreground hover:text-foreground"
-										}`}
-									>
-										<Activity className="w-4 h-4 shrink-0" />
-										Upstreams
-									</Link>
-									<Link
-										href="/analytics"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-											leftPanelView === "analytics"
-												? "border-primary text-foreground"
-												: "border-transparent text-muted-foreground hover:text-foreground"
-										}`}
-									>
-										<BarChart3 className="w-4 h-4 shrink-0" />
-										Analytics
-									</Link>
-									<Link
-										href="/certificates"
-										className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-											leftPanelView === "certificates"
-												? "border-primary text-foreground"
-												: "border-transparent text-muted-foreground hover:text-foreground"
-										}`}
-									>
-										<ShieldCheck className="w-4 h-4 shrink-0" />
-										Certificates
-									</Link>
-								</div>
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-									className="h-8 px-2 xl:block hidden bg-muted/50 hover:bg-muted shrink-0"
-									title={leftPanelExpanded ? "Collapse panel" : "Expand panel"}
-								>
-									{/* On desktop: left to collapse, right to expand */}
-									{leftPanelExpanded ? (
-										<ChevronLeft className="w-4 h-4" />
-									) : (
-										<ChevronRight className="w-4 h-4" />
-									)}
-								</Button>
-								{/* On mobile: left chevron to collapse panel and show editor */}
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-									className="h-8 px-2 xl:hidden bg-muted/50 hover:bg-muted shrink-0"
-									title="Hide panel / Show editor"
-								>
-									<ChevronLeft className="w-4 h-4" />
-								</Button>
-							</div>
-
-							{leftPanelView === "upstreams" ? (
-								<UpstreamsView
-									initialUpstreams={initialUpstreams}
-									initialConfig={config}
-								/>
-							) : leftPanelView === "analytics" ? (
-								<MetricsView initialUpstreams={initialUpstreams} />
-							) : leftPanelView === "certificates" ? (
-								<CertificatesView
-									initialCertificates={initialCertificates}
-									initialAcmeCertificates={initialAcmeCertificates}
-								/>
-							) : (
-								<>
-									{/* Sites Header with Action Buttons */}
-									<div className="flex items-center justify-between mb-4">
-										<div>
-											<h2 className="text-2xl font-bold">Sites</h2>
-											<p className="text-sm text-muted-foreground mt-1">
-												{config.siteBlocks.length === 0
-													? "Create your first site or container"
-													: `${config.siteBlocks.length} site${config.siteBlocks.length !== 1 ? "s" : ""} configured`}
-											</p>
-										</div>
-										<div className="flex items-center gap-2">
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => {
-													setNewSiteBlockType("physical");
-													setShowNewSiteDialog(true);
-												}}
-											>
-												<Globe className="w-4 h-4" />
-												<span className="hidden sm:inline ml-2">Add Site</span>
-											</Button>
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => {
-													setNewSiteBlockType("virtual-container");
-													setShowNewSiteDialog(true);
-												}}
-											>
-												<Container className="w-4 h-4" />
-												<span className="hidden sm:inline ml-2">
-													Add Container
-												</span>
-											</Button>
-										</div>
+			<main className="w-full py-6">
+				<div className="container mx-auto px-4">
+					{config && (
+						<div className="relative xl:flex xl:flex-row gap-8 items-start min-h-[calc(100vh-12rem)]">
+							{/* Left: Sites/Upstreams Panel - Elevated "table" (content height) */}
+							<div
+								className={`space-y-4 bg-card border rounded-lg shadow-lg p-3 sm:p-6 min-h-[calc(100vh-12rem)] will-change-transform relative transition-all duration-500 overflow-visible ${
+									leftPanelExpanded
+										? "xl:static -translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:w-full xl:shrink-0"
+										: "xl:static translate-x-0 opacity-100 pointer-events-auto z-20 xl:z-10 xl:w-1/2 xl:shrink-0"
+								}`}
+								style={{
+									transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+								}}
+							>
+								{/* Tab Navigation with Expand/Collapse */}
+								<div className="flex items-center justify-between gap-1 sm:gap-2 pb-2">
+									<div className="flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
+										<Link
+											href="/"
+											className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+												leftPanelView === "sites"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<Server className="w-4 h-4 shrink-0" />
+											Sites
+										</Link>
+										<Link
+											href="/upstreams"
+											className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+												leftPanelView === "upstreams"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<Activity className="w-4 h-4 shrink-0" />
+											Upstreams
+										</Link>
+										<Link
+											href="/analytics"
+											className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+												leftPanelView === "analytics"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<BarChart3 className="w-4 h-4 shrink-0" />
+											Analytics
+										</Link>
+										<Link
+											href="/certificates"
+											className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+												leftPanelView === "certificates"
+													? "border-primary text-foreground"
+													: "border-transparent text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<ShieldCheck className="w-4 h-4 shrink-0" />
+											Certificates
+										</Link>
 									</div>
-
-									{config.siteBlocks.length === 0 ? (
-										// Empty state
-										<div className="py-12 text-center">
-											<Server className="w-12 h-12 mx-auto text-muted-foreground opacity-50 mb-4" />
-											<p className="text-sm text-muted-foreground">
-												No sites configured yet. Click the buttons above to get
-												started.
-											</p>
-										</div>
-									) : (
-										<div className="grid gap-3">
-											{config.siteBlocks.map((siteBlock) => {
-												// Check if this is a container
-												if (isVirtualContainer(siteBlock)) {
-													const container = parseVirtualContainer(siteBlock);
-													return (
-														<ContainerCard
-															key={siteBlock.id}
-															id={container.id}
-															wildcardDomain={container.wildcardDomain}
-															sharedConfig={container.sharedConfig.map((d) =>
-																getDirectiveSummary(d),
-															)}
-															virtualBlocks={container.virtualBlocks.map(
-																(vb) => ({
-																	...vb,
-																	directives: vb.directives.map((d) =>
-																		formatDirectiveForDisplay(d),
-																	),
-																}),
-															)}
-															originalSiteBlock={siteBlock}
-															onEdit={handleEditSiteBlock}
-															onDelete={handleDeleteSiteBlock}
-															onAddSite={handleAddSiteToContainer}
-															onEditSite={(containerId, siteId) =>
-																setEditingSite({ containerId, siteId })
-															}
-															onDeleteSite={handleDeleteSite}
-														/>
-													);
-												}
-
-												// Regular site block
-												return (
-													<SiteBlockCard
-														key={siteBlock.id}
-														siteBlock={siteBlock}
-														onEdit={handleEditSiteBlock}
-														onDelete={handleDeleteSiteBlock}
-													/>
-												);
-											})}
-										</div>
-									)}
-								</>
-							)}
-						</div>
-
-						{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (visible when left panel collapsed on mobile, hidden when expanded on desktop) */}
-						<div
-							className={`flex flex-col space-y-4 xl:z-auto min-h-[calc(100vh-12rem)] ${
-								leftPanelExpanded
-									? "absolute inset-0 z-10 opacity-100 xl:opacity-0 xl:pointer-events-none xl:flex xl:w-0 xl:overflow-hidden"
-									: "hidden xl:flex xl:relative xl:z-10 xl:opacity-60 xl:hover:opacity-100 xl:w-1/2 xl:shrink-0"
-							}`}
-							style={{
-								transition:
-									"width 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-							}}
-						>
-							{/* Tab Navigation */}
-							<div className="flex items-center justify-between mb-2">
-								<div className="flex items-center gap-2">
-									{/* Show panel restore button on mobile when panel is collapsed */}
 									<Button
 										variant="ghost"
 										size="sm"
-										onClick={() => setLeftPanelExpanded(false)}
-										className="xl:hidden h-7 px-2 bg-muted/50 hover:bg-muted"
-										title="Show panel"
+										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
+										className="h-8 px-2 xl:block hidden bg-muted/50 hover:bg-muted shrink-0"
+										title={
+											leftPanelExpanded ? "Collapse panel" : "Expand panel"
+										}
 									>
-										<ChevronRight className="w-4 h-4" />
+										{/* On desktop: left to collapse, right to expand */}
+										{leftPanelExpanded ? (
+											<ChevronLeft className="w-4 h-4" />
+										) : (
+											<ChevronRight className="w-4 h-4" />
+										)}
 									</Button>
-									<div className="flex gap-2 border-b border-muted-foreground/20 overflow-x-auto scrollbar-hide">
-										<button
-											type="button"
-											onClick={() => setRightPanelView("raw")}
-											className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-												rightPanelView === "raw"
-													? "border-primary text-foreground"
-													: "border-transparent text-muted-foreground/70 hover:text-foreground"
-											}`}
+									{/* On mobile: left chevron to collapse panel and show editor */}
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
+										className="h-8 px-2 xl:hidden bg-muted/50 hover:bg-muted shrink-0"
+										title="Hide panel / Show editor"
+									>
+										<ChevronLeft className="w-4 h-4" />
+									</Button>
+								</div>
+
+								{leftPanelView === "upstreams" ? (
+									<UpstreamsView
+										initialUpstreams={initialUpstreams}
+										initialConfig={config}
+									/>
+								) : leftPanelView === "analytics" ? (
+									<MetricsView initialUpstreams={initialUpstreams} />
+								) : leftPanelView === "certificates" ? (
+									<CertificatesView
+										initialCertificates={initialCertificates}
+										initialAcmeCertificates={initialAcmeCertificates}
+									/>
+								) : (
+									<>
+										{/* Sites Header with Action Buttons */}
+										<div className="flex items-center justify-between mb-4">
+											<div>
+												<h2 className="text-2xl font-bold">Sites</h2>
+												<p className="text-sm text-muted-foreground mt-1">
+													{config.siteBlocks.length === 0
+														? "Create your first site or container"
+														: `${config.siteBlocks.length} site${config.siteBlocks.length !== 1 ? "s" : ""} configured`}
+												</p>
+											</div>
+											<div className="flex items-center gap-2">
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => {
+														setNewSiteBlockType("physical");
+														setShowNewSiteDialog(true);
+													}}
+												>
+													<Globe className="w-4 h-4" />
+													<span className="hidden sm:inline ml-2">
+														Add Site
+													</span>
+												</Button>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => {
+														setNewSiteBlockType("virtual-container");
+														setShowNewSiteDialog(true);
+													}}
+												>
+													<Container className="w-4 h-4" />
+													<span className="hidden sm:inline ml-2">
+														Add Container
+													</span>
+												</Button>
+											</div>
+										</div>
+
+										{config.siteBlocks.length === 0 ? (
+											// Empty state
+											<div className="py-12 text-center">
+												<Server className="w-12 h-12 mx-auto text-muted-foreground opacity-50 mb-4" />
+												<p className="text-sm text-muted-foreground">
+													No sites configured yet. Click the buttons above to
+													get started.
+												</p>
+											</div>
+										) : (
+											<div className="grid gap-3">
+												{config.siteBlocks.map((siteBlock) => {
+													// Check if this is a container
+													if (isVirtualContainer(siteBlock)) {
+														const container = parseVirtualContainer(siteBlock);
+														return (
+															<ContainerCard
+																key={siteBlock.id}
+																id={container.id}
+																wildcardDomain={container.wildcardDomain}
+																sharedConfig={container.sharedConfig.map((d) =>
+																	getDirectiveSummary(d),
+																)}
+																virtualBlocks={container.virtualBlocks.map(
+																	(vb) => ({
+																		...vb,
+																		directives: vb.directives.map((d) =>
+																			formatDirectiveForDisplay(d),
+																		),
+																	}),
+																)}
+																originalSiteBlock={siteBlock}
+																onEdit={handleEditSiteBlock}
+																onDelete={handleDeleteSiteBlock}
+																onAddSite={handleAddSiteToContainer}
+																onEditSite={(containerId, siteId) =>
+																	setEditingSite({ containerId, siteId })
+																}
+																onDeleteSite={handleDeleteSite}
+															/>
+														);
+													}
+
+													// Regular site block
+													return (
+														<SiteBlockCard
+															key={siteBlock.id}
+															siteBlock={siteBlock}
+															onEdit={handleEditSiteBlock}
+															onDelete={handleDeleteSiteBlock}
+														/>
+													);
+												})}
+											</div>
+										)}
+									</>
+								)}
+							</div>
+
+							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (visible when left panel collapsed on mobile, hidden when expanded on desktop) */}
+							<div
+								className={`flex flex-col space-y-4 xl:z-auto min-h-[calc(100vh-12rem)] ${
+									leftPanelExpanded
+										? "absolute inset-0 z-10 opacity-100 xl:opacity-0 xl:pointer-events-none xl:flex xl:w-0 xl:overflow-hidden"
+										: "hidden xl:flex xl:relative xl:z-10 xl:opacity-60 xl:hover:opacity-100 xl:w-1/2 xl:shrink-0"
+								}`}
+								style={{
+									transition:
+										"width 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+								}}
+							>
+								{/* Tab Navigation */}
+								<div className="flex items-center justify-between mb-2">
+									<div className="flex items-center gap-2">
+										{/* Show panel restore button on mobile when panel is collapsed */}
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => setLeftPanelExpanded(false)}
+											className="xl:hidden h-7 px-2 bg-muted/50 hover:bg-muted"
+											title="Show panel"
 										>
-											<Code className="w-3.5 h-3.5" />
-											<span className="hidden sm:inline">Raw Caddyfile</span>
-											<span className="sm:hidden">Raw</span>
-										</button>
-										{(caddyStatus?.available ||
-											process.env.NODE_ENV === "development") && (
+											<ChevronRight className="w-4 h-4" />
+										</Button>
+										<div className="flex gap-2 border-b border-muted-foreground/20 overflow-x-auto scrollbar-hide">
 											<button
 												type="button"
-												onClick={() => setRightPanelView("config")}
+												onClick={() => setRightPanelView("raw")}
 												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-													rightPanelView === "config"
+													rightPanelView === "raw"
 														? "border-primary text-foreground"
 														: "border-transparent text-muted-foreground/70 hover:text-foreground"
 												}`}
 											>
-												<FileJson className="w-3.5 h-3.5" />
-												<span className="hidden sm:inline">Full Config</span>
-												<span className="sm:hidden">Config</span>
+												<Code className="w-3.5 h-3.5" />
+												<span className="hidden sm:inline">Raw Caddyfile</span>
+												<span className="sm:hidden">Raw</span>
 											</button>
-										)}
+											{(caddyStatus?.available ||
+												process.env.NODE_ENV === "development") && (
+												<button
+													type="button"
+													onClick={() => setRightPanelView("config")}
+													className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+														rightPanelView === "config"
+															? "border-primary text-foreground"
+															: "border-transparent text-muted-foreground/70 hover:text-foreground"
+													}`}
+												>
+													<FileJson className="w-3.5 h-3.5" />
+													<span className="hidden sm:inline">Full Config</span>
+													<span className="sm:hidden">Config</span>
+												</button>
+											)}
+										</div>
 									</div>
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={handleFormat}
+										disabled={!rawContent.trim()}
+										className={`text-xs opacity-70 hover:opacity-100 ${
+											rightPanelView === "raw" ? "visible" : "invisible"
+										}`}
+										title="Format Caddyfile"
+									>
+										<Wand2 className="h-3.5 w-3.5" />
+										<span className="hidden sm:inline ml-2">Format</span>
+									</Button>
 								</div>
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={handleFormat}
-									disabled={!rawContent.trim()}
-									className={`text-xs opacity-70 hover:opacity-100 ${
-										rightPanelView === "raw" ? "visible" : "invisible"
-									}`}
-									title="Format Caddyfile"
-								>
-									<Wand2 className="h-3.5 w-3.5" />
-									<span className="hidden sm:inline ml-2">Format</span>
-								</Button>
-							</div>
 
-							{/* Tab Content */}
-							{rightPanelView === "raw" ? (
-								<div className="flex-1 min-h-0 border border-dashed border-muted-foreground/20 rounded-md overflow-auto bg-muted/10">
-									<CaddyfileEditor
-										value={rawContent}
-										onChange={handleRawContentChange}
-										placeholder="# Caddyfile configuration..."
-									/>
-								</div>
-							) : (
-								<div className="flex-1 min-h-0 border border-dashed border-muted-foreground/20 rounded-md overflow-auto bg-muted/10">
-									<FullConfigView />
-								</div>
-							)}
+								{/* Tab Content */}
+								{rightPanelView === "raw" ? (
+									<div className="flex-1 min-h-0 border border-dashed border-muted-foreground/20 rounded-md overflow-auto bg-muted/10">
+										<CaddyfileEditor
+											value={rawContent}
+											onChange={handleRawContentChange}
+											placeholder="# Caddyfile configuration..."
+										/>
+									</div>
+								) : (
+									<div className="flex-1 min-h-0 border border-dashed border-muted-foreground/20 rounded-md overflow-auto bg-muted/10">
+										<FullConfigView />
+									</div>
+								)}
+							</div>
 						</div>
-					</div>
-				)}
+					)}
+				</div>
 			</main>
 
 			{/* Use specialized dialog for containers */}
@@ -968,145 +987,151 @@ export function CaddyDashboard({
 
 			{/* Sticky Footer with Stats and Actions */}
 			<footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur @supports-[backdrop-filter]:bg-card/60">
-				<div className="container mx-auto px-4 py-3">
-					<div className="flex items-center justify-between gap-4">
-						{/* Left: Stats */}
-						<div className="flex items-center gap-3 sm:gap-6 flex-wrap text-sm">
-							{config && config.siteBlocks.length > 0 && (
-								<>
-									{/* Always show total sites count */}
-									<div className="flex items-center gap-2">
-										<Globe className="h-4 w-4 text-muted-foreground" />
-										<span className="font-medium">
-											{config.siteBlocks.reduce((total, block) => {
-												if (isVirtualContainer(block)) {
-													const container = parseVirtualContainer(block);
-													return total + container.virtualBlocks.length;
-												}
-												return total + 1;
-											}, 0)}
-										</span>
-										<span className="text-muted-foreground hidden sm:inline">
-											total sites
-										</span>
-										<span className="text-muted-foreground sm:hidden">
-											sites
-										</span>
-									</div>
-									{/* Hide site blocks count on mobile */}
-									<div className="hidden md:flex items-center gap-2">
-										<Server className="h-4 w-4 text-muted-foreground" />
-										<span className="font-medium">
-											{config.siteBlocks.length}
-										</span>
-										<span className="text-muted-foreground">
-											{config.siteBlocks.length === 1
-												? "site block"
-												: "site blocks"}
-										</span>
-									</div>
-									{config.siteBlocks.filter((b) =>
-										b.directives.some((d) => d.name === "tls"),
-									).length > 0 && (
+				<div className="w-full py-3">
+					<div className="container mx-auto px-4">
+						<div className="flex items-center justify-between gap-4">
+							{/* Left: Stats */}
+							<div className="flex items-center gap-3 sm:gap-6 flex-wrap text-sm">
+								{config && config.siteBlocks.length > 0 && (
+									<>
+										{/* Always show total sites count */}
 										<div className="flex items-center gap-2">
-											<ShieldCheck className="h-4 w-4 text-(--color-success)" />
+											<Globe className="h-4 w-4 text-muted-foreground" />
 											<span className="font-medium">
-												{
-													config.siteBlocks.filter((b) =>
-														b.directives.some((d) => d.name === "tls"),
-													).length
-												}
+												{config.siteBlocks.reduce((total, block) => {
+													if (isVirtualContainer(block)) {
+														const container = parseVirtualContainer(block);
+														return total + container.virtualBlocks.length;
+													}
+													return total + 1;
+												}, 0)}
 											</span>
-											<span className="text-muted-foreground">HTTPS</span>
+											<span className="text-muted-foreground hidden sm:inline">
+												total sites
+											</span>
+											<span className="text-muted-foreground sm:hidden">
+												sites
+											</span>
 										</div>
-									)}
-									{/* Hide proxy/file server counts on small screens */}
-									{config.siteBlocks.filter((b) =>
-										b.directives.some((d) => d.name === "reverse_proxy"),
-									).length > 0 && (
-										<div className="hidden lg:flex items-center gap-2">
-											<Zap className="h-4 w-4 text-primary" />
+										{/* Hide site blocks count on mobile */}
+										<div className="hidden md:flex items-center gap-2">
+											<Server className="h-4 w-4 text-muted-foreground" />
 											<span className="font-medium">
-												{
-													config.siteBlocks.filter((b) =>
+												{config.siteBlocks.length}
+											</span>
+											<span className="text-muted-foreground">
+												{config.siteBlocks.length === 1
+													? "site block"
+													: "site blocks"}
+											</span>
+										</div>
+										{config.siteBlocks.filter((b) =>
+											b.directives.some((d) => d.name === "tls"),
+										).length > 0 && (
+											<div className="flex items-center gap-2">
+												<ShieldCheck className="h-4 w-4 text-(--color-success)" />
+												<span className="font-medium">
+													{
+														config.siteBlocks.filter((b) =>
+															b.directives.some((d) => d.name === "tls"),
+														).length
+													}
+												</span>
+												<span className="text-muted-foreground">HTTPS</span>
+											</div>
+										)}
+										{/* Hide proxy/file server counts on small screens */}
+										{config.siteBlocks.filter((b) =>
+											b.directives.some((d) => d.name === "reverse_proxy"),
+										).length > 0 && (
+											<div className="hidden lg:flex items-center gap-2">
+												<Zap className="h-4 w-4 text-primary" />
+												<span className="font-medium">
+													{
+														config.siteBlocks.filter((b) =>
+															b.directives.some(
+																(d) => d.name === "reverse_proxy",
+															),
+														).length
+													}
+												</span>
+												<span className="text-muted-foreground">
+													{config.siteBlocks.filter((b) =>
 														b.directives.some(
 															(d) => d.name === "reverse_proxy",
 														),
-													).length
-												}
-											</span>
-											<span className="text-muted-foreground">
-												{config.siteBlocks.filter((b) =>
-													b.directives.some((d) => d.name === "reverse_proxy"),
-												).length === 1
-													? "proxy"
-													: "proxies"}
-											</span>
-										</div>
-									)}
-									{config.siteBlocks.filter((b) =>
-										b.directives.some((d) => d.name === "file_server"),
-									).length > 0 && (
-										<div className="hidden lg:flex items-center gap-2">
-											<Sparkles className="h-4 w-4 text-primary" />
-											<span className="font-medium">
-												{
-													config.siteBlocks.filter((b) =>
-														b.directives.some((d) => d.name === "file_server"),
-													).length
-												}
-											</span>
-											<span className="text-muted-foreground">
-												file servers
-											</span>
-										</div>
-									)}
-								</>
-							)}
-						</div>
-
-						{/* Right: Actions */}
-						<div className="flex items-center gap-2">
-							<Button
-								onClick={() => loadConfig()}
-								variant="ghost"
-								size="sm"
-								disabled={reloading}
-								title={isLiveMode ? "Reload from Caddy" : "Reload from file"}
-							>
-								<RefreshCw
-									className={`h-4 w-4 ${reloading ? "animate-spin" : ""}`}
-								/>
-								<span className="hidden sm:inline ml-2">Reload</span>
-							</Button>
-							<Button
-								onClick={handleSave}
-								disabled={saving}
-								variant="default"
-								size="sm"
-							>
-								{saving ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-								) : (
-									<Save className="h-4 w-4 mr-2" />
+													).length === 1
+														? "proxy"
+														: "proxies"}
+												</span>
+											</div>
+										)}
+										{config.siteBlocks.filter((b) =>
+											b.directives.some((d) => d.name === "file_server"),
+										).length > 0 && (
+											<div className="hidden lg:flex items-center gap-2">
+												<Sparkles className="h-4 w-4 text-primary" />
+												<span className="font-medium">
+													{
+														config.siteBlocks.filter((b) =>
+															b.directives.some(
+																(d) => d.name === "file_server",
+															),
+														).length
+													}
+												</span>
+												<span className="text-muted-foreground">
+													file servers
+												</span>
+											</div>
+										)}
+									</>
 								)}
-								{saving ? "Saving..." : isLiveMode ? "Save & Apply" : "Save"}
-							</Button>
-							{!isLiveMode && caddyStatus?.available && (
+							</div>
+
+							{/* Right: Actions */}
+							<div className="flex items-center gap-2">
 								<Button
-									onClick={handleApplyToCaddy}
-									disabled={applying}
+									onClick={() => loadConfig()}
+									variant="ghost"
 									size="sm"
-									variant="outline"
+									disabled={reloading}
+									title={isLiveMode ? "Reload from Caddy" : "Reload from file"}
 								>
-									{applying ? (
+									<RefreshCw
+										className={`h-4 w-4 ${reloading ? "animate-spin" : ""}`}
+									/>
+									<span className="hidden sm:inline ml-2">Reload</span>
+								</Button>
+								<Button
+									onClick={handleSave}
+									disabled={saving}
+									variant="default"
+									size="sm"
+								>
+									{saving ? (
 										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
 									) : (
-										<Zap className="h-4 w-4 mr-2" />
+										<Save className="h-4 w-4 mr-2" />
 									)}
-									{applying ? "Applying..." : "Apply to Caddy"}
+									{saving ? "Saving..." : isLiveMode ? "Save & Apply" : "Save"}
 								</Button>
-							)}
+								{!isLiveMode && caddyStatus?.available && (
+									<Button
+										onClick={handleApplyToCaddy}
+										disabled={applying}
+										size="sm"
+										variant="outline"
+									>
+										{applying ? (
+											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										) : (
+											<Zap className="h-4 w-4 mr-2" />
+										)}
+										{applying ? "Applying..." : "Apply to Caddy"}
+									</Button>
+								)}
+							</div>
 						</div>
 					</div>
 				</div>

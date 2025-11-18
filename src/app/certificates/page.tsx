@@ -28,6 +28,7 @@ export default async function CertificatesPage() {
 				initialUpstreams={initialData.upstreams}
 				initialCertificates={initialData.certificates}
 				initialAcmeCertificates={initialData.acmeCertificates}
+				initialAuthStatus={initialData.authStatus}
 			/>
 		</AuthGuard>
 	);

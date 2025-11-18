@@ -26,6 +26,7 @@ export default async function AnalyticsPage() {
 				initialView="analytics"
 				initialUpstreams={initialData.upstreams}
 				initialCertificates={initialData.certificates}
+				initialAuthStatus={initialData.authStatus}
 			/>
 		</AuthGuard>
 	);

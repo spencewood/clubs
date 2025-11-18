@@ -4,6 +4,8 @@
  */
 
 import fs from "node:fs/promises";
+import { getCurrentUser } from "@/lib/auth";
+import { isGuestModeEnabled } from "@/lib/db";
 import { parseCaddyfile } from "@/lib/parser/caddyfile-parser";
 import { createCaddyAPIClient } from "@/lib/server/caddy-api-client";
 import type { AcmeCertificate } from "@/lib/server/cert-parser";
@@ -17,6 +19,15 @@ import type { CaddyConfig, CaddyPKICA, CaddyUpstream } from "@/types/caddyfile";
 const CADDYFILE_PATH = process.env.CADDYFILE_PATH || "./config/Caddyfile";
 const CADDY_API_URL = process.env.CADDY_API_URL || "http://localhost:2019";
 
+export interface AuthStatus {
+	guestModeEnabled: boolean;
+	isAuthenticated: boolean;
+	user: {
+		id: number;
+		username: string;
+	} | null;
+}
+
 export interface InitialPageData {
 	config: CaddyConfig;
 	rawContent: string;
@@ -28,6 +39,7 @@ export interface InitialPageData {
 	upstreams: CaddyUpstream[];
 	certificates: CaddyPKICA | null;
 	acmeCertificates: AcmeCertificate[];
+	authStatus: AuthStatus;
 	validationErrors?: string[];
 }
 
@@ -217,6 +229,20 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 			? { ...caddyStatus, available: isLiveMode }
 			: caddyStatus;
 
+	// Fetch auth status on the server
+	const guestModeEnabled = isGuestModeEnabled();
+	const currentUser = await getCurrentUser();
+	const authStatus: AuthStatus = {
+		guestModeEnabled,
+		isAuthenticated: !!currentUser,
+		user: currentUser
+			? {
+					id: currentUser.id,
+					username: currentUser.username,
+				}
+			: null,
+	};
+
 	// Fetch upstreams, certificates, and ACME certificates in parallel
 	// PKI certificates only available if Caddy is available or in dev mode
 	// ACME certificates are always fetched from filesystem (or empty in dev without volume mount)
@@ -248,6 +274,7 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 			upstreams,
 			certificates,
 			acmeCertificates,
+			authStatus,
 		};
 	}
 
@@ -263,6 +290,7 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 		upstreams,
 		certificates,
 		acmeCertificates,
+		authStatus,
 		validationErrors: validation.valid ? undefined : validation.errors,
 	};
 }
