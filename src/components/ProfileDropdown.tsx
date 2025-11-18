@@ -23,11 +23,17 @@ interface AuthStatus {
 	} | null;
 }
 
-export function ProfileDropdown() {
+interface ProfileDropdownProps {
+	initialAuthStatus?: AuthStatus;
+}
+
+export function ProfileDropdown({ initialAuthStatus }: ProfileDropdownProps) {
 	const router = useRouter();
-	const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
+	const [authStatus, setAuthStatus] = useState<AuthStatus | null>(
+		initialAuthStatus || null,
+	);
 	const [showSettings, setShowSettings] = useState(false);
-	const [isLoading, setIsLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(!initialAuthStatus);
 
 	// Fetch auth status - returns a promise that resolves when complete
 	const fetchStatus = useCallback(async () => {
@@ -45,10 +51,12 @@ export function ProfileDropdown() {
 		}
 	}, []);
 
-	// Fetch on mount
+	// Fetch on mount only if we don't have initial auth status
 	useEffect(() => {
-		fetchStatus();
-	}, [fetchStatus]);
+		if (!initialAuthStatus) {
+			fetchStatus();
+		}
+	}, [fetchStatus, initialAuthStatus]);
 
 	// Re-fetch whenever settings dialog opens to ensure fresh data
 	useEffect(() => {
