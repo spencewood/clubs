@@ -211,6 +211,7 @@ export interface CaddyDashboardProps {
 	} | null;
 	initialAcmeCertificates?: AcmeCertificate[];
 	initialAuthStatus?: AuthStatus;
+	showTextEditor: boolean;
 }
 
 export function CaddyDashboard({
@@ -223,6 +224,7 @@ export function CaddyDashboard({
 	initialCertificates,
 	initialAcmeCertificates = [],
 	initialAuthStatus,
+	showTextEditor,
 }: CaddyDashboardProps) {
 	const [config, setConfig] = useState<CaddyConfig | null>(initialConfig);
 	const [rawContent, setRawContent] = useState<string>(initialRawContent);
@@ -621,7 +623,10 @@ export function CaddyDashboard({
 							<div className="flex items-center gap-2">
 								{caddyStatus && <ServerInfoCard initialStatus={caddyStatus} />}
 								<ThemeToggle />
-								<ProfileDropdown initialAuthStatus={initialAuthStatus} />
+								<ProfileDropdown
+									initialAuthStatus={initialAuthStatus}
+									initialShowTextEditor={showTextEditor}
+								/>
 							</div>
 						</div>
 					</div>
@@ -637,7 +642,7 @@ export function CaddyDashboard({
 								className={`space-y-4 bg-card border rounded-lg shadow-lg p-3 sm:p-6 min-h-[calc(100vh-12rem)] will-change-transform relative transition-all duration-500 overflow-visible ${
 									leftPanelExpanded
 										? "xl:static -translate-x-full opacity-0 pointer-events-none xl:translate-x-0 xl:opacity-100 xl:pointer-events-auto z-20 xl:z-10 xl:w-full xl:shrink-0"
-										: "xl:static translate-x-0 opacity-100 pointer-events-auto z-20 xl:z-10 xl:w-1/2 xl:shrink-0"
+										: `xl:static translate-x-0 opacity-100 pointer-events-auto z-20 xl:z-10 ${showTextEditor ? "xl:w-1/2" : "xl:w-full"} xl:shrink-0`
 								}`}
 								style={{
 									transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -691,32 +696,36 @@ export function CaddyDashboard({
 											Certificates
 										</Link>
 									</div>
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-										className="h-8 px-2 xl:block hidden bg-muted/50 hover:bg-muted shrink-0"
-										title={
-											leftPanelExpanded ? "Collapse panel" : "Expand panel"
-										}
-									>
-										{/* On desktop: left to collapse, right to expand */}
-										{leftPanelExpanded ? (
-											<ChevronLeft className="w-4 h-4" />
-										) : (
-											<ChevronRight className="w-4 h-4" />
-										)}
-									</Button>
-									{/* On mobile: left chevron to collapse panel and show editor */}
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
-										className="h-8 px-2 xl:hidden bg-muted/50 hover:bg-muted shrink-0"
-										title="Hide panel / Show editor"
-									>
-										<ChevronLeft className="w-4 h-4" />
-									</Button>
+									{showTextEditor && (
+										<>
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
+												className="h-8 px-2 xl:block hidden bg-muted/50 hover:bg-muted shrink-0"
+												title={
+													leftPanelExpanded ? "Collapse panel" : "Expand panel"
+												}
+											>
+												{/* On desktop: left to collapse, right to expand */}
+												{leftPanelExpanded ? (
+													<ChevronLeft className="w-4 h-4" />
+												) : (
+													<ChevronRight className="w-4 h-4" />
+												)}
+											</Button>
+											{/* On mobile: left chevron to collapse panel and show editor */}
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => setLeftPanelExpanded(!leftPanelExpanded)}
+												className="h-8 px-2 xl:hidden bg-muted/50 hover:bg-muted shrink-0"
+												title="Hide panel / Show editor"
+											>
+												<ChevronLeft className="w-4 h-4" />
+											</Button>
+										</>
+									)}
 								</div>
 
 								{leftPanelView === "upstreams" ? (
@@ -833,92 +842,98 @@ export function CaddyDashboard({
 							</div>
 
 							{/* Right: Raw Caddyfile / Full Config - Recessed "floor" (visible when left panel collapsed on mobile, hidden when expanded on desktop) */}
-							<div
-								className={`flex flex-col space-y-4 xl:z-auto min-h-[calc(100vh-12rem)] ${
-									leftPanelExpanded
-										? "absolute inset-0 z-10 opacity-100 xl:opacity-0 xl:pointer-events-none xl:flex xl:w-0 xl:overflow-hidden"
-										: "hidden xl:flex xl:relative xl:z-10 xl:opacity-60 xl:hover:opacity-100 xl:w-1/2 xl:shrink-0"
-								}`}
-								style={{
-									transition:
-										"width 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-								}}
-							>
-								{/* Tab Navigation */}
-								<div className="flex items-center justify-between mb-2">
-									<div className="flex items-center gap-2">
-										{/* Show panel restore button on mobile when panel is collapsed */}
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() => setLeftPanelExpanded(false)}
-											className="xl:hidden h-7 px-2 bg-muted/50 hover:bg-muted"
-											title="Show panel"
-										>
-											<ChevronRight className="w-4 h-4" />
-										</Button>
-										<div className="flex gap-2 border-b border-muted-foreground/20 overflow-x-auto scrollbar-hide">
-											<button
-												type="button"
-												onClick={() => setRightPanelView("raw")}
-												className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-													rightPanelView === "raw"
-														? "border-primary text-foreground"
-														: "border-transparent text-muted-foreground/70 hover:text-foreground"
-												}`}
+							{showTextEditor && (
+								<div
+									className={`flex flex-col space-y-4 xl:z-auto min-h-[calc(100vh-12rem)] ${
+										leftPanelExpanded
+											? "absolute inset-0 z-10 opacity-100 xl:opacity-0 xl:pointer-events-none xl:flex xl:w-0 xl:overflow-hidden"
+											: "hidden xl:flex xl:relative xl:z-10 xl:opacity-60 xl:hover:opacity-100 xl:w-1/2 xl:shrink-0"
+									}`}
+									style={{
+										transition:
+											"width 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+									}}
+								>
+									{/* Tab Navigation */}
+									<div className="flex items-center justify-between mb-2">
+										<div className="flex items-center gap-2">
+											{/* Show panel restore button on mobile when panel is collapsed */}
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => setLeftPanelExpanded(false)}
+												className="xl:hidden h-7 px-2 bg-muted/50 hover:bg-muted"
+												title="Show panel"
 											>
-												<Code className="w-3.5 h-3.5" />
-												<span className="hidden sm:inline">Raw Caddyfile</span>
-												<span className="sm:hidden">Raw</span>
-											</button>
-											{(caddyStatus?.available ||
-												process.env.NODE_ENV === "development") && (
+												<ChevronRight className="w-4 h-4" />
+											</Button>
+											<div className="flex gap-2 border-b border-muted-foreground/20 overflow-x-auto scrollbar-hide">
 												<button
 													type="button"
-													onClick={() => setRightPanelView("config")}
+													onClick={() => setRightPanelView("raw")}
 													className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-														rightPanelView === "config"
+														rightPanelView === "raw"
 															? "border-primary text-foreground"
 															: "border-transparent text-muted-foreground/70 hover:text-foreground"
 													}`}
 												>
-													<FileJson className="w-3.5 h-3.5" />
-													<span className="hidden sm:inline">Full Config</span>
-													<span className="sm:hidden">Config</span>
+													<Code className="w-3.5 h-3.5" />
+													<span className="hidden sm:inline">
+														Raw Caddyfile
+													</span>
+													<span className="sm:hidden">Raw</span>
 												</button>
-											)}
+												{(caddyStatus?.available ||
+													process.env.NODE_ENV === "development") && (
+													<button
+														type="button"
+														onClick={() => setRightPanelView("config")}
+														className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+															rightPanelView === "config"
+																? "border-primary text-foreground"
+																: "border-transparent text-muted-foreground/70 hover:text-foreground"
+														}`}
+													>
+														<FileJson className="w-3.5 h-3.5" />
+														<span className="hidden sm:inline">
+															Full Config
+														</span>
+														<span className="sm:hidden">Config</span>
+													</button>
+												)}
+											</div>
 										</div>
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={handleFormat}
+											disabled={!rawContent.trim()}
+											className={`text-xs opacity-70 hover:opacity-100 ${
+												rightPanelView === "raw" ? "visible" : "invisible"
+											}`}
+											title="Format Caddyfile"
+										>
+											<Wand2 className="h-3.5 w-3.5" />
+											<span className="hidden sm:inline ml-2">Format</span>
+										</Button>
 									</div>
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={handleFormat}
-										disabled={!rawContent.trim()}
-										className={`text-xs opacity-70 hover:opacity-100 ${
-											rightPanelView === "raw" ? "visible" : "invisible"
-										}`}
-										title="Format Caddyfile"
-									>
-										<Wand2 className="h-3.5 w-3.5" />
-										<span className="hidden sm:inline ml-2">Format</span>
-									</Button>
-								</div>
 
-								{/* Tab Content */}
-								{rightPanelView === "raw" ? (
-									<div className="flex-1 min-h-0 border border-dashed border-muted-foreground/20 rounded-md overflow-auto bg-muted/10">
-										<CaddyfileEditor
-											value={rawContent}
-											onChange={handleRawContentChange}
-											placeholder="# Caddyfile configuration..."
-										/>
-									</div>
-								) : (
-									<div className="flex-1 min-h-0 border border-dashed border-muted-foreground/20 rounded-md overflow-auto bg-muted/10">
-										<FullConfigView />
-									</div>
-								)}
-							</div>
+									{/* Tab Content */}
+									{rightPanelView === "raw" ? (
+										<div className="flex-1 min-h-0 border border-dashed border-muted-foreground/20 rounded-md overflow-auto bg-muted/10">
+											<CaddyfileEditor
+												value={rawContent}
+												onChange={handleRawContentChange}
+												placeholder="# Caddyfile configuration..."
+											/>
+										</div>
+									) : (
+										<div className="flex-1 min-h-0 border border-dashed border-muted-foreground/20 rounded-md overflow-auto bg-muted/10">
+											<FullConfigView />
+										</div>
+									)}
+								</div>
+							)}
 						</div>
 					)}
 				</div>

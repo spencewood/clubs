@@ -29,6 +29,7 @@ export default async function CertificatesPage() {
 				initialCertificates={initialData.certificates}
 				initialAcmeCertificates={initialData.acmeCertificates}
 				initialAuthStatus={initialData.authStatus}
+				showTextEditor={initialData.userPreferences.showTextEditor}
 			/>
 		</AuthGuard>
 	);

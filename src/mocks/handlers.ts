@@ -266,14 +266,22 @@ let mockAuthState = {
 		password: string;
 		created_at: string;
 	} | null,
+	userPreferences: new Map<string, { showTextEditor: boolean }>() as Map<
+		string,
+		{ showTextEditor: boolean }
+	>,
 };
 
 const resetMockAuthState = () => {
 	mockAuthState = {
 		users: [],
 		currentUser: null,
+		userPreferences: new Map(),
 	};
 };
+
+// Export mock auth state for E2E tests (used by SSR data fetching)
+export const getMockAuthState = () => mockAuthState;
 
 // Helper to toggle API availability (for testing)
 export const setMockCaddyAPIAvailable = (available: boolean) => {
@@ -1158,6 +1166,62 @@ CCqGSM49AwEHA0IABM8rHGvL0P/7nQ7S3F0RxGi3cT8xNjcxW9pYcMKxZ2k1Wqcz
 		return HttpResponse.json({
 			success: true,
 			guestModeEnabled: body.enabled,
+		});
+	}),
+
+	// Get user preferences
+	http.get("/api/preferences", async () => {
+		await delay(50);
+
+		if (!mockAuthState.currentUser) {
+			return HttpResponse.json(
+				{ error: "Authentication required" },
+				{ status: 401 },
+			);
+		}
+
+		const preferences = mockAuthState.userPreferences.get(
+			mockAuthState.currentUser.id,
+		) || {
+			showTextEditor: true,
+		};
+
+		return HttpResponse.json({
+			success: true,
+			preferences,
+		});
+	}),
+
+	// Update user preferences
+	http.put("/api/preferences", async ({ request }) => {
+		await delay(100);
+		const body = await request.json();
+
+		if (!mockAuthState.currentUser) {
+			return HttpResponse.json(
+				{ error: "Authentication required" },
+				{ status: 401 },
+			);
+		}
+
+		const currentPrefs = mockAuthState.userPreferences.get(
+			mockAuthState.currentUser.id,
+		) || {
+			showTextEditor: true,
+		};
+
+		const updatedPrefs = {
+			...currentPrefs,
+			...body,
+		};
+
+		mockAuthState.userPreferences.set(
+			mockAuthState.currentUser.id,
+			updatedPrefs,
+		);
+
+		return HttpResponse.json({
+			success: true,
 		});
 	}),
 ];

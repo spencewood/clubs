@@ -685,17 +685,7 @@ test.describe('Authentication System', () => {
       // Wait for home page to be fully loaded
       await expect(page.locator('h1')).toContainText('Clubs');
 
-      // In E2E mode, server-side render doesn't have access to test state
-      // ProfileDropdown needs to fetch auth status from client-side API
-      // Opening settings triggers a fetch - use this to refresh auth state
-      await page.getByRole('button', { name: /profile menu/i }).click();
-      await page.getByRole('menuitem', { name: /Settings/i }).click();
-
-      // Wait for settings dialog to open (this triggers auth status fetch)
-      await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible();
-      await page.getByRole('button', { name: /Cancel/i }).click();
-
-      // Now open menu again with fresh auth state
+      // Verify authenticated state in profile menu
       await page.getByRole('button', { name: /profile menu/i }).click();
       await expect(page.getByRole('menu').getByText('admin')).toBeVisible();
       await expect(page.getByRole('menuitem', { name: /Logout/i })).toBeVisible();

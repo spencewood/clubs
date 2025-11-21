@@ -28,6 +28,7 @@ export default async function UpstreamsPage() {
 				initialUpstreams={initialData.upstreams}
 				initialCertificates={initialData.certificates}
 				initialAuthStatus={initialData.authStatus}
+				showTextEditor={initialData.userPreferences.showTextEditor}
 			/>
 		</AuthGuard>
 	);

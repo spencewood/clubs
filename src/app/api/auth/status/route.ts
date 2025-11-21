@@ -1,26 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { isGuestModeEnabled } from "@/lib/db";
+import { getMockAuthState } from "@/mocks/handlers";
 
-// In-memory state for E2E tests
-let testState = {
-	users: [] as Array<{ id: string; username: string; password: string }>,
-	currentUser: null as {
-		id: string;
-		username: string;
-		password: string;
-	} | null,
-};
-
+// Export function for SSR to access MSW mock auth state
 export function getTestState() {
-	return testState;
-}
-
-export function resetTestState() {
-	testState = {
-		users: [],
-		currentUser: null,
-	};
+	return getMockAuthState();
 }
 
 /**
@@ -29,15 +14,16 @@ export function resetTestState() {
  */
 export async function GET(_request: NextRequest) {
 	try {
-		// Use in-memory state for E2E tests
+		// Use in-memory MSW mock state for E2E tests
 		if (process.env.E2E_TEST === "true") {
+			const mockState = getMockAuthState();
 			return NextResponse.json({
-				guestModeEnabled: testState.users.length === 0,
-				isAuthenticated: testState.currentUser !== null,
-				user: testState.currentUser
+				guestModeEnabled: mockState.users.length === 0,
+				isAuthenticated: mockState.currentUser !== null,
+				user: mockState.currentUser
 					? {
-							id: testState.currentUser.id,
-							username: testState.currentUser.username,
+							id: mockState.currentUser.id,
+							username: mockState.currentUser.username,
 						}
 					: null,
 			});
