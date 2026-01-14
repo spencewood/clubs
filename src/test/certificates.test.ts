@@ -279,8 +279,15 @@ qPOKQx4xFMbdGfwnXpE4mCOXmE/m8H5a6uoI
 
 			expect(result.daysUntilExpiry).toBeDefined();
 			expect(typeof result.daysUntilExpiry).toBe("number");
-			// This test cert is valid for 365 days from Oct 2025
-			expect(result.daysUntilExpiry).toBeGreaterThan(300);
+			// This test cert expires Oct 27, 2026 - calculate expected days dynamically
+			const certExpiry = new Date("2026-10-27T02:23:23Z");
+			const now = new Date();
+			const expectedDays = Math.floor(
+				(certExpiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+			);
+			// Allow 1 day tolerance for timing edge cases
+			expect(result.daysUntilExpiry).toBeGreaterThanOrEqual(expectedDays - 1);
+			expect(result.daysUntilExpiry).toBeLessThanOrEqual(expectedDays + 1);
 		});
 
 		it("should extract serial number", () => {
