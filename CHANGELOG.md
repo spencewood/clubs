@@ -1,5 +1,16 @@
 # clubs
 
+## 0.16.0
+
+### Minor Changes
+
+- a3d0495: Add guest mode and admin user creation with authentication
+
+### Patch Changes
+
+- ba919be: Server render profile menu
+- cf45de0: Add caddy version in status dropdown
+
 ## 0.15.0
 
 ### Minor Changes
