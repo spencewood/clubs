@@ -5,7 +5,11 @@
 
 import fs from "node:fs/promises";
 import { getCurrentUser } from "@/lib/auth";
-import { isGuestModeEnabled } from "@/lib/db";
+import {
+	getUserPreferences,
+	isGuestModeEnabled,
+	type UserPreferences,
+} from "@/lib/db";
 import { parseCaddyfile } from "@/lib/parser/caddyfile-parser";
 import { createCaddyAPIClient } from "@/lib/server/caddy-api-client";
 import type { AcmeCertificate } from "@/lib/server/cert-parser";
@@ -40,6 +44,7 @@ export interface InitialPageData {
 	certificates: CaddyPKICA | null;
 	acmeCertificates: AcmeCertificate[];
 	authStatus: AuthStatus;
+	userPreferences: UserPreferences;
 	validationErrors?: string[];
 }
 
@@ -230,18 +235,66 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 			: caddyStatus;
 
 	// Fetch auth status on the server
-	const guestModeEnabled = isGuestModeEnabled();
-	const currentUser = await getCurrentUser();
-	const authStatus: AuthStatus = {
-		guestModeEnabled,
-		isAuthenticated: !!currentUser,
-		user: currentUser
+	let guestModeEnabled: boolean;
+	let currentUser: Awaited<ReturnType<typeof getCurrentUser>>;
+	let authStatus: AuthStatus;
+
+	// For E2E tests, read from in-memory test state
+	if (process.env.E2E_TEST === "true") {
+		const { getTestState } = await import("@/app/api/auth/status/route");
+		const testState = getTestState();
+		guestModeEnabled = testState.users.length === 0;
+		currentUser = testState.currentUser
 			? {
-					id: currentUser.id,
-					username: currentUser.username,
+					id: Number(testState.currentUser.id),
+					username: testState.currentUser.username,
+					created_at: Date.now(),
 				}
-			: null,
-	};
+			: null;
+		authStatus = {
+			guestModeEnabled,
+			isAuthenticated: testState.currentUser !== null,
+			user: testState.currentUser
+				? {
+						id: Number(testState.currentUser.id),
+						username: testState.currentUser.username,
+					}
+				: null,
+		};
+	} else {
+		// Production: read from database
+		guestModeEnabled = isGuestModeEnabled();
+		currentUser = await getCurrentUser();
+		authStatus = {
+			guestModeEnabled,
+			isAuthenticated: !!currentUser,
+			user: currentUser
+				? {
+						id: currentUser.id,
+						username: currentUser.username,
+					}
+				: null,
+		};
+	}
+
+	// Fetch user preferences (defaults if not authenticated)
+	let userPreferences: UserPreferences = { showTextEditor: true };
+
+	if (currentUser) {
+		// For E2E tests, read from MSW mock state directly
+		if (process.env.E2E_TEST === "true") {
+			const { getMockAuthState } = await import("@/mocks/handlers");
+			const mockState = getMockAuthState();
+			userPreferences = mockState.userPreferences.get(
+				String(currentUser.id),
+			) || {
+				showTextEditor: true,
+			};
+		} else {
+			// Production: read from database
+			userPreferences = getUserPreferences(currentUser.id);
+		}
+	}
 
 	// Fetch upstreams, certificates, and ACME certificates in parallel
 	// PKI certificates only available if Caddy is available or in dev mode
@@ -275,6 +328,7 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 			certificates,
 			acmeCertificates,
 			authStatus,
+			userPreferences,
 		};
 	}
 
@@ -291,6 +345,7 @@ export async function getInitialPageData(): Promise<InitialPageData> {
 		certificates,
 		acmeCertificates,
 		authStatus,
+		userPreferences,
 		validationErrors: validation.valid ? undefined : validation.errors,
 	};
 }

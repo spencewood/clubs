@@ -91,6 +91,17 @@ function initializeSchema(database: Database.Database) {
     )
   `);
 
+	// Create user_preferences table
+	database.exec(`
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      user_id INTEGER PRIMARY KEY,
+      show_text_editor INTEGER NOT NULL DEFAULT 1,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+      updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
 	// Initialize default settings if not exists
 	const guestModeSetting = database
 		.prepare("SELECT value FROM settings WHERE key = 'guest_mode_enabled'")
@@ -169,4 +180,50 @@ export function deleteAllUsers(): void {
 	const db = getDatabase();
 	// Refresh tokens will be automatically deleted due to CASCADE
 	db.prepare("DELETE FROM users").run();
+}
+
+/**
+ * User preferences interface
+ */
+export interface UserPreferences {
+	showTextEditor: boolean;
+}
+
+/**
+ * Get user preferences
+ */
+export function getUserPreferences(userId: number): UserPreferences {
+	const db = getDatabase();
+	const row = db
+		.prepare("SELECT show_text_editor FROM user_preferences WHERE user_id = ?")
+		.get(userId) as { show_text_editor: number } | undefined;
+
+	if (!row) {
+		return { showTextEditor: true };
+	}
+
+	return {
+		showTextEditor: row.show_text_editor === 1,
+	};
+}
+
+/**
+ * Update user preferences
+ */
+export function updateUserPreferences(
+	userId: number,
+	preferences: Partial<UserPreferences>,
+): void {
+	const db = getDatabase();
+	const now = Math.floor(Date.now() / 1000);
+	const current = getUserPreferences(userId);
+	const updated = { ...current, ...preferences };
+
+	db.prepare(
+		`INSERT INTO user_preferences (user_id, show_text_editor, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       show_text_editor = excluded.show_text_editor,
+       updated_at = excluded.updated_at`,
+	).run(userId, updated.showTextEditor ? 1 : 0, now);
 }

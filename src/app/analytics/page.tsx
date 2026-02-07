@@ -27,6 +27,7 @@ export default async function AnalyticsPage() {
 				initialUpstreams={initialData.upstreams}
 				initialCertificates={initialData.certificates}
 				initialAuthStatus={initialData.authStatus}
+				showTextEditor={initialData.userPreferences.showTextEditor}
 			/>
 		</AuthGuard>
 	);

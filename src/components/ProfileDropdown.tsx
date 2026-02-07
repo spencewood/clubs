@@ -25,9 +25,13 @@ interface AuthStatus {
 
 interface ProfileDropdownProps {
 	initialAuthStatus?: AuthStatus;
+	initialShowTextEditor?: boolean;
 }
 
-export function ProfileDropdown({ initialAuthStatus }: ProfileDropdownProps) {
+export function ProfileDropdown({
+	initialAuthStatus,
+	initialShowTextEditor = true,
+}: ProfileDropdownProps) {
 	const router = useRouter();
 	const [authStatus, setAuthStatus] = useState<AuthStatus | null>(
 		initialAuthStatus || null,
@@ -145,6 +149,7 @@ export function ProfileDropdown({ initialAuthStatus }: ProfileDropdownProps) {
 				open={showSettings}
 				onOpenChange={setShowSettings}
 				authStatus={authStatus}
+				initialShowTextEditor={initialShowTextEditor}
 				onSuccess={handleSettingsSuccess}
 			/>
 		</>

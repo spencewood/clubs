@@ -33,6 +33,7 @@ interface SettingsDialogProps {
 	onOpenChange: (open: boolean) => void;
 	authStatus: AuthStatus | null;
 	onSuccess?: () => void;
+	initialShowTextEditor?: boolean;
 }
 
 const setupSchema = z
@@ -56,6 +57,7 @@ export function SettingsDialog({
 	open,
 	onOpenChange,
 	authStatus,
+	initialShowTextEditor = true,
 	onSuccess,
 }: SettingsDialogProps) {
 	const router = useRouter();
@@ -69,10 +71,19 @@ export function SettingsDialog({
 	const [validationErrors, setValidationErrors] = useState<
 		Record<string, string>
 	>({});
+	const [showTextEditor, setShowTextEditor] = useState(initialShowTextEditor);
+	const [storedInitialShowTextEditor, setStoredInitialShowTextEditor] =
+		useState(initialShowTextEditor);
 
 	// Track whether we've initialized the form for this dialog session
 	// This prevents race conditions where authStatus updates reset user changes
 	const hasInitializedRef = useRef(false);
+
+	// Update showTextEditor when initialShowTextEditor prop changes
+	useEffect(() => {
+		setShowTextEditor(initialShowTextEditor);
+		setStoredInitialShowTextEditor(initialShowTextEditor);
+	}, [initialShowTextEditor]);
 
 	useEffect(() => {
 		if (open && !hasInitializedRef.current && authStatus !== null) {
@@ -85,14 +96,17 @@ export function SettingsDialog({
 			// IMPORTANT: Reset to actual auth status, not hardcoded false
 			setActiveTab("general");
 			setGuestModeEnabled(authStatus?.guestModeEnabled ?? false);
+			setShowTextEditor(initialShowTextEditor);
+			setStoredInitialShowTextEditor(initialShowTextEditor);
 			setUsername("");
 			setPassword("");
 			setConfirmPassword("");
 			setError(null);
 			setValidationErrors({});
+			setIsLoading(false);
 			hasInitializedRef.current = false;
 		}
-	}, [open, authStatus]);
+	}, [open, authStatus, initialShowTextEditor]);
 
 	const handleSetup = async (e?: React.FormEvent) => {
 		e?.preventDefault();
@@ -165,12 +179,64 @@ export function SettingsDialog({
 
 		// Check if guest mode setting changed
 		const guestModeChanged = guestModeEnabled !== authStatus?.guestModeEnabled;
+		const textEditorChanged = showTextEditor !== storedInitialShowTextEditor;
 
-		if (!guestModeChanged) {
+		if (!guestModeChanged && !textEditorChanged) {
 			// No changes, just close
 			onOpenChange(false);
 			return;
 		}
+
+		setIsLoading(true);
+
+		try {
+			// Save user preferences if changed and user is authenticated
+			if (authStatus?.isAuthenticated && textEditorChanged) {
+				console.log("[SettingsDialog] Saving preferences:", { showTextEditor });
+				const prefsResponse = await fetch("/api/preferences", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ showTextEditor }),
+				});
+
+				console.log(
+					"[SettingsDialog] Preferences response:",
+					prefsResponse.status,
+				);
+
+				if (!prefsResponse.ok) {
+					const errorText = await prefsResponse.text();
+					console.error("[SettingsDialog] Preferences save failed:", errorText);
+					throw new Error(
+						`Failed to update preferences: ${prefsResponse.status}`,
+					);
+				}
+			}
+
+			// If no guest mode change, we're done
+			if (!guestModeChanged) {
+				console.log(
+					"[SettingsDialog] Preferences saved successfully, refreshing page",
+				);
+				toast.success("Preferences updated!");
+				onOpenChange(false);
+				if (onSuccess) {
+					onSuccess();
+				}
+				// Refresh the page to apply new preferences
+				router.refresh();
+				return;
+			}
+		} catch (err) {
+			console.error("[SettingsDialog] Error saving preferences:", err);
+			toast.error(
+				`Failed to update preferences: ${err instanceof Error ? err.message : "Unknown error"}`,
+			);
+			setIsLoading(false);
+			return;
+		}
+
+		// Continue with guest mode change if needed
 
 		// If turning OFF guest mode for the first time (no users exist), need to create admin
 		if (authStatus?.guestModeEnabled && !guestModeEnabled) {
@@ -303,8 +369,34 @@ export function SettingsDialog({
 					{/* Tab Content */}
 					{activeTab === "general" && (
 						<div className="space-y-4">
-							<div className="text-sm text-muted-foreground">
-								General application settings will appear here.
+							{/* Show disclaimer if guest mode is enabled */}
+							{authStatus?.guestModeEnabled && (
+								<div className="p-3 bg-muted/50 rounded-md border border-muted-foreground/20">
+									<p className="text-sm text-muted-foreground">
+										Disable guest mode to customize general settings.
+									</p>
+								</div>
+							)}
+
+							{/* Show text editor preference */}
+							<div className="flex items-center justify-between space-x-4 p-4 rounded-lg border">
+								<div className="flex-1 space-y-1">
+									<label
+										htmlFor="show-text-editor"
+										className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+									>
+										Show text editor
+									</label>
+									<p className="text-sm text-muted-foreground">
+										Display the raw Caddyfile editor alongside the GUI
+									</p>
+								</div>
+								<Switch
+									id="show-text-editor"
+									checked={showTextEditor}
+									onCheckedChange={setShowTextEditor}
+									disabled={!authStatus?.isAuthenticated || isLoading}
+								/>
 							</div>
 						</div>
 					)}

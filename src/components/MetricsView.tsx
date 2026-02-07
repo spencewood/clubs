@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, BarChart3, TrendingUp, XCircle } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import {
 	Area,
 	AreaChart,
@@ -711,14 +711,14 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 															<div className="font-medium mb-1">{label}</div>
 															<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
 																{payload.map((entry: TooltipPayloadEntry) => (
-																	<>
+																	<Fragment key={entry.name}>
 																		<div className="text-muted-foreground">
 																			{entry.name}:
 																		</div>
 																		<div className="font-mono text-right tabular-nums">
 																			{entry.value.toFixed(2)}
 																		</div>
-																	</>
+																	</Fragment>
 																))}
 															</div>
 														</div>
@@ -778,14 +778,14 @@ export function MetricsView({ initialUpstreams }: MetricsViewProps) {
 															<div className="font-medium mb-1">{label}</div>
 															<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
 																{payload.map((entry: TooltipPayloadEntry) => (
-																	<>
+																	<Fragment key={entry.name}>
 																		<div className="text-muted-foreground">
 																			{entry.name}:
 																		</div>
 																		<div className="font-mono text-right tabular-nums">
 																			{entry.value.toFixed(2)}
 																		</div>
-																	</>
+																	</Fragment>
 																))}
 															</div>
 														</div>
